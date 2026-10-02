@@ -229,6 +229,9 @@
       </div>
       <div class="sim-note">회색·파랑 띠는 사용자 프로그램 A, B가 CPU를 쓰는 시간, 주황 띠는 커널의 인터럽트 처리 시간이다. 타이머 인터럽트는 운영체제가 주기적으로 CPU를 되찾아 다음 프로그램으로 바꾸는 장치다. 이것이 없으면 무한 반복에 빠진 프로그램 하나가 컴퓨터를 독차지할 수 있다.</div>
     </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">운영체제가 타이머 인터럽트를 끄고, 각 프로그램이 ‘이제 양보할게요’라고 스스로 말할 때만 CPU를 넘겨받는다면?</p><p class="wi-hint">인터럽트 시뮬레이터의 ‘타이머 인터럽트’ 체크를 해제해 보자.</p><div class="opts">
+      <button class="opt">아무 차이 없다</button><button class="opt" data-correct>무한 반복에 빠진 프로그램 하나가 컴퓨터 전체를 멈추게 할 수 있다</button><button class="opt">더 공평해진다</button><button class="opt">배터리가 더 빨리 닳는다</button>
+    </div><div class="quiz-exp">실제로 1990년대 초 일부 운영체제(옛 맥 OS, 윈도우 3.1)가 이런 ‘협력형’ 방식이었다. 프로그램 하나가 멈추면 마우스까지 굳어 버렸다. 요즘 운영체제는 타이머 인터럽트로 언제든 CPU를 빼앗을 수 있는 ‘선점형’ 방식을 쓴다.</div></div>
   </section>
 
   <!-- ============================================================ -->

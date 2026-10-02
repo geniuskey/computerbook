@@ -244,6 +244,9 @@
       </div>
       <div class="sim-note">재귀 호출이 끝나지 않으면(예: n이 1에서 멈추는 조건을 빼먹으면) 스택이 끝없이 쌓여 할당된 공간을 넘친다. 이것이 <b>스택 오버플로</b>다. 개발자 질문 사이트의 이름도 여기서 왔다.</div>
     </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">팩토리얼 함수에서 멈춤 조건 <code>if (n == 1) return 1</code>을 빼먹으면?</p><p class="wi-hint">호출 스택 시뮬레이터의 ‘멈춤 조건을 빼먹으면’을 켜고 끝까지 진행해 보자.</p><div class="opts">
+      <button class="opt">0이 나온다</button><button class="opt" data-correct>스택이 끝없이 쌓이다가 스택 오버플로로 프로그램이 종료된다</button><button class="opt">답이 무한대가 된다</button><button class="opt">컴파일 오류가 난다</button>
+    </div><div class="quiz-exp">문법은 멀쩡하므로 컴파일은 된다. 하지만 실행하면 fact(0), fact(−1), …로 끝없이 내려가며 프레임이 쌓이고, 스택 공간이 바닥나는 순간 운영체제가 프로그램을 종료한다. 이런 오류는 실행해 봐야 드러나서 ‘런타임 오류’라 부른다.</div></div>
   </section>
 
   <!-- ============================================================ -->
