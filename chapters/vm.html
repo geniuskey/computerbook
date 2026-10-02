@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <title>가상 메모리 · ComputerBook</title>
-<meta name="description" content="프로그램마다 주어지는 가상 주소 공간, 페이지와 페이지 테이블을 통한 주소 변환, 페이지 폴트와 스왑, FIFO·LRU·최적 페이지 교체 알고리즘, 메모리 보호를 시뮬레이터로 익힌다.">
+<meta name="description" content="프로그램마다 주어지는 가상 주소 공간, 페이지와 페이지 테이블을 통한 주소 변환, 페이지 폴트와 스왑, FIFO·LRU·최적 페이지 교체 알고리즘, TLB와 큰 페이지, 스래싱, 메모리 보호를 시뮬레이터로 익힌다.">
 <link rel="canonical" href="https://computerbook.euiyun.com/chapters/vm.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="ComputerBook">
 <meta property="og:title" content="가상 메모리 · ComputerBook">
-<meta property="og:description" content="프로그램마다 주어지는 가상 주소 공간, 페이지와 페이지 테이블을 통한 주소 변환, 페이지 폴트와 스왑, FIFO·LRU·최적 페이지 교체 알고리즘, 메모리 보호를 시뮬레이터로 익힌다.">
+<meta property="og:description" content="프로그램마다 주어지는 가상 주소 공간, 페이지와 페이지 테이블을 통한 주소 변환, 페이지 폴트와 스왑, FIFO·LRU·최적 페이지 교체 알고리즘, TLB와 큰 페이지, 스래싱, 메모리 보호를 시뮬레이터로 익힌다.">
 <meta property="og:url" content="https://computerbook.euiyun.com/chapters/vm.html">
 <meta property="og:image" content="https://computerbook.euiyun.com/og.png">
 <meta property="og:image:width" content="1200">
@@ -67,6 +67,33 @@
     </ul>
     <p>해결책은 프로그램에게 <b>진짜 주소를 알려 주지 않는 것</b>이다. 프로그램은 0번지부터 시작하는 자기만의 <span class="term">가상 주소</span><span class="en">(virtual address)</span>를 쓰고, 실제 메모리의 어디에 있는지는 운영체제와 CPU가 몰래 바꿔치기한다.</p>
     <div class="callout analogy"><strong>호텔 객실 번호</strong><p>단체 여행객 두 팀에게 각각 “여러분 방은 1호, 2호, 3호입니다”라고 알려 준다. A팀의 1호는 실제로 507호이고 B팀의 1호는 812호다. 프런트(운영체제)만 이 대응표를 알고 있다. 손님은 자기 팀 번호만 쓰면 되고, 다른 팀 방에는 갈 방법조차 없다. 방이 모자라면 일부 짐을 지하 창고(SSD)에 맡겨 두었다가 필요할 때 꺼내 준다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="두 프로세스의 가상 페이지가 실제 메모리 프레임과 디스크에 대응되는 모습">
+        <g stroke-width="2" fill="none">
+          <path d="M170 60 C300 60 330 200 480 200" stroke="var(--accent)"/><path d="M170 96 C300 96 330 60 480 60" stroke="var(--accent)"/><path d="M170 132 C300 132 360 270 610 270" stroke="var(--accent)" stroke-dasharray="5 4"/>
+          <path d="M170 196 C300 196 330 130 480 130" stroke="var(--accent-2)"/><path d="M170 232 C300 232 330 96 480 96" stroke="var(--accent-2)"/><path d="M170 268 C300 268 330 236 480 236" stroke="var(--accent-2)"/>
+        </g>
+        <text x="95" y="28" text-anchor="middle" class="t" style="font-weight:700;fill:var(--accent)">메신저의 가상 공간</text>
+        <g class="t-mono"><rect x="40" y="44" width="130" height="32" rx="6" class="f-acc-soft"/><text x="105" y="65" text-anchor="middle">페이지 0</text>
+          <rect x="40" y="80" width="130" height="32" rx="6" class="f-acc-soft"/><text x="105" y="101" text-anchor="middle">페이지 1</text>
+          <rect x="40" y="116" width="130" height="32" rx="6" class="f-acc-soft"/><text x="105" y="137" text-anchor="middle">페이지 2</text></g>
+        <text x="95" y="168" text-anchor="middle" class="t" style="font-weight:700;fill:var(--accent-2)">게임의 가상 공간</text>
+        <g class="t-mono"><rect x="40" y="180" width="130" height="32" rx="6" class="f-acc2-soft"/><text x="105" y="201" text-anchor="middle">페이지 0</text>
+          <rect x="40" y="216" width="130" height="32" rx="6" class="f-acc2-soft"/><text x="105" y="237" text-anchor="middle">페이지 1</text>
+          <rect x="40" y="252" width="130" height="32" rx="6" class="f-acc2-soft"/><text x="105" y="273" text-anchor="middle">페이지 2</text></g>
+        <text x="545" y="28" text-anchor="middle" class="t" style="font-weight:700">실제 메모리 (RAM)</text>
+        <g class="t-mono"><rect x="480" y="44" width="130" height="32" rx="6" class="f-elev"/><text x="545" y="65" text-anchor="middle">프레임 0</text>
+          <rect x="480" y="80" width="130" height="32" rx="6" class="f-elev"/><text x="545" y="101" text-anchor="middle">프레임 1</text>
+          <rect x="480" y="114" width="130" height="32" rx="6" class="f-elev"/><text x="545" y="135" text-anchor="middle">프레임 2</text>
+          <rect x="480" y="148" width="130" height="32" rx="6" class="f-surface"/><text x="545" y="169" text-anchor="middle">(빈칸)</text>
+          <rect x="480" y="184" width="130" height="32" rx="6" class="f-elev"/><text x="545" y="205" text-anchor="middle">프레임 4</text>
+          <rect x="480" y="220" width="130" height="32" rx="6" class="f-elev"/><text x="545" y="241" text-anchor="middle">프레임 5</text></g>
+        <rect x="610" y="252" width="170" height="38" rx="8" fill="color-mix(in srgb, var(--warn) 18%, transparent)" stroke="var(--warn)"/><text x="695" y="276" text-anchor="middle" class="t">SSD (스왑 공간)</text>
+        <text x="660" y="70" class="t-dim">두 프로그램 모두</text><text x="660" y="90" class="t-dim">“페이지 0”을 쓰지만</text><text x="660" y="110" class="t-dim">실제 위치는 다르다.</text>
+        <text x="660" y="150" class="t-dim">순서도 뒤죽박죽,</text><text x="660" y="170" class="t-dim">일부는 디스크에.</text><text x="660" y="190" class="t-dim">프로그램은 모른다.</text>
+      </svg>
+      <figcaption><b>그림 9-1.</b> 가상 메모리의 대응. 각 프로세스는 0번부터 이어진 깔끔한 주소 공간을 보지만, 실제로는 RAM 여기저기와 SSD에 흩어져 있다. 이 대응표가 페이지 테이블이다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
@@ -74,6 +101,25 @@
     <h2>페이지와 페이지 테이블</h2>
     <p>주소를 한 바이트씩 바꿔치기하면 대응표가 메모리보다 커진다. 그래서 메모리를 일정한 크기의 덩어리로 나눠 덩어리 단위로 대응시킨다. 가상 주소 공간의 덩어리를 <span class="term">페이지</span><span class="en">(page)</span>, 실제 메모리의 같은 크기 덩어리를 <span class="term">프레임</span><span class="en">(frame)</span>이라 한다. 실제 컴퓨터의 페이지는 보통 4,096바이트(4 KB)인데, 여기서는 계산하기 쉽게 <b>1,000바이트</b>로 하자.</p>
     <p>그러면 가상 주소 <code>3250</code>은 “<b>3번 페이지</b>의 <b>250번째</b> 바이트”다. 앞부분이 페이지 번호, 뒷부분이 페이지 안에서의 위치(<span class="term">오프셋</span>)다. 프로세스마다 하나씩 있는 <span class="term">페이지 테이블</span><span class="en">(page table)</span>이 “3번 페이지 → 6번 프레임”이라고 알려 주면 실제 주소는 <code>6250</code>이 된다. 오프셋은 그대로 두고 앞부분만 바꾸면 된다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 262" role="img" aria-label="가상 주소를 페이지 번호와 오프셋으로 나눠 실제 주소로 바꾸는 과정">
+        <defs><marker id="vm-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="20" y="28" class="t" style="font-weight:700">가상 주소 3250</text>
+        <g transform="translate(20,40)"><rect width="110" height="46" rx="8" class="f-acc"/><text x="55" y="30" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:18px;font-family:var(--mono)">3</text>
+          <rect x="116" width="160" height="46" rx="8" fill="color-mix(in srgb, var(--warn) 22%, transparent)" stroke="var(--warn)"/><text x="196" y="30" text-anchor="middle" style="fill:var(--text);font-weight:700;font-size:18px;font-family:var(--mono)">250</text>
+          <text x="55" y="66" text-anchor="middle" class="t-dim">페이지 번호</text><text x="196" y="66" text-anchor="middle" class="t-dim">오프셋 (그대로)</text></g>
+        <path d="M75 112 V140 H330" class="s-acc" marker-end="url(#vm-a)"/>
+        <g transform="translate(336,112)"><rect width="150" height="96" rx="10" class="f-surface"/><text x="75" y="22" text-anchor="middle" class="t" style="font-weight:700">페이지 테이블</text>
+          <text x="30" y="48" class="t-mono">2 → 1</text><rect x="20" y="56" width="110" height="22" rx="4" fill="var(--accent-soft)"/><text x="30" y="72" class="t-mono" style="fill:var(--text);font-weight:700">3 → 6</text><text x="30" y="92" class="t-mono">4 → 디스크</text></g>
+        <path d="M486 140 H560 V112" class="s-acc" marker-end="url(#vm-a)"/>
+        <path d="M216 112 V228 H686 V94" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#vm-a)"/>
+        <text x="450" y="250" text-anchor="middle" class="t-mono" style="fill:var(--warn)">오프셋은 바뀌지 않고 그대로 붙는다</text>
+        <text x="520" y="28" class="t" style="font-weight:700">실제 주소 6250</text>
+        <g transform="translate(520,40)"><rect width="110" height="46" rx="8" class="f-acc"/><text x="55" y="30" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:18px;font-family:var(--mono)">6</text>
+          <rect x="116" width="140" height="46" rx="8" fill="color-mix(in srgb, var(--warn) 22%, transparent)" stroke="var(--warn)"/><text x="186" y="30" text-anchor="middle" style="fill:var(--text);font-weight:700;font-size:18px;font-family:var(--mono)">250</text></g>
+      </svg>
+      <figcaption><b>그림 9-2.</b> 주소 변환은 앞부분만 바꿔 끼우는 일이다. 실제 컴퓨터에서는 페이지가 4,096바이트(2¹²)라서 주소의 오른쪽 12비트가 오프셋, 나머지가 페이지 번호가 된다. 10진수 대신 2진수로 자를 뿐 원리는 같다.</figcaption>
+    </figure>
     <div class="sim" id="sim-pt">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>주소 변환기: 가상 주소 → 실제 주소</h3></div>
       <div class="sim-controls" style="border-top:0">
@@ -90,6 +136,39 @@
     </div>
     <p>이 변환은 메모리에 접근할 때마다, 즉 1초에 수십억 번 일어나야 한다. 그래서 소프트웨어가 아니라 CPU 안의 전용 회로인 <span class="term">MMU</span><span class="en">(Memory Management Unit)</span>가 처리한다. 운영체제는 페이지 테이블을 만들어 두기만 하고, 실제 변환은 하드웨어가 번개처럼 해낸다.</p>
     <div class="callout deep"><strong>TLB: 변환 결과의 캐시</strong><p>페이지 테이블 자체도 메모리에 있다. 그러면 주소 하나를 쓰기 위해 메모리를 두 번(테이블 한 번, 실제 데이터 한 번) 가야 할까? 그렇게 되지 않도록 CPU는 최근에 쓴 변환 결과를 <b>TLB</b>라는 작은 캐시에 보관한다. 6장의 지역성 덕분에 TLB 적중률은 99%를 넘는다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 280" role="img" aria-label="주소 변환 경로: TLB, 페이지 테이블, 페이지 폴트">
+        <defs><marker id="tl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-dim)"/></marker></defs>
+        <rect x="20" y="40" width="120" height="50" rx="10" class="f-acc"/><text x="80" y="70" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">CPU 코어</text>
+        <text x="150" y="56" class="t-mono">가상 주소</text>
+        <path d="M140 65 H226" class="s-line" marker-end="url(#tl-a)"/>
+        <rect x="230" y="40" width="130" height="50" rx="10" class="f-acc2-soft"/><text x="295" y="62" text-anchor="middle" class="t" style="font-weight:700">TLB</text><text x="295" y="80" text-anchor="middle" class="t-mono">최근 변환 수십~수천 개</text>
+        <path d="M360 65 H556" stroke="var(--ok)" stroke-width="2.5" marker-end="url(#tl-a)"/><text x="458" y="56" text-anchor="middle" class="t" style="fill:var(--ok);font-weight:700">① 적중 (99% 이상) · 약 1박자</text>
+        <rect x="560" y="40" width="220" height="50" rx="10" class="f-elev"/><text x="670" y="62" text-anchor="middle" class="t" style="font-weight:700">실제 주소로 캐시·RAM 접근</text><text x="670" y="80" text-anchor="middle" class="t-mono">6장의 메모리 계층</text>
+        <path d="M295 90 V140" class="s-line" marker-end="url(#tl-a)"/><text x="305" y="120" class="t-dim">② TLB에 없음</text>
+        <rect x="200" y="144" width="190" height="54" rx="10" class="f-surface"/><text x="295" y="166" text-anchor="middle" class="t" style="font-weight:700">페이지 테이블 확인</text><text x="295" y="186" text-anchor="middle" class="t-mono">메모리에서 읽기 · 수십~수백 ns</text>
+        <path d="M390 160 Q560 150 650 94" class="s-line" fill="none" marker-end="url(#tl-a)"/><text x="520" y="138" class="t-dim">찾음 → TLB에 기록</text>
+        <path d="M295 198 V226" class="s-line" marker-end="url(#tl-a)"/><text x="305" y="218" class="t-dim">③ 디스크에 있음</text>
+        <rect x="150" y="228" width="290" height="44" rx="10" fill="color-mix(in srgb, var(--warn) 18%, transparent)" stroke="var(--warn)"/><text x="295" y="255" text-anchor="middle" class="t" style="font-weight:700">페이지 폴트 → 운영체제가 처리 (수십 µs~ms)</text>
+        <text x="480" y="240" class="t-dim">아래 단계로 갈수록 수십~수만 배 느려진다.</text><text x="480" y="260" class="t-dim">다행히 대부분은 ①에서 끝난다.</text>
+      </svg>
+      <figcaption><b>그림 9-3.</b> 주소 변환의 세 갈래. MMU는 먼저 TLB를 보고, 없으면 메모리의 페이지 테이블을, 그래도 실제 메모리에 없으면 운영체제를 부른다.</figcaption>
+    </figure>
+    <div class="sim" id="sim-tlb">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>TLB 실험: 접근 방식에 따라 적중률이 어떻게 달라질까</h3></div>
+      <div class="sim-view"><canvas id="cv-tlb"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>메모리 접근 방식</span><div class="seg" id="tlb-pat"><button data-value="seq" class="on">배열을 차례로</button><button data-value="stride">4 KB씩 건너뛰며</button><button data-value="rand">아무 데나</button></div></div>
+        <label class="ctrl"><span>TLB 칸 수 <output id="tlb-n-out"></output></span><input type="range" id="tlb-n" min="0" max="4" value="1"></label>
+        <div class="ctrl"><span>페이지 크기</span><div class="seg" id="tlb-pg"><button data-value="4096" class="on">4 KB (보통)</button><button data-value="2097152">2 MB (큰 페이지)</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">TLB 적중률</span><span class="v" id="o-tlb-hr">—</span></div>
+        <div class="stat"><span class="k">TLB 실패 횟수</span><span class="v" id="o-tlb-miss">—</span></div>
+        <div class="stat"><span class="k">평균 변환 비용</span><span class="v" id="o-tlb-cost">—</span></div>
+      </div>
+      <div class="sim-note">64 MB 범위에서 메모리를 2만 번 읽는 실험이다(적중 1박자, 실패 100박자로 계산). 위 그래프는 접근 순서대로 적중(초록)과 실패(빨강)를 찍은 것이다. 해볼 것: “4 KB씩 건너뛰며”는 매번 새 페이지를 건드려 TLB가 쓸모없어진다. 이때 페이지 크기를 2 MB로 키우면? 데이터베이스와 AI 프로그램이 “큰 페이지”를 즐겨 쓰는 이유다.</div>
+    </div>
   </section>
 
   <!-- ============================================================ -->
@@ -98,6 +177,37 @@
     <p>가상 메모리의 또 다른 선물은 <b>실제 RAM보다 많은 메모리를 쓸 수 있다는 것</b>이다. 당장 쓰지 않는 페이지는 SSD의 특별한 영역(스왑 공간, 페이지 파일)으로 내보내고, 페이지 테이블에 “지금은 디스크에 있음”이라고 적어 둔다.</p>
     <p>프로그램이 그 페이지를 건드리면 MMU가 변환에 실패하고 운영체제를 부른다. 이것이 <span class="term">페이지 폴트</span><span class="en">(page fault)</span>다. 운영체제는 ① 빈 프레임을 찾고(없으면 덜 쓰는 페이지 하나를 SSD로 쫓아내고) ② SSD에서 페이지를 읽어 오고 ③ 페이지 테이블을 고친 다음 ④ 프로그램을 멈췄던 바로 그 명령부터 다시 실행시킨다. 프로그램은 잠깐 느려졌다는 것 말고는 아무것도 눈치채지 못한다.</p>
     <div class="callout warn"><strong>스래싱: 컴퓨터가 갑자기 버벅일 때</strong><p>메모리가 많이 모자라면 페이지를 내보내자마자 다시 필요해지는 일이 반복된다. CPU는 거의 놀고 SSD만 바쁘게 페이지를 넣었다 뺐다 한다. 이를 <b>스래싱</b>(thrashing)이라 한다. 브라우저 탭을 수백 개 열었을 때 컴퓨터가 갑자기 굼떠지는 이유 중 하나다. 1장의 시간 감각으로 보면 RAM 접근(5분) 대신 SSD 접근(3일)을 계속 하는 셈이다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="페이지 폴트 처리 순서">
+        <defs><marker id="pf-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g>
+          <rect x="20" y="30" width="170" height="70" rx="12" class="f-acc-soft"/><text x="105" y="58" text-anchor="middle" class="t" style="font-weight:700">① 앱이 주소 접근</text><text x="105" y="80" text-anchor="middle" class="t-dim">MMU: “디스크에 있음!”</text>
+          <rect x="220" y="30" width="170" height="70" rx="12" class="f-acc-soft"/><text x="305" y="58" text-anchor="middle" class="t" style="font-weight:700">② 운영체제 호출</text><text x="305" y="80" text-anchor="middle" class="t-dim">앱은 잠시 대기 상태</text>
+          <rect x="420" y="30" width="170" height="70" rx="12" class="f-acc-soft"/><text x="505" y="58" text-anchor="middle" class="t" style="font-weight:700">③ 빈 프레임 찾기</text><text x="505" y="80" text-anchor="middle" class="t-dim">없으면 하나를 SSD로</text>
+          <rect x="620" y="30" width="160" height="70" rx="12" fill="color-mix(in srgb, var(--warn) 18%, transparent)" stroke="var(--warn)"/><text x="700" y="58" text-anchor="middle" class="t" style="font-weight:700">④ SSD에서 읽기</text><text x="700" y="80" text-anchor="middle" class="t-dim">가장 오래 걸림</text>
+          <rect x="420" y="150" width="170" height="70" rx="12" class="f-acc-soft"/><text x="505" y="178" text-anchor="middle" class="t" style="font-weight:700">⑤ 페이지 테이블 고침</text><text x="505" y="200" text-anchor="middle" class="t-dim">“이제 프레임 n에 있음”</text>
+          <rect x="220" y="150" width="170" height="70" rx="12" class="f-acc"/><text x="305" y="178" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">⑥ 같은 명령 다시 실행</text><text x="305" y="200" text-anchor="middle" style="fill:#fff" class="t-dim">이번엔 성공</text>
+        </g>
+        <path d="M190 65 H216" class="s-acc" marker-end="url(#pf-a)"/><path d="M390 65 H416" class="s-acc" marker-end="url(#pf-a)"/><path d="M590 65 H616" class="s-acc" marker-end="url(#pf-a)"/>
+        <path d="M700 100 V185 H594" class="s-acc" fill="none" marker-end="url(#pf-a)"/><path d="M420 185 H394" class="s-acc" marker-end="url(#pf-a)"/>
+        <text x="30" y="178" class="t-dim">앱 입장에서는</text><text x="30" y="198" class="t-dim">한 명령이 조금 늦게</text><text x="30" y="218" class="t-dim">끝났을 뿐이다.</text>
+      </svg>
+      <figcaption><b>그림 9-4.</b> 페이지 폴트를 처리하는 여섯 단계. ④에서 SSD를 기다리는 동안 CPU는 놀지 않고 다른 프로세스를 실행한다(8장의 스케줄링).</figcaption>
+    </figure>
+    <div class="sim" id="sim-thrash">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>프로그램을 계속 열면: 스래싱 체험</h3></div>
+      <div class="sim-view"><canvas id="cv-thrash"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>동시에 열어 둔 프로그램 <output id="th-n-out"></output></span><input type="range" id="th-n" min="1" max="16" value="3"></label>
+        <div class="ctrl"><span>RAM 크기</span><div class="seg" id="th-ram"><button data-value="8" class="on">8 GB</button><button data-value="16">16 GB</button><button data-value="32">32 GB</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">필요한 메모리 합</span><span class="v" id="o-th-need">—</span></div>
+        <div class="stat"><span class="k">초당 페이지 폴트</span><span class="v" id="o-th-pf">—</span></div>
+        <div class="stat"><span class="k">CPU가 실제로 일한 비율</span><span class="v" id="o-th-u">—</span></div>
+      </div>
+      <div class="sim-note">프로그램 하나가 자주 쓰는 메모리(작업 집합)를 1.5 GB로 가정한 단순 모델이다. 프로그램이 늘수록 CPU 활용률이 오르다가, 필요한 메모리가 RAM을 넘는 순간 페이지 폴트가 폭증하며 절벽처럼 떨어진다. 이 절벽이 스래싱이다. RAM을 늘리면 절벽이 오른쪽으로 밀려난다.</div>
+    </div>
   </section>
 
   <!-- ============================================================ -->
@@ -141,6 +251,7 @@
       <li>변환은 CPU의 <b>MMU</b>가 하고, 최근 변환 결과는 <b>TLB</b>에 캐시한다.</li>
       <li>RAM에 없는 페이지를 건드리면 <b>페이지 폴트</b>가 나고, OS가 SSD에서 가져온다. 이 덕분에 RAM보다 큰 메모리를 쓸 수 있지만, 지나치면 <b>스래싱</b>이 생긴다.</li>
       <li>프레임이 꽉 차면 <b>FIFO, LRU</b> 같은 규칙으로 내보낼 페이지를 고른다.</li>
+      <li>필요한 메모리가 RAM을 넘으면 페이지 폴트가 폭증하는 <b>스래싱</b>이 생긴다. 큰 페이지와 TLB는 변환 비용을 줄인다.</li>
       <li>페이지 테이블의 <b>권한</b> 비트로 침범을 막고, 같은 프레임을 가리켜 라이브러리를 <b>공유</b>한다.</li>
     </ol>
   </section>
@@ -169,6 +280,12 @@
         <button class="opt">앞으로 가장 늦게 쓸 페이지</button>
         <button class="opt">무작위 페이지</button>
       </div><div class="quiz-exp">Least Recently Used. 최근에 쓰지 않은 것은 앞으로도 덜 쓸 것이라는 지역성 가정에 기반한다.</div></div>
+      <div class="quiz-q"><p>메모리를 4 KB씩 건너뛰며 읽으면 TLB 적중률이 크게 떨어진다. 가장 효과적인 해결책은?</p><div class="opts">
+        <button class="opt">CPU 클럭을 올린다</button><button class="opt" data-correct>페이지 크기를 키운다(큰 페이지)</button><button class="opt">SSD를 더 빠른 것으로 바꾼다</button><button class="opt">프로그램을 더 많이 연다</button>
+      </div><div class="quiz-exp">페이지가 크면 TLB 한 칸이 덮는 범위가 넓어져, 같은 칸 수로도 훨씬 넓은 메모리를 적중시킬 수 있다.</div></div>
+      <div class="quiz-q"><p>프로그램을 너무 많이 열었더니 CPU 사용률은 낮은데 컴퓨터가 매우 느려졌다. 가장 그럴듯한 원인은?</p><div class="opts">
+        <button class="opt">CPU가 고장 났다</button><button class="opt" data-correct>필요한 메모리가 RAM을 넘어 페이지를 넣고 빼느라 바쁜 스래싱</button><button class="opt">캐시가 너무 크다</button><button class="opt">네트워크가 끊겼다</button>
+      </div><div class="quiz-exp">CPU는 SSD에서 페이지가 오기를 기다리느라 놀고 있다. 프로그램을 닫거나 RAM을 늘리면 해결된다.</div></div>
     </div>
   </section>
 </main>
@@ -239,6 +356,65 @@
     CB.stat("o-cmp", ["fifo", "lru", "opt"].map((k) => run(seq, n, k).faults).join(" / "));
   }
   renderRep();
+})();
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- TLB experiment ---------------- */
+  const TLBN = [4, 16, 64, 256, 1024];
+  const pat = CB.seg("tlb-pat", () => tcv.redraw()), pg = CB.seg("tlb-pg", () => tcv.redraw());
+  const tn = CB.range("tlb-n", (v) => TLBN[v] + "칸", () => tcv.redraw());
+  function stream(kind) {
+    const N = 20000, span = 64 * 1024 * 1024, r = CB.rng(17), out = new Array(N);
+    for (let i = 0; i < N; i++) out[i] = kind === "seq" ? i * 8 : kind === "stride" ? (i * 4096) % span : Math.floor(r() * span);
+    return out;
+  }
+  function run() {
+    const addrs = stream(pat()), P = Number(pg()), cap = TLBN[tn()];
+    const tlb = new Map(); let miss = 0; const res = new Uint8Array(addrs.length);
+    addrs.forEach((a, i) => { const p = Math.floor(a / P); if (tlb.has(p)) { tlb.delete(p); tlb.set(p, 1); res[i] = 1; } else { miss++; tlb.set(p, 1); if (tlb.size > cap) tlb.delete(tlb.keys().next().value); } });
+    return { res, miss, n: addrs.length };
+  }
+  const tcv = CB.canvas("#cv-tlb", (ctx, w, h) => {
+    const C = CB.palette(); const { res, miss, n } = run();
+    const cols = Math.floor((w - 20) / 4), rows = Math.floor((h - 20) / 4), per = Math.ceil(n / (cols * rows));
+    for (let k = 0; k < cols * rows; k++) {
+      const a = k * per; if (a >= n) break;
+      let hits = 0, cnt = 0; for (let j = a; j < Math.min(n, a + per); j++) { hits += res[j]; cnt++; }
+      const f = hits / cnt;
+      ctx.fillStyle = f > 0.98 ? C.ok : f < 0.5 ? C.bad : C.warn; ctx.globalAlpha = 0.85;
+      ctx.fillRect(10 + (k % cols) * 4, 10 + Math.floor(k / cols) * 4, 3, 3);
+    }
+    ctx.globalAlpha = 1;
+    const hr = (n - miss) / n;
+    CB.stat("o-tlb-hr", (hr * 100).toFixed(hr > 0.99 ? 2 : 1) + "%");
+    CB.stat("o-tlb-miss", miss.toLocaleString() + "번");
+    CB.stat("o-tlb-cost", (hr * 1 + (1 - hr) * 100).toFixed(1) + " 박자");
+  }, { aspect: 0.22, minHeight: 120, maxHeight: 180 });
+
+  /* ---------------- thrashing ---------------- */
+  const thn = CB.range("th-n", (v) => v + "개", () => hcv.redraw());
+  const ram = CB.seg("th-ram", () => hcv.redraw());
+  const WS = 1.5, OS = 2;
+  function model(n, R) {
+    const need = OS + n * WS;
+    const demand = Math.min(1, n / 4);              // 프로그램이 적으면 CPU가 놀 시간이 많다
+    const over = Math.max(0, need - R) / need;      // 메모리에 못 들어가는 비율
+    const pf = over * 9000 * n / 4;                 // 초당 페이지 폴트 (단순 모델)
+    const util = demand / (1 + over * 60);
+    return { need, pf, util };
+  }
+  const hcv = CB.canvas("#cv-thrash", (ctx, w, h) => {
+    const C = CB.palette(); const R = Number(ram()), n = thn();
+    const data = []; for (let k = 1; k <= 16; k += 0.1) data.push([k, model(k, R).util * 100]);
+    const knee = (R - OS) / WS;
+    CB.chart(ctx, null, { x: [1, 16], y: [0, 100], xLabel: "동시에 열어 둔 프로그램 수", yLabel: "CPU가 실제로 일한 비율 (%)", series: [{ data, color: C.accent, width: 2.5, fill: CB.color("accent-soft") }], vlines: knee <= 16 ? [{ x: knee, label: "RAM 한계", color: C.bad }] : [], points: [{ x: n, y: model(n, R).util * 100, color: C.warn, r: 6 }] });
+    const m = model(n, R);
+    CB.stat("o-th-need", m.need.toFixed(1) + " GB / " + R + " GB");
+    CB.stat("o-th-pf", m.pf < 1 ? "거의 0" : "약 " + CB.kn(m.pf) + "번");
+    CB.stat("o-th-u", `<span style="color:${m.util < 0.3 ? "var(--bad)" : "inherit"}">${(m.util * 100).toFixed(0)}%</span>`);
+  }, { aspect: 0.45, minHeight: 240, maxHeight: 340 });
 })();
 </script>
 </body>

@@ -79,6 +79,31 @@
   <section id="kernel">
     <h2>커널과 시스템 콜: 창구를 통해서만</h2>
     <p>운영체제의 핵심 부분을 <span class="term">커널</span><span class="en">(kernel, 알맹이)</span>이라 한다. CPU에는 두 가지 실행 모드가 있다. 커널은 모든 하드웨어를 직접 만질 수 있는 <b>커널 모드</b>에서, 일반 앱은 권한이 제한된 <b>사용자 모드</b>에서 실행된다. 사용자 모드에서 하드웨어를 직접 건드리는 명령을 실행하면 CPU가 거부하고 커널에 알린다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="사용자 모드와 커널 모드의 경계, 시스템 콜">
+        <defs><marker id="os-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="20" y="24" class="t-dim">사용자 모드 (권한 제한)</text>
+        <g>
+          <rect x="20" y="34" width="170" height="54" rx="10" class="f-elev"/><text x="105" y="66" text-anchor="middle" class="t">브라우저</text>
+          <rect x="210" y="34" width="170" height="54" rx="10" class="f-elev"/><text x="295" y="66" text-anchor="middle" class="t">메신저</text>
+          <rect x="400" y="34" width="170" height="54" rx="10" class="f-elev"/><text x="485" y="66" text-anchor="middle" class="t">게임</text>
+          <rect x="590" y="34" width="190" height="54" rx="10" class="f-elev"/><text x="685" y="66" text-anchor="middle" class="t">음악 앱</text>
+        </g>
+        <path d="M20 112 H780" stroke="var(--warn)" stroke-width="3" stroke-dasharray="10 6"/>
+        <text x="400" y="106" text-anchor="middle" class="t" style="fill:var(--warn);font-weight:700">시스템 콜 창구 (정해진 입구로만 통과)</text>
+        <path d="M105 88 V130" class="s-acc" marker-end="url(#os-a)" marker-start="url(#os-a)"/><path d="M295 88 V130" class="s-acc" marker-end="url(#os-a)" marker-start="url(#os-a)"/><path d="M485 88 V130" class="s-acc" marker-end="url(#os-a)" marker-start="url(#os-a)"/><path d="M685 88 V130" class="s-acc" marker-end="url(#os-a)" marker-start="url(#os-a)"/>
+        <rect x="20" y="134" width="760" height="96" rx="12" class="f-acc-soft"/><text x="36" y="156" class="t-acc">커널 모드 (모든 권한)</text>
+        <g>
+          <rect x="36" y="166" width="132" height="50" rx="8" class="f-elev"/><text x="102" y="196" text-anchor="middle" class="t">스케줄러</text>
+          <rect x="184" y="166" width="132" height="50" rx="8" class="f-elev"/><text x="250" y="196" text-anchor="middle" class="t">메모리 관리</text>
+          <rect x="332" y="166" width="132" height="50" rx="8" class="f-elev"/><text x="398" y="196" text-anchor="middle" class="t">파일 시스템</text>
+          <rect x="480" y="166" width="132" height="50" rx="8" class="f-elev"/><text x="546" y="196" text-anchor="middle" class="t">네트워크</text>
+          <rect x="628" y="166" width="136" height="50" rx="8" class="f-elev"/><text x="696" y="196" text-anchor="middle" class="t">드라이버</text>
+        </g>
+        <rect x="20" y="244" width="760" height="46" rx="12" class="f-surface"/><text x="400" y="273" text-anchor="middle" class="t">하드웨어: CPU · 메모리 · SSD · 네트워크 칩 · 화면</text>
+      </svg>
+      <figcaption><b>그림 8-1.</b> 운영체제의 층. 앱은 위층에서 서로 격리된 채 실행되고, 하드웨어가 필요하면 시스템 콜이라는 정해진 입구로만 커널에 부탁한다.</figcaption>
+    </figure>
     <p>그래서 앱이 파일을 저장하거나 네트워크로 데이터를 보내려면 커널에게 정식으로 부탁해야 한다. 이 부탁을 <span class="term">시스템 콜</span><span class="en">(system call)</span>이라 한다. 은행 금고에 손님이 직접 들어갈 수 없고 창구 직원에게 요청해야 하는 것과 같다.</p>
     <div class="sim" id="sim-syscall">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>시스템 콜 따라가기: “파일 저장” 버튼을 누르면</h3></div>
@@ -115,7 +140,55 @@
     <h2>프로세스와 스레드</h2>
     <p>SSD에 저장된 앱은 그저 명령어와 데이터가 담긴 파일, 즉 <b>프로그램</b>이다. 레시피 책에 비유할 수 있다. 이 프로그램을 실행하면 운영체제가 메모리에 올리고 실행 상태를 관리하는데, 이렇게 <b>실행 중인 프로그램</b>을 <span class="term">프로세스</span><span class="en">(process)</span>라 한다. 레시피를 보고 실제로 요리가 진행 중인 상태다. 같은 브라우저를 두 번 실행하면 프로그램은 하나지만 프로세스는 두 개다.</p>
     <p>운영체제는 프로세스마다 다음 정보를 기록해 둔다: 지금 어디까지 실행했는지(PC 값), 레지스터 값들, 사용 중인 메모리 영역, 열어 둔 파일, 상태(실행 중/대기 중/준비됨). 이 기록 덕분에 프로세스를 잠시 멈췄다가 정확히 그 자리에서 다시 이어 갈 수 있다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 260" role="img" aria-label="프로세스의 상태 전이도">
+        <defs><marker id="ps-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="20" y="96" width="110" height="50" rx="25" class="f-surface"/><text x="75" y="126" text-anchor="middle" class="t">생성</text>
+        <rect x="210" y="96" width="130" height="50" rx="25" class="f-acc2-soft"/><text x="275" y="126" text-anchor="middle" class="t" style="font-weight:700">준비</text>
+        <rect x="450" y="96" width="130" height="50" rx="25" class="f-acc"/><text x="515" y="126" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">실행</text>
+        <rect x="660" y="96" width="120" height="50" rx="25" class="f-surface"/><text x="720" y="126" text-anchor="middle" class="t">종료</text>
+        <rect x="330" y="196" width="140" height="50" rx="25" fill="color-mix(in srgb, var(--warn) 18%, transparent)" stroke="var(--warn)"/><text x="400" y="226" text-anchor="middle" class="t" style="font-weight:700">대기</text>
+        <path d="M130 121 H204" class="s-acc" marker-end="url(#ps-a)"/>
+        <path d="M340 110 Q395 70 446 110" class="s-acc" marker-end="url(#ps-a)"/><text x="395" y="74" text-anchor="middle" class="t-dim">스케줄러가 CPU를 줌</text>
+        <path d="M450 136 Q395 170 344 136" class="s-acc" marker-end="url(#ps-a)"/><text x="395" y="164" text-anchor="middle" class="t-dim">시간 조각 끝 (타이머)</text>
+        <path d="M580 121 H654" class="s-acc" marker-end="url(#ps-a)"/><text x="617" y="112" text-anchor="middle" class="t-mono">끝남</text>
+        <path d="M520 146 Q520 220 474 222" class="s-acc" marker-end="url(#ps-a)"/><text x="560" y="200" class="t-dim">입출력을 기다림</text><text x="560" y="218" class="t-dim">(키 입력, SSD, 네트워크)</text>
+        <path d="M330 222 Q270 220 270 150" class="s-acc" marker-end="url(#ps-a)"/><text x="130" y="200" class="t-dim">기다리던 일이 끝남</text><text x="130" y="218" class="t-dim">(인터럽트가 알려 줌)</text>
+        <text x="20" y="18" class="t" style="font-weight:700">한 코어에서 ‘실행’ 상태는 한 번에 하나뿐</text>
+        <text x="20" y="38" class="t-dim">나머지는 줄 서서(준비) 기다리거나, 무언가를 기다리며 잠들어(대기) 있다.</text>
+      </svg>
+      <figcaption><b>그림 8-2.</b> 프로세스의 일생. 대부분의 앱은 사실 ‘대기’ 상태로 대부분의 시간을 보낸다. 사용자의 입력을 기다리는 시간이 계산하는 시간보다 훨씬 길기 때문이다.</figcaption>
+    </figure>
     <p>한 프로세스 안에서도 여러 일을 동시에 하고 싶을 때가 있다. 웹 브라우저는 페이지를 그리면서 동시에 파일을 내려받고 동영상을 재생한다. 한 프로세스 안에서 메모리를 공유하며 따로 실행되는 흐름을 <span class="term">스레드</span><span class="en">(thread, 실)</span>라 한다. 한 주방(프로세스) 안의 여러 요리사(스레드)가 같은 조리대(메모리)를 함께 쓰는 셈이다. 함께 쓰니 빠르고 편하지만, 나중에 보겠지만 부딪칠 위험도 있다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 260" role="img" aria-label="프로세스와 스레드의 메모리 비교">
+        <text x="190" y="22" text-anchor="middle" class="t" style="font-weight:700">프로세스 두 개</text>
+        <g transform="translate(20,34)">
+          <rect width="165" height="200" rx="12" class="f-surface"/><text x="82" y="22" text-anchor="middle" class="t-dim">메신저</text>
+          <rect x="12" y="34" width="141" height="30" rx="6" class="f-elev"/><text x="82" y="54" text-anchor="middle" class="t-mono">코드</text>
+          <rect x="12" y="70" width="141" height="30" rx="6" class="f-elev"/><text x="82" y="90" text-anchor="middle" class="t-mono">데이터·힙</text>
+          <rect x="12" y="106" width="141" height="30" rx="6" class="f-acc-soft"/><text x="82" y="126" text-anchor="middle" class="t-mono">스택</text>
+          <text x="82" y="170" text-anchor="middle" class="t-dim">자기만의</text><text x="82" y="188" text-anchor="middle" class="t-dim">주소 공간</text>
+        </g>
+        <g transform="translate(195,34)">
+          <rect width="165" height="200" rx="12" class="f-surface"/><text x="82" y="22" text-anchor="middle" class="t-dim">게임</text>
+          <rect x="12" y="34" width="141" height="30" rx="6" class="f-elev"/><text x="82" y="54" text-anchor="middle" class="t-mono">코드</text>
+          <rect x="12" y="70" width="141" height="30" rx="6" class="f-elev"/><text x="82" y="90" text-anchor="middle" class="t-mono">데이터·힙</text>
+          <rect x="12" y="106" width="141" height="30" rx="6" class="f-acc-soft"/><text x="82" y="126" text-anchor="middle" class="t-mono">스택</text>
+          <text x="82" y="170" text-anchor="middle" class="t-dim">서로의 메모리를</text><text x="82" y="188" text-anchor="middle" class="t-dim">볼 수 없다 (9장)</text>
+        </g>
+        <text x="590" y="22" text-anchor="middle" class="t" style="font-weight:700">한 프로세스 안의 스레드 세 개</text>
+        <g transform="translate(420,34)">
+          <rect width="360" height="200" rx="12" class="f-surface"/><text x="180" y="22" text-anchor="middle" class="t-dim">브라우저 프로세스</text>
+          <rect x="12" y="34" width="336" height="30" rx="6" class="f-elev"/><text x="180" y="54" text-anchor="middle" class="t-mono">코드 (함께 씀)</text>
+          <rect x="12" y="70" width="336" height="30" rx="6" class="f-elev"/><text x="180" y="90" text-anchor="middle" class="t-mono">데이터·힙 (함께 씀 → 빠르지만 부딪칠 수 있다)</text>
+          <rect x="12" y="110" width="104" height="70" rx="6" class="f-acc-soft"/><text x="64" y="134" text-anchor="middle" class="t-mono">스택</text><text x="64" y="152" text-anchor="middle" class="t-mono">레지스터·PC</text><text x="64" y="170" text-anchor="middle" class="t-dim">화면 그리기</text>
+          <rect x="128" y="110" width="104" height="70" rx="6" class="f-acc-soft"/><text x="180" y="134" text-anchor="middle" class="t-mono">스택</text><text x="180" y="152" text-anchor="middle" class="t-mono">레지스터·PC</text><text x="180" y="170" text-anchor="middle" class="t-dim">파일 내려받기</text>
+          <rect x="244" y="110" width="104" height="70" rx="6" class="f-acc-soft"/><text x="296" y="134" text-anchor="middle" class="t-mono">스택</text><text x="296" y="152" text-anchor="middle" class="t-mono">레지스터·PC</text><text x="296" y="170" text-anchor="middle" class="t-dim">동영상 재생</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 8-3.</b> 프로세스와 스레드. 프로세스는 서로 벽으로 나뉜 주방, 스레드는 한 주방 안의 요리사들이다. 스레드마다 자기 스택과 레지스터(지금 어디까지 했는지)만 따로 가진다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
