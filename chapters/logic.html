@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>트랜지스터와 논리 게이트 · ComputerBook</title>
+<meta name="description" content="전기로 켜고 끄는 스위치인 트랜지스터에서 AND·OR·NOT 게이트로, 게이트를 엮어 덧셈기와 1비트 기억 소자(래치)와 클럭을 만드는 과정을 직접 조작하며 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/logic.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="트랜지스터와 논리 게이트 · ComputerBook">
+<meta property="og:description" content="전기로 켜고 끄는 스위치인 트랜지스터에서 AND·OR·NOT 게이트로, 게이트를 엮어 덧셈기와 1비트 기억 소자(래치)와 클럭을 만드는 과정을 직접 조작하며 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/logic.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"트랜지스터와 논리 게이트","name":"트랜지스터와 논리 게이트 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/logic.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/logic.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":3,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"전기로 켜고 끄는 스위치인 트랜지스터에서 AND·OR·NOT 게이트로, 게이트를 엮어 덧셈기와 1비트 기억 소자(래치)와 클럭을 만드는 과정을 직접 조작하며 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"03 트랜지스터와 논리 게이트","item":"https://computerbook.euiyun.com/chapters/logic.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .io-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; padding: 12px 18px; }
+  .io-row .lbl { font-size: 13px; color: var(--text-dim); }
+  .tt td, .tt th { text-align: center; font-family: var(--mono); }
+  .tt tr.cur td { background: var(--accent-soft); font-weight: 700; }
+  .addrow { display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 8px; padding: 4px 18px 20px; }
+  .addrow .lbl { font-size: 14px; color: var(--text-dim); text-align: right; }
+  .addrow .bits { justify-content: flex-start; }
+  .addrow .bit { width: 42px; height: 42px; font-size: 18px; }
+  .addrow .dec { font-family: var(--mono); color: var(--text-dim); margin-left: 8px; align-self: center; }
+</style>
+</head>
+<body data-chapter="logic">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 03</div>
+    <h1>트랜지스터와 논리 게이트</h1>
+    <p class="lead">CPU는 수십억 개의 아주 작은 <strong>스위치</strong>로 만들어진다. 스위치 하나는 켜짐과 꺼짐밖에 모르지만, 몇 개를 엮으면 “둘 다 켜졌나?”를 판단하고, 수십 개를 엮으면 덧셈을 하고, 서로 꼬리를 물게 하면 <strong>기억</strong>까지 한다. 이 장에서는 스위치에서 계산기의 심장까지 한 계단씩 올라간다.</p>
+    <ul class="objectives">
+      <li>트랜지스터가 “전기로 조작하는 스위치”라는 것을 이해한다.</li>
+      <li>AND, OR, NOT, XOR 게이트의 동작을 진리표로 설명한다.</li>
+      <li>게이트를 조합해 2진수 덧셈기를 만드는 원리를 따라간다.</li>
+      <li>출력이 다시 입력으로 돌아오는 구조(래치)로 1비트를 기억하는 방법을 안다.</li>
+      <li>클럭이 회로 전체의 박자를 맞추는 이유와 GHz의 의미를 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="transistor">
+    <h2>트랜지스터: 전기로 누르는 스위치</h2>
+    <p>방의 전등 스위치는 손가락으로 누른다. <span class="term">트랜지스터</span><span class="en">(transistor)</span>는 손가락 대신 <strong>전기 신호</strong>로 누르는 스위치다. 다리가 세 개 있는데, 그중 하나인 <b>게이트</b>에 전압을 걸면 나머지 두 다리(소스와 드레인) 사이로 전류가 흐르고, 전압을 빼면 막힌다.</p>
+    <div class="callout analogy"><strong>수도꼭지</strong><p>수도관 중간에 꼭지가 있다고 생각하자. 꼭지를 열면 물(전류)이 흐르고 닫으면 멈춘다. 트랜지스터에서는 꼭지를 돌리는 손잡이가 또 다른 전기 신호다. 그래서 <b>한 트랜지스터의 출력으로 다른 트랜지스터의 꼭지를 돌릴 수 있다.</b> 이 연쇄가 컴퓨터를 가능하게 한다.</p></div>
+    <div class="sim" id="sim-tr">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>트랜지스터 스위치</h3></div>
+      <div class="sim-view"><canvas id="cv-tr"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>게이트 전압</span><div class="seg" id="tr-g"><button data-value="0" class="on">0 V (꺼짐)</button><button data-value="1">1 V (켜짐)</button></div></div>
+      </div>
+      <div class="sim-note">게이트에 전압을 주면 위쪽 전원(+)에서 아래쪽 땅(0 V)으로 전류가 흐르고 전구가 켜진다. 실제 칩에서는 전구 대신 다음 트랜지스터의 게이트가 연결된다.</div>
+    </div>
+    <p>요즘 CPU의 트랜지스터는 크기가 수십 나노미터 수준이다. 머리카락 굵기(약 80,000 nm)에 수천 개가 나란히 들어간다. 그리고 1초에 수십억 번 켜졌다 꺼질 수 있다. 사람이 누르는 스위치와 원리는 같지만 크기와 속도가 상상을 초월한다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="gates">
+    <h2>논리 게이트: 스위치로 판단하기</h2>
+    <p>스위치 두 개를 <strong>일렬로(직렬)</strong> 이으면 둘 다 켜져야 전기가 통한다. “A <b>그리고</b> B”다. 이것을 <span class="term">AND 게이트</span>라 한다. 스위치 두 개를 <strong>나란히(병렬)</strong> 이으면 하나만 켜져도 통한다. “A <b>또는</b> B”, <span class="term">OR 게이트</span>다. 입력을 뒤집는 <span class="term">NOT 게이트</span>도 트랜지스터 두 개로 만든다.</p>
+    <p>이런 기본 판단 회로를 <span class="term">논리 게이트</span><span class="en">(logic gate)</span>라 하고, 입력의 모든 경우에 대한 출력을 정리한 표를 <span class="term">진리표</span>라 한다. 아래에서 게이트를 바꿔 가며 입력 스위치를 눌러 보자.</p>
+    <div class="sim" id="sim-gate">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>논리 게이트 놀이터</h3></div>
+      <div class="sim-body side">
+        <div class="sim-view"><canvas id="cv-gate"></canvas></div>
+        <div class="sim-controls">
+          <div class="ctrl"><span>게이트 종류</span><div class="seg" id="gtype"><button data-value="AND" class="on">AND</button><button data-value="OR">OR</button><button data-value="NOT">NOT</button><button data-value="XOR">XOR</button><button data-value="NAND">NAND</button></div></div>
+          <div class="ctrl"><span>입력 (눌러서 켜고 끄기)</span><div class="bits" style="justify-content:flex-start"><button class="bit" id="gA">0<small>A</small></button><button class="bit" id="gB">0<small>B</small></button></div></div>
+          <div style="margin-top:14px" id="gdesc" class="scale-note"></div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin:0;border:0;border-top:1px solid var(--border);border-radius:0"><table class="tt" id="tt"></table></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>게이트</th><th>한 줄 설명</th><th>일상 속 예</th></tr></thead>
+      <tbody>
+        <tr><td><b>AND</b></td><td>모두 1일 때만 1</td><td>안전 장치: 문이 닫혔고 <b>그리고</b> 시작 버튼이 눌렸을 때만 전자레인지 작동</td></tr>
+        <tr><td><b>OR</b></td><td>하나라도 1이면 1</td><td>현관 벨: 앞문 버튼 <b>또는</b> 뒷문 버튼</td></tr>
+        <tr><td><b>NOT</b></td><td>뒤집기</td><td>“문이 열려 있지 <b>않으면</b> 출발 가능”</td></tr>
+        <tr><td><b>XOR</b></td><td>서로 다를 때만 1</td><td>계단 위아래 두 스위치로 한 전등 켜고 끄기</td></tr>
+        <tr><td><b>NAND</b></td><td>AND의 반대</td><td>이것 하나만으로 다른 모든 게이트를 만들 수 있다</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout deep"><strong>NAND 하나면 충분하다</strong><p>NAND 게이트만 충분히 있으면 NOT(입력 두 개를 묶어서), AND(NAND 뒤에 NOT), OR까지 모두 만들 수 있다. 실제로 반도체 회로는 NAND, NOR처럼 트랜지스터 몇 개로 만들기 쉬운 게이트를 기본 블록으로 쓴다. SSD에 쓰이는 “NAND 플래시”라는 이름도 여기서 왔다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="adder">
+    <h2>게이트로 덧셈하기</h2>
+    <p>2진수 한 자리끼리 더하는 경우는 네 가지뿐이다. 0+0=0, 0+1=1, 1+0=1, 1+1=<b>10</b>(2진수로 2, 즉 이 자리는 0이고 1이 올라간다). 잘 보면 규칙이 보인다.</p>
+    <ul>
+      <li><b>이 자리의 값(합)</b>은 두 입력이 <b>서로 다를 때</b> 1이다. → <b>XOR</b></li>
+      <li><b>올림수</b>는 두 입력이 <b>모두 1일 때</b> 1이다. → <b>AND</b></li>
+    </ul>
+    <p>게이트 두 개로 한 자리 덧셈기(반가산기)가 완성된다. 아랫자리에서 올라온 올림수까지 받아서 셋을 더하는 <span class="term">전가산기</span><span class="en">(full adder)</span>는 게이트 다섯 개면 된다. 전가산기를 여러 개 이어 붙여 올림수를 옆으로 넘기면 몇 자리 덧셈이든 할 수 있다. 종이에 덧셈할 때 받아올림하는 것과 똑같다.</p>
+    <div class="sim" id="sim-add">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>4비트 덧셈기: 올림수가 번져 가는 모습</h3></div>
+      <div style="padding-top:12px">
+        <div class="addrow"><span class="lbl">A</span><div class="bits" id="addA"></div></div>
+        <div class="addrow"><span class="lbl">B</span><div class="bits" id="addB"></div></div>
+      </div>
+      <div class="sim-view"><canvas id="cv-add"></canvas></div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">A (10진수)</span><span class="v" id="o-a">—</span></div>
+        <div class="stat"><span class="k">B (10진수)</span><span class="v" id="o-b">—</span></div>
+        <div class="stat"><span class="k">합 (10진수)</span><span class="v" id="o-s">—</span></div>
+      </div>
+      <div class="sim-note">해볼 것: A = 0111(7), B = 0001(1)로 두면 올림수가 오른쪽에서 왼쪽으로 차례차례 번져 가는 것이 보인다. 각 칸은 앞 칸의 올림수가 도착해야 답이 확정된다. 그래서 자리 수가 많은 덧셈기일수록 느려지고, 실제 CPU는 올림수를 미리 내다보는 더 영리한 회로를 쓴다.</div>
+    </div>
+    <p>이것이 CPU 안의 계산 장치인 <span class="term">ALU</span><span class="en">(Arithmetic Logic Unit, 산술 논리 장치)</span>의 출발점이다. 뺄셈은 2장에서 본 “2의 보수”로 덧셈으로 바꾸고, 곱셈은 덧셈과 자리 옮기기의 반복으로 만든다. 결국 컴퓨터의 모든 계산은 이 단순한 게이트들의 조합이다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="latch">
+    <h2>기억하기: 꼬리를 무는 회로</h2>
+    <p>지금까지의 회로는 입력이 바뀌면 출력도 바로 바뀐다. 입력을 치우면 결과도 사라진다. 계산 결과를 <strong>기억</strong>하려면 어떻게 해야 할까?</p>
+    <p>비결은 <strong>출력을 다시 입력으로 되돌리는 것</strong>이다. NOR 게이트 두 개가 서로의 출력을 입력으로 받게 연결하면, 한번 정해진 상태가 스스로를 계속 유지한다. 이 회로를 <span class="term">래치</span><span class="en">(latch)</span>라 한다. S(Set)를 잠깐 누르면 1을 기억하고, R(Reset)을 잠깐 누르면 0을 기억한다. 둘 다 떼어도 값은 그대로 남는다.</p>
+    <div class="sim" id="sim-latch">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>SR 래치: 1비트 기억 장치</h3></div>
+      <div class="sim-view"><canvas id="cv-latch"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>버튼을 눌렀다 떼 보세요 (누르는 동안만 1)</span><div class="btn-row"><button class="btn primary" id="btnS">S 누르기 (1 기억)</button><button class="btn" id="btnR">R 누르기 (0 기억)</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">S</span><span class="v" id="o-S">0</span></div>
+        <div class="stat"><span class="k">R</span><span class="v" id="o-R">0</span></div>
+        <div class="stat"><span class="k">기억된 값 Q</span><span class="v" id="o-Q">0</span></div>
+      </div>
+      <div class="sim-note">밝은 선은 1(전압 있음), 흐린 선은 0이다. S를 눌렀다 떼도 Q가 1로 남는 것을 확인하자. 출력이 되돌아가 자기 자신을 붙잡고 있기 때문이다. 전원을 끄면 이 순환이 끊기므로 기억도 사라진다. RAM이 휘발성인 이유다.</div>
+    </div>
+    <div class="callout analogy"><strong>서로 등을 받쳐 주는 두 사람</strong><p>두 사람이 서로 “네가 앉아 있으면 나는 서 있을게”라고 약속했다고 하자. 한 명이 서 있으면 다른 한 명은 앉아 있고, 그 모습을 보고 처음 사람은 계속 서 있는다. 누군가 바깥에서 밀어 주기(S나 R) 전까지 이 상태는 영원히 유지된다.</p></div>
+    <p>래치를 8개 나란히 놓으면 1바이트를 기억하는 <span class="term">레지스터</span>가 된다. CPU 안에서 지금 계산 중인 값을 쥐고 있는 “요리사의 손”이 바로 이것이다. 수십억 개의 기억 소자를 촘촘히 모으면 메모리가 된다(6장).</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="clock">
+    <h2>클럭: 모두가 같은 박자로</h2>
+    <p>수십억 개의 게이트가 제각각 움직이면 혼란이 생긴다. 덧셈기에서 봤듯이 신호가 회로를 지나가는 데는 시간이 걸리고, 어떤 부분은 먼저, 어떤 부분은 나중에 답이 나온다. 그래서 컴퓨터에는 일정한 간격으로 똑딱이는 <span class="term">클럭</span><span class="en">(clock)</span> 신호가 있다. 레지스터는 클럭이 0에서 1로 올라가는 <b>순간에만</b> 새 값을 받아들인다. 그 사이에 회로는 차분히 다음 답을 계산한다.</p>
+    <div class="sim" id="sim-clock">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>클럭과 카운터</h3></div>
+      <div class="sim-view"><canvas id="cv-clock"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>클럭 속도 (화면용으로 아주 느리게) <output id="hz-out"></output></span><input type="range" id="hz" min="0.5" max="6" step="0.5" value="1.5"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn" id="clk-pause">일시정지</button><button class="btn" id="clk-reset">0으로</button></div></div>
+      </div>
+      <div class="sim-note">4비트 레지스터가 클럭이 올라가는 순간(▲)마다 1씩 커진다. 1111(15) 다음에는 오버플로로 0000이 된다. 실제 CPU의 클럭은 이보다 약 10억 배 빠르다.</div>
+    </div>
+    <p>클럭 속도는 1초에 몇 번 똑딱이는지를 나타내며 단위는 <span class="term">헤르츠</span><span class="en">(Hz)</span>다. 3 GHz CPU는 1초에 30억 번 박자를 맞춘다. 한 박자에 0.33 ns. 박자를 무작정 빠르게 할 수 없는 이유, 즉 가장 느린 회로가 답을 내기 전에 다음 박자가 오면 안 된다는 것과 열 문제는 5장에서 다룬다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="moore">
+    <h2>수십억 개의 스위치: 무어의 법칙</h2>
+    <p>1971년 인텔의 첫 마이크로프로세서 4004에는 트랜지스터가 2,300개 있었다. 그 뒤로 약 2년마다 칩 하나에 들어가는 트랜지스터 수가 두 배로 늘었고, 이 경향을 인텔 공동 창업자의 이름을 따 <span class="term">무어의 법칙</span>이라 부른다. 아래 그래프의 세로축은 한 칸에 10배씩 커지는 로그 눈금이다. 직선처럼 보인다는 것은 일정한 비율로 <b>곱절씩</b> 늘었다는 뜻이다.</p>
+    <div class="sim" id="sim-moore">
+      <div class="sim-head"><span class="sim-tag">CHART</span><h3>칩 하나의 트랜지스터 수 (대표 제품)</h3></div>
+      <div class="sim-view"><canvas id="cv-moore"></canvas></div>
+      <div class="sim-note">값은 공개된 대표 제품의 대략적인 수치다. 50년 동안 약 1억 배 늘었다. 같은 기간 자동차가 이만큼 빨라졌다면 지금 차는 빛보다 빨리 달릴 것이다.</div>
+    </div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>트랜지스터는 <b>전기 신호로 켜고 끄는 스위치</b>다. 한 트랜지스터의 출력이 다른 트랜지스터를 조작할 수 있다.</li>
+      <li>스위치를 직렬로 이으면 AND, 병렬로 이으면 OR가 된다. 논리 게이트의 동작은 진리표로 정리한다.</li>
+      <li>덧셈은 XOR(이 자리 값)과 AND(올림수)로 만들고, 전가산기를 이어 붙이면 여러 자리 덧셈기가 된다. 이것이 ALU의 기초다.</li>
+      <li>출력을 입력으로 되돌리는 <b>래치</b>는 값을 스스로 유지해 1비트를 기억한다. 래치를 모으면 레지스터와 메모리가 된다.</li>
+      <li><b>클럭</b>은 회로 전체의 박자를 맞춘다. 3 GHz는 1초에 30억 박자다.</li>
+      <li>무어의 법칙에 따라 트랜지스터 수는 약 2년마다 두 배씩 늘어 오늘날 칩 하나에 수백억 개가 들어간다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>스위치 두 개를 직렬(일렬)로 연결하면 어떤 게이트처럼 동작하는가?</p><div class="opts">
+        <button class="opt" data-correct>AND</button><button class="opt">OR</button><button class="opt">NOT</button><button class="opt">XOR</button>
+      </div><div class="quiz-exp">일렬로 놓인 두 스위치가 모두 닫혀야 전류가 흐른다. “A 그리고 B”다.</div></div>
+      <div class="quiz-q"><p>XOR 게이트에 A=1, B=1을 넣으면 출력은?</p><div class="opts">
+        <button class="opt">1</button><button class="opt" data-correct>0</button>
+      </div><div class="quiz-exp">XOR는 두 입력이 서로 다를 때만 1이다. 그래서 1+1의 “이 자리 값”(0)을 계산하는 데 쓰인다.</div></div>
+      <div class="quiz-q"><p>한 자리 2진수 덧셈에서 올림수를 계산하는 게이트는?</p><div class="opts">
+        <button class="opt">OR</button><button class="opt">NOT</button><button class="opt" data-correct>AND</button><button class="opt">XOR</button>
+      </div><div class="quiz-exp">두 입력이 모두 1일 때(1+1)만 올림수가 생긴다. 바로 AND다.</div></div>
+      <div class="quiz-q"><p>래치가 입력을 치운 뒤에도 값을 기억할 수 있는 이유는?</p><div class="opts">
+        <button class="opt">작은 배터리가 들어 있어서</button>
+        <button class="opt" data-correct>출력이 다시 입력으로 돌아가 스스로 상태를 유지해서</button>
+        <button class="opt">자석으로 값을 기록해서</button>
+        <button class="opt">클럭이 값을 다시 써 줘서</button>
+      </div><div class="quiz-exp">두 게이트가 서로의 출력을 붙잡는 피드백 구조다. 그래서 전원이 끊기면 순환이 멈추고 기억도 사라진다.</div></div>
+      <div class="quiz-q"><p>4 GHz CPU의 한 박자는 몇 나노초인가?</p><div class="opts">
+        <button class="opt">4 ns</button><button class="opt" data-correct>0.25 ns</button><button class="opt">0.4 ns</button><button class="opt">25 ns</button>
+      </div><div class="quiz-exp">1초 ÷ 40억 = 0.25 × 10⁻⁹초 = 0.25 ns.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const on = () => CB.palette().accent, offc = () => CB.palette().faint;
+
+  /* ---------------- transistor ---------------- */
+  const trg = CB.seg("tr-g", () => { trcv.redraw(); });
+  let flowT = 0;
+  const trcv = CB.canvas("#cv-tr", (ctx, w, h) => {
+    const P = CB.palette(); const g = trg() === "1";
+    const cx = w / 2;
+    const wire = (pts, live) => { ctx.strokeStyle = live ? P.accent : P.border; ctx.lineWidth = live ? 4 : 3; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); };
+    const top = 30, bot = h - 30;
+    CB.text(ctx, "+ 전원", cx, top - 14, { align: "center", size: 12, color: P.dim });
+    CB.text(ctx, "땅 (0 V)", cx, bot + 16, { align: "center", size: 12, color: P.dim });
+    // bulb
+    const by = top + (bot - top) * 0.28;
+    wire([[cx, top], [cx, by - 22]], g); wire([[cx, by + 22], [cx, h * 0.5 - 30]], g);
+    ctx.beginPath(); ctx.arc(cx, by, 22, 0, 7); ctx.fillStyle = g ? "#ffd84a" : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1.5; ctx.stroke();
+    if (g) { ctx.strokeStyle = "rgba(255,200,40,.5)"; ctx.lineWidth = 2; for (let a = 0; a < 8; a++) { const an = (a / 8) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * 28, by + Math.sin(an) * 28); ctx.lineTo(cx + Math.cos(an) * 38, by + Math.sin(an) * 38); ctx.stroke(); } }
+    CB.text(ctx, "전구", cx + 34, by, { size: 12, color: P.dim });
+    // transistor body
+    const ty = h * 0.5 - 30, tb = h * 0.5 + 30;
+    CB.rrect(ctx, cx - 12, ty, 24, tb - ty, 4); ctx.fillStyle = g ? P.accent : P.surface; ctx.globalAlpha = g ? 0.35 : 1; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = P.border; ctx.stroke();
+    CB.text(ctx, "드레인", cx + 20, ty + 6, { size: 11, color: P.faint });
+    CB.text(ctx, "소스", cx + 20, tb - 6, { size: 11, color: P.faint });
+    // gate
+    ctx.strokeStyle = g ? P.accent2 : P.border; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(cx - 22, ty + 4); ctx.lineTo(cx - 22, tb - 4); ctx.stroke();
+    wire([[cx - 22, h * 0.5], [cx - Math.min(160, w * 0.3), h * 0.5]], false);
+    ctx.strokeStyle = g ? P.accent2 : P.border; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 22, h * 0.5); ctx.lineTo(cx - Math.min(160, w * 0.3), h * 0.5); ctx.stroke();
+    CB.text(ctx, "게이트 " + (g ? "1 V" : "0 V"), cx - Math.min(160, w * 0.3), h * 0.5 - 14, { size: 12.5, bold: true, color: g ? P.accent2 : P.dim });
+    wire([[cx, tb], [cx, bot]], g);
+    // electrons flowing
+    if (g) {
+      ctx.fillStyle = P.accent;
+      const path = [[cx, top], [cx, bot]];
+      for (let i = 0; i < 9; i++) { const t = ((flowT * 0.5 + i / 9) % 1); const y = CB.lerp(top, bot, t); if (Math.abs(y - by) < 24 || (y > ty && y < tb)) continue; ctx.beginPath(); ctx.arc(cx, y, 3.2, 0, 7); ctx.fill(); }
+    }
+    CB.text(ctx, g ? "전류가 흐른다 → 출력 1" : "막혀 있다 → 출력 0", w - 14, h - 14, { align: "right", size: 13, bold: true, color: g ? P.ok : P.dim });
+  }, { aspect: 0.42, minHeight: 260, maxHeight: 320 });
+  CB.loop(document.getElementById("cv-tr"), (dt) => { if (trg() === "1") { flowT += dt; trcv.redraw(); } });
+
+  /* ---------------- gate playground ---------------- */
+  const F = { AND: (a, b) => a & b, OR: (a, b) => a | b, NOT: (a) => 1 - a, XOR: (a, b) => a ^ b, NAND: (a, b) => 1 - (a & b) };
+  const DESC = { AND: "모든 입력이 1이어야 출력이 1.", OR: "입력 중 하나라도 1이면 출력이 1.", NOT: "입력을 뒤집는다. 입력은 A 하나만 쓴다.", XOR: "두 입력이 서로 다를 때만 1. ‘배타적 OR’.", NAND: "AND의 결과를 뒤집는다. 범용 게이트." };
+  let A = 0, B = 0;
+  const gtype = CB.seg("gtype", () => renderGate());
+  const gA = document.getElementById("gA"), gB = document.getElementById("gB");
+  gA.onclick = () => { A ^= 1; renderGate(); };
+  gB.onclick = () => { B ^= 1; renderGate(); };
+  function gateShape(ctx, t, x, y, w, h) {
+    ctx.beginPath();
+    if (t === "AND" || t === "NAND") { ctx.moveTo(x, y); ctx.lineTo(x + w * 0.5, y); ctx.arc(x + w * 0.5, y + h / 2, h / 2, -Math.PI / 2, Math.PI / 2); ctx.lineTo(x, y + h); ctx.closePath(); }
+    else if (t === "OR" || t === "XOR") { ctx.moveTo(x, y); ctx.quadraticCurveTo(x + w * 0.6, y, x + w, y + h / 2); ctx.quadraticCurveTo(x + w * 0.6, y + h, x, y + h); ctx.quadraticCurveTo(x + w * 0.25, y + h / 2, x, y); }
+    else if (t === "NOT") { ctx.moveTo(x, y); ctx.lineTo(x + w * 0.85, y + h / 2); ctx.lineTo(x, y + h); ctx.closePath(); }
+  }
+  const gcv = CB.canvas("#cv-gate", (ctx, w, h) => {
+    const P = CB.palette(); const t = gtype();
+    const out = t === "NOT" ? F.NOT(A) : F[t](A, B);
+    const gw = Math.min(150, w * 0.32), gh = gw * 0.75, gx = w / 2 - gw / 2, gy = h / 2 - gh / 2;
+    const wire = (x1, y1, x2, y2, v) => { ctx.strokeStyle = v ? P.accent : P.border; ctx.lineWidth = v ? 4 : 3; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+    const ins = t === "NOT" ? [[A, h / 2, "A"]] : [[A, gy + gh * 0.28, "A"], [B, gy + gh * 0.72, "B"]];
+    ins.forEach(([v, y, n]) => {
+      wire(30, y, gx + (t === "OR" || t === "XOR" ? gw * 0.12 : 0), y, v);
+      ctx.beginPath(); ctx.arc(30, y, 12, 0, 7); ctx.fillStyle = v ? P.accent : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1; ctx.stroke();
+      CB.text(ctx, String(v), 30, y, { align: "center", size: 12, bold: true, mono: true, color: v ? "#fff" : P.dim });
+      CB.text(ctx, n, 30, y - 22, { align: "center", size: 12, color: P.dim });
+    });
+    if (t === "XOR") { ctx.beginPath(); ctx.moveTo(gx - 10, gy); ctx.quadraticCurveTo(gx - 10 + gw * 0.25, gy + gh / 2, gx - 10, gy + gh); ctx.strokeStyle = P.text; ctx.lineWidth = 2; ctx.stroke(); }
+    gateShape(ctx, t, gx, gy, gw, gh); ctx.fillStyle = P.surface; ctx.fill(); ctx.strokeStyle = P.text; ctx.lineWidth = 2; ctx.stroke();
+    let ox = gx + gw;
+    if (t === "NOT") ox = gx + gw * 0.85;
+    if (t === "NOT" || t === "NAND") { ctx.beginPath(); ctx.arc(ox + 7, h / 2, 7, 0, 7); ctx.fillStyle = P.bg; ctx.fill(); ctx.stroke(); ox += 14; }
+    CB.text(ctx, t, gx + gw * 0.4, h / 2, { align: "center", size: 14, bold: true, color: P.text });
+    const lx = w - 40;
+    wire(ox, h / 2, lx - 18, h / 2, out);
+    ctx.beginPath(); ctx.arc(lx, h / 2, 18, 0, 7); ctx.fillStyle = out ? "#ffd84a" : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1.5; ctx.stroke();
+    CB.text(ctx, String(out), lx, h / 2, { align: "center", size: 14, bold: true, mono: true, color: out ? "#3a2a00" : P.dim });
+    CB.text(ctx, "출력", lx, h / 2 - 30, { align: "center", size: 12, color: P.dim });
+  }, { aspect: 0.5, minHeight: 200, maxHeight: 300 });
+  function renderGate() {
+    const t = gtype();
+    gA.classList.toggle("on", !!A); gA.firstChild.textContent = A;
+    gB.classList.toggle("on", !!B); gB.firstChild.textContent = B;
+    gB.disabled = t === "NOT"; gB.style.opacity = t === "NOT" ? 0.35 : 1;
+    document.getElementById("gdesc").textContent = DESC[t];
+    const rows = t === "NOT" ? [[0], [1]] : [[0, 0], [0, 1], [1, 0], [1, 1]];
+    document.getElementById("tt").innerHTML = `<thead><tr><th>A</th>${t === "NOT" ? "" : "<th>B</th>"}<th>${t} 출력</th></tr></thead><tbody>` +
+      rows.map((r) => { const o = t === "NOT" ? F.NOT(r[0]) : F[t](r[0], r[1]); const cur = r[0] === A && (t === "NOT" || r[1] === B); return `<tr class="${cur ? "cur" : ""}"><td>${r[0]}</td>${t === "NOT" ? "" : `<td>${r[1]}</td>`}<td>${o}</td></tr>`; }).join("") + "</tbody>";
+    gcv.redraw();
+  }
+  renderGate();
+
+  /* ---------------- 4-bit adder ---------------- */
+  const aBits = [0, 1, 1, 1], bBits = [0, 0, 0, 1]; // MSB first
+  let addT = 99; // seconds since change
+  function mk(id, arr) {
+    const el = document.getElementById(id);
+    arr.forEach((_, i) => { const b = document.createElement("button"); b.className = "bit"; b.innerHTML = `0<small>${8 >> i}</small>`; b.onclick = () => { arr[i] ^= 1; addT = 0; refresh(); }; el.appendChild(b); });
+    const d = document.createElement("span"); d.className = "dec"; el.appendChild(d);
+  }
+  mk("addA", aBits); mk("addB", bBits);
+  const val = (arr) => arr.reduce((a, b, i) => a + b * (8 >> i), 0);
+  function refresh() {
+    [["addA", aBits], ["addB", bBits]].forEach(([id, arr]) => { const kids = document.getElementById(id).children; arr.forEach((v, i) => { kids[i].classList.toggle("on", !!v); kids[i].firstChild.textContent = v; }); kids[4].textContent = "= " + val(arr); });
+    CB.stat("o-a", val(aBits)); CB.stat("o-b", val(bBits));
+    acv.redraw();
+  }
+  const STAGE = 0.55;
+  const acv = CB.canvas("#cv-add", (ctx, w, h) => {
+    const P = CB.palette();
+    // compute ripple from LSB (index 3) to MSB
+    const sum = [0, 0, 0, 0], carry = [0, 0, 0, 0, 0]; // carry[k] into stage k (k=0 is LSB)
+    for (let k = 0; k < 4; k++) { const i = 3 - k; const a = aBits[i], b = bBits[i], c = carry[k]; sum[i] = a ^ b ^ c; carry[k + 1] = (a & b) | (c & (a ^ b)); }
+    const doneStages = Math.floor(addT / STAGE);
+    const bw = Math.min(110, (w - 120) / 4 - 14), bh = 64, gap = (w - 60 - 4 * bw) / 4;
+    const y = 34;
+    for (let i = 0; i < 4; i++) {
+      const k = 3 - i; // stage index from LSB
+      const x = 60 + i * (bw + gap) + gap / 2;
+      const ready = doneStages > k;
+      const busy = doneStages === k;
+      CB.box(ctx, x, y, bw, bh, { fill: busy ? P.accent : ready ? P.surface : P.bg, stroke: busy ? P.accent : P.border, text: "전가산기\n" + (8 >> i) + "의 자리", color: busy ? "#fff" : P.text, size: 12, r: 10 });
+      // inputs label
+      CB.text(ctx, `${aBits[i]}+${bBits[i]}`, x + bw / 2, y - 14, { align: "center", size: 12, mono: true, color: P.dim });
+      // sum output
+      ctx.strokeStyle = P.border; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + bw / 2, y + bh); ctx.lineTo(x + bw / 2, y + bh + 22); ctx.stroke();
+      CB.box(ctx, x + bw / 2 - 20, y + bh + 22, 40, 34, { fill: ready ? (sum[i] ? P.accent : P.surface) : P.bg, stroke: P.border, text: ready ? String(sum[i]) : "?", mono: true, bold: true, size: 16, color: ready && sum[i] ? "#fff" : P.dim });
+      // carry out to the left
+      const cOut = carry[k + 1];
+      const cx1 = x, cx2 = i === 0 ? 24 : x - gap;
+      const live = ready && cOut;
+      CB.arrow(ctx, cx1, y + bh / 2, cx2 + 2, y + bh / 2, { color: live ? P.warn : P.border, lw: live ? 3 : 2 });
+      if (ready) CB.text(ctx, "올림 " + cOut, (cx1 + cx2) / 2, y + bh / 2 - 12, { align: "center", size: 11, color: live ? P.warn : P.faint, bold: !!live });
+    }
+    const allDone = doneStages >= 4;
+    const total = val(aBits) + val(bBits);
+    CB.text(ctx, allDone ? (carry[4] ? "넘침(5번째 자리) 1" : "넘침 없음") : "계산 중…", 8, y + bh + 39, { size: 11.5, color: allDone && carry[4] ? P.warn : P.faint });
+    CB.stat("o-s", allDone ? (carry[4] ? `${total - 16} <small>(넘침! 실제 ${total})</small>` : total) : "…");
+  }, { height: 170 });
+  CB.loop(document.getElementById("cv-add"), (dt) => { if (addT < STAGE * 4 + 0.1) { addT += dt; acv.redraw(); } });
+  addT = 0; refresh();
+
+  /* ---------------- SR latch ---------------- */
+  let S = 0, R = 0, Q = 0;
+  function settle() { // NOR latch
+    for (let i = 0; i < 4; i++) { const qb = 1 - (S | Q); Q = 1 - (R | qb); }
+  }
+  function press(which, v) { if (which === "S") S = v; else R = v; settle(); CB.stat("o-S", S); CB.stat("o-R", R); CB.stat("o-Q", `<span style="color:${Q ? "var(--accent)" : "inherit"}">${Q}</span>`); lcv.redraw(); }
+  [["btnS", "S"], ["btnR", "R"]].forEach(([id, k]) => {
+    const b = document.getElementById(id);
+    const down = (e) => { e.preventDefault(); press(k, 1); }, up = () => press(k, 0);
+    b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointerleave", () => { if ((k === "S" ? S : R)) up(); });
+    b.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); press(k, 1); } });
+    b.addEventListener("keyup", up);
+  });
+  const lcv = CB.canvas("#cv-latch", (ctx, w, h) => {
+    const P = CB.palette();
+    const Qb = 1 - (S | Q);
+    const gw = Math.min(110, w * 0.2), gh = gw * 0.7;
+    const gx = w * 0.42 - gw / 2, y1 = h * 0.28 - gh / 2, y2 = h * 0.72 - gh / 2;
+    const col = (v) => (v ? P.accent : P.border), lw = (v) => (v ? 4 : 2.5);
+    const line = (pts, v) => { ctx.strokeStyle = col(v); ctx.lineWidth = lw(v); ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); };
+    const outX = gx + gw + 14;
+    // inputs
+    line([[40, y1 + gh * 0.28], [gx + gw * 0.12, y1 + gh * 0.28]], R);
+    line([[40, y2 + gh * 0.72], [gx + gw * 0.12, y2 + gh * 0.72]], S);
+    CB.text(ctx, "R", 24, y1 + gh * 0.28, { align: "center", bold: true, color: R ? P.accent : P.dim });
+    CB.text(ctx, "S", 24, y2 + gh * 0.72, { align: "center", bold: true, color: S ? P.accent : P.dim });
+    // outputs
+    const qx = w - 60;
+    line([[outX, y1 + gh / 2], [qx, y1 + gh / 2]], Q);
+    line([[outX, y2 + gh / 2], [qx, y2 + gh / 2]], Qb);
+    // feedback cross
+    const fx = outX + Math.min(50, w * 0.08);
+    const my = h / 2, ix = gx + gw * 0.12;
+    line([[fx, y1 + gh / 2], [fx, my - 12], [gx - 26, my + 12], [gx - 26, y2 + gh * 0.28], [ix, y2 + gh * 0.28]], Q);
+    line([[fx + 16, y2 + gh / 2], [fx + 16, my + 12], [gx - 44, my - 12], [gx - 44, y1 + gh * 0.72], [ix, y1 + gh * 0.72]], Qb);
+    [[y1, "NOR"], [y2, "NOR"]].forEach(([yy, n]) => {
+      gateShape(ctx, "OR", gx, yy, gw, gh); ctx.fillStyle = P.surface; ctx.fill(); ctx.strokeStyle = P.text; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(gx + gw + 7, yy + gh / 2, 7, 0, 7); ctx.fillStyle = P.bg; ctx.fill(); ctx.stroke();
+      CB.text(ctx, n, gx + gw * 0.42, yy + gh / 2, { align: "center", size: 12, bold: true, color: P.text });
+    });
+    ctx.beginPath(); ctx.arc(qx + 18, y1 + gh / 2, 18, 0, 7); ctx.fillStyle = Q ? "#ffd84a" : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1.5; ctx.stroke();
+    CB.text(ctx, "Q=" + Q, qx + 18, y1 + gh / 2, { align: "center", size: 12, bold: true, mono: true, color: Q ? "#3a2a00" : P.dim });
+    CB.text(ctx, "Q̄=" + Qb, qx + 18, y2 + gh / 2, { align: "center", size: 12, mono: true, color: P.dim });
+  }, { aspect: 0.42, minHeight: 240, maxHeight: 320 });
+  press("S", 0);
+
+  /* ---------------- clock ---------------- */
+  const hz = CB.range("hz", (v) => v + " Hz", null);
+  let ct = 0, count = 0, paused = false, edges = [];
+  const hist = [];
+  document.getElementById("clk-pause").onclick = (e) => { paused = !paused; e.target.textContent = paused ? "다시 시작" : "일시정지"; };
+  document.getElementById("clk-reset").onclick = () => { count = 0; };
+  const ccv = CB.canvas("#cv-clock", (ctx, w, h) => {
+    const P = CB.palette();
+    const span = 4; // seconds visible
+    const x0 = 60, x1 = w - 170, yH = 40, yL = 100;
+    CB.text(ctx, "클럭", 10, (yH + yL) / 2, { size: 12, color: P.dim });
+    ctx.strokeStyle = P.accent; ctx.lineWidth = 2.5; ctx.beginPath();
+    const f = hz();
+    for (let i = 0; i <= 600; i++) {
+      const t = ct - span + (i / 600) * span; const v = t >= 0 && ((t * f) % 1) < 0.5 ? 1 : 0;
+      const x = x0 + (i / 600) * (x1 - x0), y = v ? yH : yL;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    // rising edges markers
+    const kStart = Math.ceil((ct - span) * f), kEnd = Math.floor(ct * f);
+    for (let k = Math.max(0, kStart); k <= kEnd; k++) { const t = k / f; const x = x0 + ((t - (ct - span)) / span) * (x1 - x0); CB.text(ctx, "▲", x, yL + 16, { align: "center", size: 11, color: P.warn }); }
+    CB.text(ctx, "지금", x1, yL + 34, { align: "center", size: 11, color: P.faint });
+    // register
+    const rx = w - 150, ry = 40;
+    CB.text(ctx, "4비트 레지스터", rx + 70, ry - 18, { align: "center", size: 12, color: P.dim });
+    const bits = CB.bin(count, 4);
+    for (let i = 0; i < 4; i++) CB.box(ctx, rx + i * 35, ry, 32, 42, { fill: bits[i] === "1" ? P.accent : P.surface, text: bits[i], mono: true, bold: true, size: 18, color: bits[i] === "1" ? "#fff" : P.dim });
+    CB.text(ctx, "= " + count, rx + 70, ry + 64, { align: "center", size: 16, mono: true, bold: true, color: P.text });
+  }, { height: 150 });
+  CB.loop(document.getElementById("cv-clock"), (dt) => {
+    if (paused) return;
+    const f = hz(); const before = Math.floor(ct * f); ct += dt; const after = Math.floor(ct * f);
+    if (after > before) count = (count + after - before) % 16;
+    ccv.redraw();
+  });
+
+  /* ---------------- Moore ---------------- */
+  const CHIPS = [[1971, 2300, "4004"], [1978, 29000, "8086"], [1985, 275000, "386"], [1993, 3.1e6, "Pentium"], [2000, 4.2e7, "Pentium 4"], [2006, 2.9e8, "Core 2"], [2012, 1.4e9, "Core i7"], [2020, 1.6e10, "Apple M1"], [2022, 1.14e11, "M1 Ultra"], [2024, 2.08e11, "AI GPU"]];
+  CB.canvas("#cv-moore", (ctx, w, h) => {
+    const P = CB.palette();
+    const trend = []; for (let y = 1971; y <= 2024; y++) trend.push([y, 2300 * Math.pow(2, (y - 1971) / 2)]);
+    CB.chart(ctx, { x: 70, y: 16, w: w - 70 - 22, h: h - 16 - 46 }, {
+      x: [1968, 2032], y: [1e3, 1e12], logY: true, xLabel: "연도", yLabel: "트랜지스터 수",
+      yFmt: (v) => ({ 1e3: "천", 1e4: "1만", 1e5: "10만", 1e6: "100만", 1e7: "1천만", 1e8: "1억", 1e9: "10억", 1e10: "100억", 1e11: "1천억", 1e12: "1조" }[v] || ""),
+      series: [{ data: trend, color: P.faint, dash: [5, 5], width: 1.5 }],
+      points: CHIPS.map(([x, y, l]) => ({ x, y, label: w > 560 ? l : "", color: P.accent })),
+    });
+    CB.text(ctx, "점선: 2년마다 2배", 80, 24, { size: 11.5, color: P.faint, base: "top" });
+  }, { aspect: 0.5, minHeight: 260, maxHeight: 400 });
+})();
+</script>
+</body>
+</html>

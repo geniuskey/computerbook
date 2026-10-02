@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>ComputerBook · 누구나 읽는 컴퓨터 교과서</title>
+<meta name="description" content="0과 1에서 인공지능 GPU까지 — 컴퓨터 구조를 배운 적 없는 사람도 CPU, 메모리, 운영체제, 네트워크, GPU, 프로그램 실행 원리를 시뮬레이터로 직접 만지며 이해하는 인터랙티브 컴퓨터 교과서.">
+<link rel="canonical" href="https://computerbook.euiyun.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="ComputerBook · 누구나 읽는 컴퓨터 교과서">
+<meta property="og:description" content="0과 1에서 인공지능 GPU까지 — 컴퓨터 구조를 배운 적 없는 사람도 CPU, 메모리, 운영체제, 네트워크, GPU, 프로그램 실행 원리를 시뮬레이터로 직접 만지며 이해하는 인터랙티브 컴퓨터 교과서.">
+<meta property="og:url" content="https://computerbook.euiyun.com/">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://computerbook.euiyun.com/#site","name":"ComputerBook","alternateName":"컴퓨터 교과서","url":"https://computerbook.euiyun.com/","inLanguage":"ko"},{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/","inLanguage":"ko","isAccessibleForFree":true,"educationalLevel":"입문 (사전 지식 불필요)","about":["컴퓨터 구조","운영체제","컴퓨터 네트워크","GPU","프로그램 실행 원리"],"image":"https://computerbook.euiyun.com/og.png","hasPart":[{"@type":"Chapter","position":1,"name":"컴퓨터는 무엇인가","url":"https://computerbook.euiyun.com/chapters/intro.html"},{"@type":"Chapter","position":2,"name":"0과 1로 모든 것을","url":"https://computerbook.euiyun.com/chapters/bits.html"},{"@type":"Chapter","position":3,"name":"트랜지스터와 논리 게이트","url":"https://computerbook.euiyun.com/chapters/logic.html"},{"@type":"Chapter","position":4,"name":"CPU: 명령을 수행하는 두뇌","url":"https://computerbook.euiyun.com/chapters/cpu.html"},{"@type":"Chapter","position":5,"name":"더 빠른 CPU의 비밀","url":"https://computerbook.euiyun.com/chapters/cpu-perf.html"},{"@type":"Chapter","position":6,"name":"메모리와 캐시","url":"https://computerbook.euiyun.com/chapters/memory.html"},{"@type":"Chapter","position":7,"name":"저장장치와 파일","url":"https://computerbook.euiyun.com/chapters/storage.html"},{"@type":"Chapter","position":8,"name":"운영체제: 컴퓨터의 관리자","url":"https://computerbook.euiyun.com/chapters/os.html"},{"@type":"Chapter","position":9,"name":"가상 메모리","url":"https://computerbook.euiyun.com/chapters/vm.html"},{"@type":"Chapter","position":10,"name":"네트워크의 기초","url":"https://computerbook.euiyun.com/chapters/network.html"},{"@type":"Chapter","position":11,"name":"웹 페이지가 열리기까지","url":"https://computerbook.euiyun.com/chapters/web.html"},{"@type":"Chapter","position":12,"name":"GPU: 수천 개의 작은 일꾼","url":"https://computerbook.euiyun.com/chapters/gpu.html"},{"@type":"Chapter","position":13,"name":"프로그램은 어떻게 실행되는가","url":"https://computerbook.euiyun.com/chapters/program.html"},{"@type":"Chapter","position":14,"name":"클릭 한 번의 여행","url":"https://computerbook.euiyun.com/chapters/journey.html"},{"@type":"Chapter","position":15,"name":"용어집 & 종합 퀴즈","url":"https://computerbook.euiyun.com/chapters/glossary.html"}],"description":"0과 1에서 인공지능 GPU까지 — 컴퓨터 구조를 배운 적 없는 사람도 CPU, 메모리, 운영체제, 네트워크, GPU, 프로그램 실행 원리를 시뮬레이터로 직접 만지며 이해하는 인터랙티브 컴퓨터 교과서."}]}</script>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/common.js"></script>
+<style>
+  .hero-3d { cursor: pointer; height: auto; touch-action: auto; }
+  .hero-3d canvas { display: block; width: 100%; }
+  .paths { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .path { padding: 18px 20px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-elev); }
+  .path h3 { margin: 0 0 6px; font-size: 17px; }
+  .path p { margin: 0 0 10px; color: var(--text-dim); font-size: 14.5px; }
+  .path .steps { display: flex; flex-wrap: wrap; gap: 6px; }
+  .path .steps a { font-family: var(--mono); font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .path .steps a:hover { text-decoration: none; filter: brightness(1.1); }
+  .numbers { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .numbers div { background: var(--bg-elev); padding: 18px 20px; }
+  .numbers b { display: block; font-family: var(--mono); font-size: 24px; letter-spacing: -0.02em; color: var(--text); }
+  .numbers span { color: var(--text-dim); font-size: 14px; }
+  .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+  .hero-badges span { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-elev); }
+  .part-title { font-size: 13px; letter-spacing: .1em; font-weight: 700; color: var(--text-faint); margin: 28px 0 10px; text-transform: uppercase; }
+  .part-title:first-of-type { margin-top: 0; }
+  .stack-fig svg { display: block; width: 100%; height: auto; }
+  .stack-fig a:hover rect { stroke: var(--accent); stroke-width: 2; }
+  .howto { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .howto div { padding: 16px 18px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-elev); font-size: 14.5px; color: var(--text-dim); }
+  .howto b { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+  .howto .sim-tag { display: inline-block; margin-bottom: 8px; }
+</style>
+</head>
+<body data-root="">
+
+<section class="home-hero">
+  <div class="inner">
+    <div>
+      <div class="eyebrow">Interactive Computer Textbook</div>
+      <h1>0과 1에서<br><span class="grad">인공지능까지</span></h1>
+      <p>스마트폰 화면을 한 번 터치하는 0.1초 동안 그 안에서는 무슨 일이 일어날까요? 스위치 하나에서 시작해 CPU, 메모리, 운영체제, 네트워크, GPU, 그리고 프로그램이 실행되는 원리까지. 컴퓨터 구조를 배운 적 없어도 괜찮습니다. 직접 스위치를 켜고, 장난감 CPU를 한 박자씩 돌리고, 패킷을 보내며 배우는 컴퓨터 교과서입니다.</p>
+      <div class="cta">
+        <a class="primary" href="chapters/intro.html">1장부터 시작하기 →</a>
+        <a class="ghost" href="chapters/cpu.html">장난감 CPU 돌려 보기</a>
+      </div>
+      <div class="hero-badges">
+        <span>15개 챕터</span><span>50개 인터랙티브 실습</span><span>사전 지식 불필요</span><span>설치 없이 브라우저에서</span>
+      </div>
+    </div>
+    <div class="hero-3d" id="hero"><canvas id="cv-hero"></canvas><span class="hint">부품을 누르면 해당 장으로 이동합니다 · 빛나는 점은 데이터</span></div>
+  </div>
+</section>
+
+<section class="home-section">
+  <h2>컴퓨터는 층층이 쌓은 탑이다</h2>
+  <p class="sub">각 층은 바로 아래층이 제공하는 기능만 믿고 그 위에 더 쉬운 기능을 쌓습니다. 이 책은 맨 아래 스위치에서 출발해 한 층씩 올라갑니다. 층을 누르면 해당 장으로 갑니다.</p>
+  <figure class="diagram stack-fig">
+    <div style="overflow-x:auto"><svg style="min-width:600px" viewBox="0 0 900 380" role="img" aria-label="컴퓨터의 계층 구조">
+      <g font-family="var(--font)">
+        <a href="chapters/program.html"><rect x="250" y="10" width="400" height="44" rx="10" class="f-acc-soft"/><text x="450" y="38" text-anchor="middle" class="t" style="font-weight:700">앱과 프로그램 (메신저, 게임, 브라우저)</text><text x="670" y="38" class="t-mono">13–14장</text></a>
+        <a href="chapters/web.html"><rect x="200" y="62" width="500" height="44" rx="10" class="f-acc2-soft"/><text x="450" y="90" text-anchor="middle" class="t">네트워크와 웹 (패킷, TCP/IP, DNS, HTTPS)</text><text x="720" y="90" class="t-mono">10–11장</text></a>
+        <a href="chapters/os.html"><rect x="150" y="114" width="600" height="44" rx="10" class="f-acc-soft"/><text x="450" y="142" text-anchor="middle" class="t">운영체제 (프로세스, 스케줄링, 가상 메모리, 파일)</text><text x="770" y="142" class="t-mono">7–9장</text></a>
+        <a href="chapters/cpu.html"><rect x="100" y="166" width="340" height="44" rx="10" class="f-elev"/><text x="270" y="194" text-anchor="middle" class="t">CPU (명령어, 파이프라인)</text></a>
+        <a href="chapters/memory.html"><rect x="450" y="166" width="170" height="44" rx="10" class="f-elev"/><text x="535" y="194" text-anchor="middle" class="t">메모리·캐시</text></a>
+        <a href="chapters/gpu.html"><rect x="630" y="166" width="170" height="44" rx="10" class="f-elev"/><text x="715" y="194" text-anchor="middle" class="t">GPU</text></a>
+        <text x="820" y="194" class="t-mono">4–6·12장</text>
+        <a href="chapters/logic.html"><rect x="50" y="218" width="800" height="44" rx="10" class="f-surface"/><text x="450" y="246" text-anchor="middle" class="t">논리 회로 (게이트, 덧셈기, 래치, 클럭)</text><text x="790" y="246" class="t-mono">3장</text></a>
+        <a href="chapters/logic.html"><rect x="20" y="270" width="860" height="44" rx="10" class="f-surface"/><text x="450" y="298" text-anchor="middle" class="t">트랜지스터 (전기로 누르는 스위치)</text><text x="820" y="298" class="t-mono">3장</text></a>
+        <a href="chapters/bits.html"><rect x="0" y="322" width="900" height="44" rx="10" fill="var(--accent)"/><text x="450" y="350" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">0과 1 (비트로 표현한 모든 정보)</text><text x="845" y="350" class="t-mono" style="fill:#fff">2장</text></a>
+      </g>
+    </svg></div>
+    <figcaption><b>그림 0-1.</b> 컴퓨터의 계층. 위층으로 갈수록 사람에게 가깝고, 아래층으로 갈수록 전기와 물리에 가깝다.</figcaption>
+  </figure>
+</section>
+
+<section class="home-section" style="padding-top:0">
+  <h2>숫자로 보는 요즘 컴퓨터</h2>
+  <p class="sub">이 책을 끝내면 아래 숫자가 무엇을 뜻하는지, 서로 어떻게 얽혀 있는지 설명할 수 있게 됩니다.</p>
+  <div class="numbers">
+    <div><b>0.2 ns</b><span>5 GHz CPU의 한 박자. 이 동안 빛은 6 cm를 간다</span></div>
+    <div><b>1000억 개+</b><span>최신 칩 하나에 들어가는 트랜지스터 수</span></div>
+    <div><b>× 300</b><span>캐시보다 메인 메모리가 느린 정도. 그래서 캐시가 중요하다</span></div>
+    <div><b>4 KB</b><span>운영체제가 메모리를 나누는 기본 단위, 페이지</span></div>
+    <div><b>1만 개+</b><span>AI용 GPU 하나의 연산 유닛 수</span></div>
+    <div><b>≈ 100 ms</b><span>서울 ↔ 미국 왕복 지연. 빛의 속도가 정한 한계</span></div>
+  </div>
+</section>
+
+<section class="home-section" style="padding-top:0">
+  <h2>이 책을 읽는 방법</h2>
+  <p class="sub">수식이나 전문 지식 없이도 따라올 수 있도록 만들었습니다. 각 장은 같은 흐름으로 진행됩니다.</p>
+  <div class="howto">
+    <div><span class="pill" style="background:color-mix(in srgb, var(--warn) 14%, transparent);color:var(--warn);border:0">비유</span><b>주방으로 이해하기</b>CPU는 요리사, 메모리는 조리대, SSD는 창고, GPU는 보조 요리사 군단, 운영체제는 주방장. 익숙한 장면으로 먼저 감을 잡습니다.</div>
+    <div><span class="sim-tag">SIMULATOR</span><b>직접 만지기</b>읽기만 하지 말고 슬라이더를 움직이고 버튼을 눌러 보세요. “해볼 것”에 적힌 실험을 따라 하면 핵심이 보입니다.</div>
+    <div><span class="pill acc">정리</span><b>핵심 정리와 퀴즈</b>장 끝의 요약과 퀴즈로 확인하고, 마지막 장의 용어집과 종합 퀴즈로 전체를 복습합니다.</div>
+  </div>
+</section>
+
+<section class="home-section" style="padding-top:0">
+  <h2>추천 학습 경로</h2>
+  <p class="sub">처음부터 순서대로 읽는 것이 가장 좋지만, 관심사에 따라 골라 읽어도 됩니다.</p>
+  <div class="paths">
+    <div class="path"><h3>🧭 전체 일주 (추천)</h3><p>컴퓨터를 처음 배운다면 1장부터 차례로. 각 장이 앞 장 위에 쌓입니다.</p><div class="steps"><a href="chapters/intro.html">01</a><a href="chapters/bits.html">02</a><a href="chapters/logic.html">03</a><a href="chapters/cpu.html">04</a><a href="chapters/cpu-perf.html">05</a><a href="chapters/memory.html">06</a><a href="chapters/storage.html">07</a><a href="chapters/os.html">08</a><a href="chapters/vm.html">09</a><a href="chapters/network.html">10</a><a href="chapters/web.html">11</a><a href="chapters/gpu.html">12</a><a href="chapters/program.html">13</a><a href="chapters/journey.html">14</a></div></div>
+    <div class="path"><h3>⚡ 하드웨어 속으로</h3><p>컴퓨터가 물리적으로 어떻게 계산하고 기억하는지 궁금하다면.</p><div class="steps"><a href="chapters/bits.html">02 비트</a><a href="chapters/logic.html">03 논리</a><a href="chapters/cpu.html">04 CPU</a><a href="chapters/cpu-perf.html">05 성능</a><a href="chapters/memory.html">06 메모리</a><a href="chapters/gpu.html">12 GPU</a></div></div>
+    <div class="path"><h3>🌐 인터넷은 어떻게</h3><p>웹 서핑, 메신저, 보안의 원리가 궁금하다면.</p><div class="steps"><a href="chapters/intro.html">01 큰 그림</a><a href="chapters/bits.html">02 비트</a><a href="chapters/network.html">10 네트워크</a><a href="chapters/web.html">11 웹</a><a href="chapters/journey.html">14 여행</a></div></div>
+    <div class="path"><h3>💻 개발자 입문</h3><p>코딩을 시작했는데 내 코드가 컴퓨터에서 어떻게 도는지 알고 싶다면.</p><div class="steps"><a href="chapters/cpu.html">04 CPU</a><a href="chapters/memory.html">06 캐시</a><a href="chapters/os.html">08 OS</a><a href="chapters/vm.html">09 가상 메모리</a><a href="chapters/program.html">13 실행 원리</a></div></div>
+  </div>
+</section>
+
+<section class="home-section" style="padding-top:0" id="chapters">
+  <h2>전체 목차</h2>
+  <p class="sub">모든 장에 직접 조작하는 시뮬레이터가 들어 있습니다.</p>
+  <div id="ch-parts"></div>
+</section>
+
+<script>
+(function () {
+  // chapter grid grouped by part
+  let html = "", last = "";
+  CB.CHAPTERS.forEach((c) => {
+    if (c.part !== last) { if (last) html += "</div>"; html += `<div class="part-title">${c.part}</div><div class="ch-grid">`; last = c.part; }
+    html += `<a class="ch-card" href="chapters/${c.slug}.html"><span class="num">CHAPTER ${c.num}</span><h3>${c.title}</h3><p>${c.desc}</p><div class="tags">${c.tags.map((t) => `<span class="${t === "sim" ? "sim" : ""}">${t === "sim" ? "시뮬레이터" : t}</span>`).join("")}</div></a>`;
+  });
+  document.getElementById("ch-parts").innerHTML = html + "</div>";
+
+  // hero: living computer
+  const PARTS = [
+    { k: "cpu", x: 0.5, y: 0.42, w: 0.24, h: 0.24, label: "CPU", sub: "4·5장", slug: "cpu", main: true },
+    { k: "ram", x: 0.82, y: 0.42, w: 0.18, h: 0.2, label: "메모리", sub: "6장", slug: "memory" },
+    { k: "ssd", x: 0.82, y: 0.8, w: 0.18, h: 0.14, label: "SSD", sub: "7장", slug: "storage" },
+    { k: "gpu", x: 0.5, y: 0.82, w: 0.3, h: 0.16, label: "GPU", sub: "12장", slug: "gpu" },
+    { k: "os", x: 0.5, y: 0.1, w: 0.42, h: 0.1, label: "운영체제", sub: "8·9장", slug: "os" },
+    { k: "net", x: 0.16, y: 0.42, w: 0.18, h: 0.2, label: "네트워크", sub: "10·11장", slug: "network" },
+    { k: "io", x: 0.16, y: 0.8, w: 0.18, h: 0.14, label: "입출력", sub: "1장", slug: "intro" },
+  ];
+  const LINKS = [["cpu", "ram"], ["ram", "ssd"], ["cpu", "gpu"], ["ram", "gpu"], ["cpu", "os"], ["cpu", "net"], ["io", "cpu"], ["net", "ram"]];
+  const parts = Object.fromEntries(PARTS.map((p) => [p.k, p]));
+  const dots = Array.from({ length: 26 }, (_, i) => ({ l: i % LINKS.length, t: Math.random(), s: 0.25 + Math.random() * 0.5, dir: Math.random() < 0.5 ? 1 : -1 }));
+  let hover = null, tt = 0;
+  const cvEl = document.getElementById("cv-hero");
+  const hero = CB.canvas(cvEl, (ctx, w, h) => {
+    const P = CB.palette();
+    const R = (p) => [p.x * w - (p.w * w) / 2, p.y * h - (p.h * h) / 2, p.w * w, p.h * h];
+    LINKS.forEach(([a, b]) => { ctx.strokeStyle = P.border; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(parts[a].x * w, parts[a].y * h); ctx.lineTo(parts[b].x * w, parts[b].y * h); ctx.stroke(); });
+    dots.forEach((d) => {
+      const [a, b] = LINKS[d.l]; const t = d.dir > 0 ? d.t : 1 - d.t;
+      const x = CB.lerp(parts[a].x * w, parts[b].x * w, t), y = CB.lerp(parts[a].y * h, parts[b].y * h, t);
+      ctx.fillStyle = d.l % 2 ? P.accent2 : P.accent; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    });
+    PARTS.forEach((p) => {
+      const [x, y, ww, hh] = R(p); const on = hover === p.k;
+      CB.rrect(ctx, x, y, ww, hh, 12);
+      ctx.fillStyle = p.main ? P.accent : on ? P.accent2 : P.bg; ctx.fill();
+      ctx.strokeStyle = on || p.main ? P.accent : P.border; ctx.lineWidth = on ? 2.5 : 1.5; ctx.stroke();
+      if (p.main) { // pins + pulsing core
+        ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 2;
+        for (let i = 1; i < 6; i++) { const px = x + (ww * i) / 6; ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px, y); ctx.moveTo(px, y + hh); ctx.lineTo(px, y + hh + 6); ctx.stroke(); }
+        const pulse = 0.5 + 0.5 * Math.sin(tt * 3);
+        ctx.fillStyle = `rgba(255,255,255,${0.12 + 0.12 * pulse})`; CB.rrect(ctx, x + ww * 0.2, y + hh * 0.2, ww * 0.6, hh * 0.6, 8); ctx.fill();
+      }
+      const fg = p.main || on ? "#fff" : P.text;
+      CB.text(ctx, p.label, x + ww / 2, y + hh / 2 - (hh > 46 ? 8 : 0), { align: "center", size: Math.max(11, Math.min(16, ww / 6)), bold: true, color: fg });
+      if (hh > 46) CB.text(ctx, p.sub, x + ww / 2, y + hh / 2 + 12, { align: "center", size: 11, color: p.main || on ? "rgba(255,255,255,.85)" : P.dim });
+    });
+  }, { aspect: 0.82, minHeight: 300, maxHeight: 420 });
+  CB.loop(cvEl, (dt) => { tt += dt; dots.forEach((d) => { d.t += dt * d.s; if (d.t > 1) { d.t = 0; d.l = Math.floor(Math.random() * LINKS.length); d.dir = Math.random() < 0.5 ? 1 : -1; } }); hero.redraw(); });
+  const hit = (e) => { const r = cvEl.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; return PARTS.find((p) => Math.abs(x - p.x) < p.w / 2 && Math.abs(y - p.y) < p.h / 2); };
+  cvEl.addEventListener("pointermove", (e) => { const p = hit(e); hover = p ? p.k : null; cvEl.style.cursor = p ? "pointer" : "default"; });
+  cvEl.addEventListener("pointerleave", () => (hover = null));
+  cvEl.addEventListener("click", (e) => { const p = hit(e); if (p) location.href = "chapters/" + p.slug + ".html"; });
+})();
+</script>
+</body>
+</html>

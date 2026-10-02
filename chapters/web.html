@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>웹 페이지가 열리기까지 · ComputerBook</title>
+<meta name="description" content="주소창에 URL을 입력한 순간부터 DNS 조회, TCP 연결, HTTPS 암호화, HTTP 요청과 응답, 브라우저가 HTML을 화면에 그리기까지의 전 과정을 시뮬레이터로 따라간다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/web.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="웹 페이지가 열리기까지 · ComputerBook">
+<meta property="og:description" content="주소창에 URL을 입력한 순간부터 DNS 조회, TCP 연결, HTTPS 암호화, HTTP 요청과 응답, 브라우저가 HTML을 화면에 그리기까지의 전 과정을 시뮬레이터로 따라간다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/web.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"웹 페이지가 열리기까지","name":"웹 페이지가 열리기까지 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/web.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/web.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":11,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"주소창에 URL을 입력한 순간부터 DNS 조회, TCP 연결, HTTPS 암호화, HTTP 요청과 응답, 브라우저가 HTML을 화면에 그리기까지의 전 과정을 시뮬레이터로 따라간다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"11 웹 페이지가 열리기까지","item":"https://computerbook.euiyun.com/chapters/web.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .url-parts { display: flex; flex-wrap: wrap; gap: 2px; padding: 16px 18px 6px; font-family: var(--mono); font-size: 16px; }
+  .url-parts span { padding: 4px 4px 22px; border-radius: 6px; position: relative; }
+  .url-parts span i { position: absolute; left: 4px; bottom: 3px; font-style: normal; font-family: var(--font); font-size: 11px; white-space: nowrap; }
+  .url-legend { padding: 4px 18px 16px; display: grid; gap: 6px; font-size: 14px; }
+  .url-legend div { display: flex; gap: 10px; align-items: baseline; }
+  .url-legend b { font-family: var(--mono); font-size: 13px; padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  .spy { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 16px 18px; }
+  .spy > div { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+  .spy h5 { margin: 0 0 6px; font-size: 13px; color: var(--text-dim); }
+  .spy pre { margin: 0; font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+  .spy .eve pre { color: var(--bad); }
+  .htmlplay { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  @media (min-width: 820px) { .htmlplay { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .htmlplay > div + div { border-left: 1px solid var(--border); } }
+  .htmlplay > div { padding: 14px 18px; min-width: 0; }
+  .htmlplay h5 { margin: 0 0 8px; font-size: 13px; color: var(--text-dim); }
+  .htmlplay textarea { width: 100%; min-height: 230px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 10px; resize: vertical; }
+  .htmlplay iframe { width: 100%; height: 230px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+  .dom { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; padding: 12px 18px; border-top: 1px solid var(--border); max-height: 240px; overflow: auto; }
+  .dom .tg { color: var(--accent); font-weight: 600; }
+  .dom .tx { color: var(--text-dim); }
+  .status td:first-child { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body data-chapter="web">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 11</div>
+    <h1>웹 페이지가 열리기까지</h1>
+    <p class="lead">주소창에 주소를 치고 Enter를 누르면 1초도 안 되어 페이지가 뜬다. 그 짧은 순간에 브라우저는 서버의 위치를 묻고, 연결을 맺고, 비밀 대화 통로를 만들고, 페이지를 요청하고, 받은 글자를 그림으로 바꾼다. 이 장에서는 이 과정을 슬로 모션으로 재생해 본다. 앞 장들에서 배운 거의 모든 것이 여기서 함께 등장한다.</p>
+    <ul class="objectives">
+      <li>URL을 구성 요소(프로토콜, 도메인, 경로, 쿼리)로 나눠 읽는다.</li>
+      <li>웹 페이지 로딩의 전체 단계와 각 단계가 걸리는 시간을 폭포 그래프로 이해한다.</li>
+      <li>DNS가 도메인 이름을 IP 주소로 바꾸는 계층적 조회 과정을 따라간다.</li>
+      <li>HTTPS가 도청자로부터 대화를 지키는 방법과 자물쇠 아이콘의 의미를 안다.</li>
+      <li>HTTP 요청과 응답의 모양, 상태 코드의 의미를 안다.</li>
+      <li>브라우저가 HTML을 DOM 트리로 만들고 화면에 그리는 과정을 체험한다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="url">
+    <h2>URL 읽기: 인터넷의 주소 형식</h2>
+    <p>웹 주소, 즉 <span class="term">URL</span><span class="en">(Uniform Resource Locator)</span>은 몇 개의 부분으로 나뉜다. 아래에 아무 주소나 넣어 보자.</p>
+    <div class="sim" id="sim-url">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>URL 해부기</h3></div>
+      <div class="sim-controls" style="border-top:0"><label class="ctrl"><span>URL</span><input type="text" id="url-in" value="https://shop.example.com:443/search?q=노트북&amp;page=2#reviews"></label></div>
+      <div class="url-parts" id="url-parts"></div>
+      <div class="url-legend" id="url-legend"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="timeline">
+    <h2>전체 그림: 0.5초의 폭포</h2>
+    <p>웹 페이지 하나가 열리는 과정은 대략 다음 순서로 진행된다. 각 단계는 앞 단계가 끝나야 시작할 수 있어서 계단식 폭포처럼 보인다. 개발자 도구(F12)의 “네트워크” 탭에서 실제 사이트의 폭포 그래프를 볼 수 있다.</p>
+    <div class="sim" id="sim-wf">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>페이지 로딩 폭포 그래프</h3></div>
+      <div class="sim-view"><canvas id="cv-wf"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>서버까지의 거리 (왕복 지연)</span><div class="seg" id="wf-rtt"><button data-value="10">국내 (10 ms)</button><button data-value="40" class="on">일본 (40 ms)</button><button data-value="180">미국 (180 ms)</button></div></div>
+        <div class="ctrl"><span>방문 상태</span><div class="seg" id="wf-visit"><button data-value="first" class="on">처음 방문</button><button data-value="again">다시 방문 (캐시 있음)</button></div></div>
+        <label class="ctrl"><span>인터넷 대역폭 <output id="wf-bw-out"></output></span><input type="range" id="wf-bw" min="0" max="3" value="2"></label>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">화면에 처음 뜨기까지</span><span class="v" id="o-fp">—</span></div>
+        <div class="stat"><span class="k">왕복 횟수</span><span class="v" id="o-rt">—</span></div>
+        <div class="stat"><span class="k">시간 중 “기다림”의 비율</span><span class="v" id="o-wait">—</span></div>
+      </div>
+      <div class="sim-note">해볼 것: 서버를 미국으로 바꾸면 대역폭을 아무리 올려도 느리다. 연결을 맺는 데만 왕복이 여러 번 필요하기 때문이다(10장의 지연). “다시 방문”에서는 DNS 결과와 이미지가 캐시에 있어 단계가 크게 줄어든다. 그래서 큰 사이트들은 전 세계에 서버 복사본(CDN)을 두어 사용자와의 거리를 줄인다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="dns">
+    <h2>DNS: 인터넷의 전화번호부</h2>
+    <p>컴퓨터는 <code>www.example.com</code> 같은 이름으로는 연결할 수 없다. 10장에서 본 IP 주소가 필요하다. 이름을 IP 주소로 바꿔 주는 시스템이 <span class="term">DNS</span><span class="en">(Domain Name System)</span>다. 사람 이름으로 전화번호를 찾는 전화번호부와 같다.</p>
+    <p>전 세계 수억 개의 도메인을 한 곳에서 관리할 수는 없으므로 DNS는 <b>계층</b>으로 나뉜다. 주소를 오른쪽부터 읽는다. <code>.com</code>을 아는 서버, <code>example.com</code>을 아는 서버를 차례로 물어 찾아간다. 한 번 찾은 결과는 여러 곳에 캐시해 두어 다음에는 바로 답한다.</p>
+    <div class="sim" id="sim-dns">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>DNS 조회 따라가기</h3></div>
+      <div class="sim-view"><canvas id="cv-dns"></canvas></div>
+      <div class="stepdesc" id="dns-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:64px"></div>
+      <div class="sim-controls">
+        <div class="btn-row"><button class="btn primary" id="dns-next">다음 단계</button><button class="btn" id="dns-reset">처음으로</button><button class="btn" id="dns-cached">같은 주소 다시 찾기 (캐시)</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="tcp">
+    <h2>연결 맺기: 세 번의 악수</h2>
+    <p>IP 주소를 알았으니 이제 서버와 TCP 연결(10장)을 맺는다. 전화를 걸어 “여보세요?” “네, 들려요.” “네, 저도 들려요.”라고 확인하듯, 세 번 신호를 주고받는다. 이를 <span class="term">3방향 핸드셰이크</span><span class="en">(3-way handshake)</span>라 한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 700 230" role="img" aria-label="TCP 3방향 핸드셰이크">
+        <defs><marker id="hs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="150" y="22" text-anchor="middle" class="t" style="font-weight:700">내 브라우저</text>
+        <text x="550" y="22" text-anchor="middle" class="t" style="font-weight:700">웹 서버</text>
+        <line x1="150" y1="34" x2="150" y2="220" class="s-axis" stroke-width="3"/>
+        <line x1="550" y1="34" x2="550" y2="220" class="s-axis" stroke-width="3"/>
+        <path d="M150 50 L545 95" class="s-acc" marker-end="url(#hs)"/><text x="350" y="62" text-anchor="middle" class="t-acc">① SYN: 연결해도 될까요?</text>
+        <path d="M550 110 L155 155" class="s-acc" marker-end="url(#hs)"/><text x="350" y="122" text-anchor="middle" class="t-acc">② SYN-ACK: 좋아요, 들려요</text>
+        <path d="M150 170 L545 215" class="s-acc" marker-end="url(#hs)"/><text x="350" y="182" text-anchor="middle" class="t-acc">③ ACK: 저도 들려요. 시작합시다</text>
+      </svg>
+      <figcaption><b>그림 11-1.</b> TCP 연결에는 왕복 한 번 반의 시간이 든다. 서버가 멀수록 이 악수가 느려진다.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="https">
+    <h2>HTTPS: 엿듣지 못하게</h2>
+    <p>10장에서 패킷이 수십 대의 라우터와 공유기를 거친다고 했다. 그 중 하나라도 나쁜 마음을 먹으면(예: 카페의 가짜 Wi-Fi) 내용을 몽땅 엿볼 수 있다. 비밀번호와 카드 번호가 그대로 보인다. 그래서 요즘 웹은 거의 모두 <span class="term">HTTPS</span>를 쓴다. 마지막 S는 Secure(안전한)다. 내용을 <b>암호화</b>해서 브라우저와 서버만 읽을 수 있게 한다.</p>
+    <div class="sim" id="sim-spy">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>카페 Wi-Fi의 도청자 시점</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>연결 방식</span><div class="seg" id="spy-mode"><button data-value="http">http:// (암호화 없음)</button><button data-value="https" class="on">https:// (암호화)</button></div></div>
+        <label class="ctrl"><span>로그인 비밀번호</span><input type="text" id="spy-pw" value="sunflower2026!"></label>
+      </div>
+      <div class="spy">
+        <div><h5>내가 보낸 것</h5><pre id="spy-plain"></pre></div>
+        <div class="eve"><h5>👀 도청자가 본 것</h5><pre id="spy-eve"></pre></div>
+      </div>
+      <div class="sim-note">HTTPS에서도 도청자는 “어느 사이트(서버 IP)와 통신하는지”, “데이터 양”은 알 수 있다. 하지만 어떤 페이지를 보고 무엇을 입력했는지는 알 수 없다. 여기서 보이는 암호문은 설명을 위해 흉내 낸 것이다.</div>
+    </div>
+    <div class="callout analogy"><strong>열린 자물쇠 보내기</strong><p>처음 만난 두 사람이 비밀 열쇠를 어떻게 안전하게 나눠 가질까? 서버가 <b>열린 자물쇠</b>(공개 키)를 누구나 가져갈 수 있게 뿌린다. 브라우저는 새로 만든 비밀 열쇠를 상자에 넣고 그 자물쇠로 “찰칵” 잠가 보낸다. 잠근 자물쇠는 서버만 가진 <b>진짜 열쇠</b>(개인 키)로만 열린다. 도청자는 자물쇠도, 잠긴 상자도 보지만 열 수 없다. 이렇게 나눈 비밀 열쇠로 그 뒤의 대화를 빠르게 암호화한다. 이 원리를 <b>공개 키 암호</b>라 한다.</p></div>
+    <p>그런데 도청자가 “내가 그 서버야”라며 가짜 자물쇠를 보내면 어떡할까? 그래서 서버는 믿을 수 있는 기관(인증 기관)이 “이 자물쇠는 진짜 example.com의 것”이라고 서명한 <span class="term">인증서</span>를 함께 보낸다. 브라우저 주소창의 자물쇠 아이콘은 “암호화되어 있고, 인증서가 유효하다”는 뜻이다. 사이트가 착한 곳이라는 보증은 아니다. 피싱 사이트도 자물쇠를 달 수 있으니 주소를 꼭 확인하자.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="http">
+    <h2>HTTP: 요청하고 응답받기</h2>
+    <p>연결과 암호화가 준비되면 드디어 페이지를 요청한다. 웹의 대화 규칙이 <span class="term">HTTP</span><span class="en">(HyperText Transfer Protocol)</span>다. 놀랍게도 그 내용은 사람이 읽을 수 있는 글자다.</p>
+    <div class="codebox"><span class="c">// 브라우저 → 서버 (요청)</span>
+<span class="k">GET</span> /search?q=노트북 HTTP/1.1
+Host: shop.example.com
+User-Agent: Mozilla/5.0 (...)
+Accept-Language: ko-KR
+Cookie: session=8f3a...
+
+<span class="c">// 서버 → 브라우저 (응답)</span>
+HTTP/1.1 <span class="s">200 OK</span>
+Content-Type: text/html; charset=utf-8
+Content-Length: 18342
+Cache-Control: max-age=600
+
+&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;검색 결과&lt;/title&gt; ...</div>
+    <p>첫 줄의 <code>GET</code>은 “가져와 달라”는 뜻이다. 로그인 정보나 글을 보낼 때는 <code>POST</code>를 쓴다. 응답 첫 줄의 숫자는 <b>상태 코드</b>다.</p>
+    <div class="table-wrap"><table class="status">
+      <thead><tr><th>코드</th><th>뜻</th><th>언제 보나</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--ok)">200 OK</td><td>성공</td><td>거의 모든 정상 응답</td></tr>
+        <tr><td>301 / 302</td><td>다른 곳으로 이사 갔음</td><td>http를 https로, 옛 주소를 새 주소로 보낼 때</td></tr>
+        <tr><td>304</td><td>바뀐 것 없음, 캐시를 써라</td><td>다시 방문했을 때</td></tr>
+        <tr><td style="color:var(--warn)">403</td><td>권한 없음</td><td>로그인하지 않고 비공개 페이지에 접근할 때</td></tr>
+        <tr><td style="color:var(--warn)">404</td><td>그런 페이지 없음</td><td>주소를 잘못 쳤거나 삭제된 글</td></tr>
+        <tr><td style="color:var(--bad)">500 / 503</td><td>서버 내부 문제 / 과부하</td><td>서버 프로그램 오류, 접속 폭주</td></tr>
+      </tbody>
+    </table></div>
+    <p>HTML을 받은 브라우저는 그 안에 적힌 그림, 글꼴, 스타일(CSS), 프로그램(자바스크립트) 파일을 다시 요청한다. 요즘 뉴스 사이트 하나를 열면 이런 요청이 100개를 넘기도 한다. 그래서 하나의 연결로 여러 요청을 동시에 처리하는 HTTP/2, HTTP/3가 나왔다.</p>
+    <div class="callout tip"><strong>쿠키</strong><p>HTTP는 원래 매 요청이 독립적이라 서버는 방금 로그인한 사람이 누구인지 기억하지 못한다. 그래서 서버는 응답에 작은 이름표(쿠키)를 실어 보내고, 브라우저는 다음 요청마다 그 이름표를 함께 보낸다. 위 요청의 <code>Cookie: session=…</code> 줄이 그것이다. 로그인이 유지되는 원리이자, 광고 추적에 쓰이는 원리이기도 하다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="render">
+    <h2>글자에서 그림으로: 브라우저의 렌더링</h2>
+    <p>서버가 보낸 HTML은 그냥 글자다. 브라우저는 이것을 다음 순서로 화면에 그린다.</p>
+    <ol>
+      <li><b>파싱</b>: HTML 글자를 읽어 <code>&lt;body&gt;</code> 안에 <code>&lt;h1&gt;</code>과 <code>&lt;p&gt;</code>가 있는 식의 나무 구조, 즉 <span class="term">DOM 트리</span>를 만든다.</li>
+      <li><b>스타일 계산</b>: CSS 규칙을 읽어 각 요소의 색, 글꼴, 크기를 정한다.</li>
+      <li><b>레이아웃</b>: 화면 폭에 맞춰 각 상자의 위치와 크기를 계산한다. 글자가 몇 줄로 꺾일지도 여기서 정한다.</li>
+      <li><b>페인트·합성</b>: 픽셀을 칠하고 여러 층을 합친다. 이 단계의 많은 부분을 GPU가 맡는다(12장).</li>
+    </ol>
+    <p>왼쪽 HTML을 고쳐 보자. 오른쪽 화면과 아래 DOM 트리가 바로 바뀐다.</p>
+    <div class="sim" id="sim-html">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>미니 브라우저: HTML → DOM → 화면</h3></div>
+      <div class="htmlplay">
+        <div><h5>HTML (서버가 보낸 글자)</h5><textarea id="html-src" spellcheck="false"></textarea></div>
+        <div><h5>화면 (브라우저가 그린 결과)</h5><iframe id="html-view" sandbox="" title="미리보기"></iframe></div>
+      </div>
+      <div class="dom" id="dom"></div>
+      <div class="sim-note">해볼 것: <code>&lt;li&gt;</code>를 하나 더 추가하거나, <code>style</code>의 색을 바꿔 보자. 태그를 닫지 않아도 브라우저는 최대한 너그럽게 해석해 DOM을 만든다.</div>
+    </div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>URL은 <b>프로토콜 · 도메인 · (포트) · 경로 · 쿼리 · 조각</b>으로 이루어진다.</li>
+      <li>페이지 로딩은 <b>DNS → TCP 연결 → TLS(암호화) → HTTP 요청 → 응답 → 렌더링</b>의 순서로 진행된다. 왕복 지연이 전체 시간을 크게 좌우한다.</li>
+      <li><b>DNS</b>는 루트 → 최상위 도메인 → 해당 도메인 서버 순으로 물어 이름을 IP 주소로 바꾸고, 결과를 캐시한다.</li>
+      <li><b>HTTPS</b>는 공개 키 암호로 비밀 열쇠를 나눠 대화를 암호화하고, 인증서로 서버가 진짜인지 확인한다.</li>
+      <li><b>HTTP</b>는 사람이 읽을 수 있는 요청/응답 형식이며, 상태 코드로 결과를 알린다.</li>
+      <li>브라우저는 HTML을 <b>DOM 트리</b>로 만들고 스타일 계산, 레이아웃, 페인트를 거쳐 화면을 그린다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>DNS가 하는 일은?</p><div class="opts">
+        <button class="opt">웹 페이지를 암호화한다</button>
+        <button class="opt" data-correct>도메인 이름을 IP 주소로 바꿔 준다</button>
+        <button class="opt">패킷의 순서를 맞춘다</button>
+        <button class="opt">HTML을 화면에 그린다</button>
+      </div><div class="quiz-exp">사람이 기억하기 쉬운 이름(www.example.com)을 컴퓨터가 연결할 수 있는 IP 주소로 바꾸는 인터넷의 전화번호부다.</div></div>
+      <div class="quiz-q"><p>주소창의 자물쇠 아이콘이 보장하는 것은?</p><div class="opts">
+        <button class="opt">이 사이트는 사기가 아니다</button>
+        <button class="opt" data-correct>통신이 암호화되어 있고, 인증서상 그 도메인의 서버와 연결되었다</button>
+        <button class="opt">바이러스가 없다</button>
+        <button class="opt">페이지가 빨리 열린다</button>
+      </div><div class="quiz-exp">자물쇠는 암호화와 도메인 인증을 뜻한다. 피싱 사이트도 자기 도메인의 인증서를 받을 수 있으므로 주소를 확인해야 한다.</div></div>
+      <div class="quiz-q"><p>존재하지 않는 페이지를 요청했을 때 서버가 보내는 상태 코드는?</p><div class="opts">
+        <button class="opt">200</button><button class="opt">301</button><button class="opt" data-correct>404</button><button class="opt">500</button>
+      </div><div class="quiz-exp">404 Not Found. 500은 서버 내부 오류, 301은 주소 이동, 200은 성공이다.</div></div>
+      <div class="quiz-q"><p>미국에 있는 서버의 페이지가 대역폭을 올려도 처음 뜨는 시간이 잘 줄지 않는 이유는?</p><div class="opts">
+        <button class="opt">미국 서버는 느리게 만들어져서</button>
+        <button class="opt" data-correct>DNS, TCP, TLS, HTTP 단계마다 왕복이 필요하고 왕복 지연은 거리로 정해지기 때문에</button>
+        <button class="opt">한국어 페이지가 아니라서</button>
+        <button class="opt">HTML이 너무 커서</button>
+      </div><div class="quiz-exp">여러 번의 왕복 × 긴 지연이 합쳐진다. 그래서 서버 복사본을 사용자 가까이에 두는 CDN이 효과적이다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- URL ---------------- */
+  const UC = { scheme: ["#4f46e5", "프로토콜", "어떤 규칙으로 대화할지. https는 암호화된 HTTP."], host: ["#0e8fa8", "도메인(호스트)", "어느 서버인지. DNS로 IP 주소를 찾는다. 오른쪽부터 .com → example → shop 순으로 범위가 좁아진다."], port: ["#8a4fd6", "포트", "서버 안의 어느 프로그램인지. https는 443이 기본이라 보통 생략한다."], path: ["#d98a00", "경로", "서버 안에서 어떤 자원(페이지)인지. 폴더 경로처럼 생겼다."], query: ["#1f9d55", "쿼리", "서버에 넘기는 추가 정보. 이름=값 쌍을 &로 잇는다. 검색어, 페이지 번호 등."], frag: ["#d64545", "조각(프래그먼트)", "페이지 안의 위치. 서버로 보내지 않고 브라우저가 그 위치로 스크롤할 때만 쓴다."] };
+  function parseURL() {
+    const s = $("url-in").value.trim();
+    const m = s.match(/^([a-zA-Z][\w+.-]*):\/\/([^/:?#]*)(?::(\d+))?([^?#]*)(\?[^#]*)?(#.*)?$/);
+    if (!m) { $("url-parts").innerHTML = `<span style="color:var(--bad)">URL 형식이 아닙니다 (예: https://example.com/page)</span>`; $("url-legend").innerHTML = ""; return; }
+    const parts = [["scheme", m[1] + "://"], ["host", m[2]], ["port", m[3] ? ":" + m[3] : ""], ["path", m[4] || ""], ["query", m[5] || ""], ["frag", m[6] || ""]].filter(([, v]) => v);
+    $("url-parts").innerHTML = parts.map(([k, v]) => `<span style="background:color-mix(in srgb, ${UC[k][0]} 16%, transparent);color:var(--text)">${v.replace(/</g, "&lt;")}<i style="color:${UC[k][0]}">${UC[k][1]}</i></span>`).join("");
+    $("url-legend").innerHTML = parts.map(([k, v]) => `<div><b style="background:color-mix(in srgb, ${UC[k][0]} 16%, transparent);color:${UC[k][0]}">${UC[k][1]}</b><span>${UC[k][2]}</span></div>`).join("");
+  }
+  $("url-in").addEventListener("input", parseURL); parseURL();
+
+  /* ---------------- waterfall ---------------- */
+  const BW = [[5, "5 Mbps"], [50, "50 Mbps"], [300, "300 Mbps"], [1000, "1 Gbps"]];
+  const wrtt = CB.seg("wf-rtt", () => wcv.redraw()), wvisit = CB.seg("wf-visit", () => wcv.redraw());
+  const wbw = CB.range("wf-bw", (v) => BW[v][1], () => wcv.redraw());
+  function plan() {
+    const R = Number(wrtt()), first = wvisit() === "first", mbps = BW[wbw()][0];
+    const dl = (kb) => (kb * 8) / (mbps * 1000) * 1000; // ms
+    const rows = []; let t = 0, rts = 0;
+    const add = (name, dur, color, kind, start) => { const s = start == null ? t : start; rows.push({ name, s, e: s + dur, color, kind }); return s + dur; };
+    if (first) { t = add("DNS 조회", R * 1.2 + 8, "dns", "wait"); rts++; } else { t = add("DNS (캐시)", 1, "dns", "wait"); }
+    t = add("TCP 연결 (악수)", R, "tcp", "wait"); rts++;
+    t = add("TLS 암호화 협상", R, "tls", "wait"); rts++;
+    t = add("HTTP 요청 → 서버 처리", R + 30, "req", "wait"); rts++;
+    t = add("HTML 받기 (60 KB)", dl(60), "dl", "dl");
+    const parse = add("HTML 파싱·스타일", 25, "cpu", "cpu");
+    const cssEnd = add("CSS·JS 요청+받기", R + dl(first ? 300 : 0) + (first ? 10 : 0), "req", first ? "wait" : "wait", t + 5); rts++;
+    const fp = Math.max(parse, cssEnd);
+    const lay = add("레이아웃·첫 페인트", 20, "cpu", "cpu", fp);
+    const imgs = first ? add("이미지들 받기 (1.5 MB)", R + dl(1500), "dl", "dl", t + 5) : add("이미지 (캐시에서)", 4, "dl", "dl", t + 5);
+    const all = add("모든 이미지 그리기", 15, "cpu", "cpu", Math.max(imgs, lay));
+    if (first) rts++;
+    return { rows, fp: lay, end: all, rts };
+  }
+  const WC = { dns: "#0e8fa8", tcp: "#4f46e5", tls: "#8a4fd6", req: "#d98a00", dl: "#1f9d55", cpu: "#d64545" };
+  const wcv = CB.canvas("#cv-wf", (ctx, w, h) => {
+    const P = CB.palette();
+    const { rows, fp, end, rts } = plan();
+    const left = Math.min(170, w * 0.36), right = 16, top = 12, rh = (h - top - 28) / rows.length;
+    const total = Math.max(end * 1.08, 100);
+    const X = (t) => left + (t / total) * (w - left - right);
+    const step = total > 1500 ? 500 : total > 600 ? 200 : total > 250 ? 100 : 50;
+    for (let t = 0; t <= total; t += step) { ctx.strokeStyle = P.grid; ctx.beginPath(); ctx.moveTo(X(t), top); ctx.lineTo(X(t), h - 24); ctx.stroke(); CB.text(ctx, t + " ms", X(t), h - 10, { align: "center", size: 10.5, mono: true, color: P.faint }); }
+    rows.forEach((r, i) => {
+      const y = top + i * rh;
+      CB.text(ctx, r.name, left - 8, y + rh / 2, { align: "right", size: w < 520 ? 10.5 : 12, color: P.text });
+      CB.rrect(ctx, X(r.s), y + rh * 0.2, Math.max(3, X(r.e) - X(r.s)), rh * 0.6, 4); ctx.fillStyle = WC[r.color]; ctx.fill();
+    });
+    ctx.strokeStyle = P.accent; ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(fp), top); ctx.lineTo(X(fp), h - 24); ctx.stroke(); ctx.setLineDash([]);
+    CB.text(ctx, "첫 화면", X(fp) + 4, top + 4, { size: 11, bold: true, color: P.accent, base: "top" });
+    const waitT = rows.filter((r) => r.kind === "wait").reduce((a, r) => a + (r.e - r.s), 0), allT = rows.reduce((a, r) => a + (r.e - r.s), 0);
+    CB.stat("o-fp", Math.round(fp) + " ms"); CB.stat("o-rt", rts + "번"); CB.stat("o-wait", Math.round((waitT / allT) * 100) + "%");
+  }, { aspect: 0.48, minHeight: 300, maxHeight: 400 });
+
+  /* ---------------- DNS ---------------- */
+  const DN = { me: [0.08, 0.5, "내 컴퓨터"], res: [0.38, 0.5, "통신사 DNS\n(리졸버)"], root: [0.78, 0.13, "루트 서버\n( . )"], tld: [0.86, 0.5, ".com 서버"], auth: [0.78, 0.87, "example.com\n서버"] };
+  const DSTEPS = [
+    ["me", "me", "브라우저와 운영체제가 먼저 자기 캐시를 본다. 최근에 <code>www.example.com</code>을 찾은 적이 없어서 모른다."],
+    ["me", "res", "통신사(또는 공용) DNS 서버, 즉 <b>리졸버</b>에게 “www.example.com의 IP가 뭐죠?”라고 묻는다. 리졸버가 대신 끝까지 알아봐 준다."],
+    ["res", "root", "리졸버가 <b>루트 서버</b>에게 묻는다. 루트: “나는 모르지만 <code>.com</code>을 담당하는 서버 주소는 알려 줄게.”"],
+    ["res", "tld", "<b>.com 서버</b>에게 묻는다. “<code>example.com</code>을 담당하는 서버는 저쪽이야.”"],
+    ["res", "auth", "<b>example.com의 담당 서버</b>에게 묻는다. “<code>www.example.com</code>은 <b>93.184.215.14</b>야.” 드디어 답!"],
+    ["res", "me", "리졸버가 답을 전해 주고 <b>캐시</b>에 저장한다. 같은 통신사를 쓰는 다른 사람이 물으면 바로 답한다. 내 컴퓨터도 캐시한다. 이제 이 IP로 연결을 시작한다."],
+  ];
+  let di = -1, dcached = false, danim = 1;
+  const dcv = CB.canvas("#cv-dns", (ctx, w, h) => {
+    const P = CB.palette();
+    const bw = Math.min(140, w * 0.22), bh = 50;
+    const p = (k) => [DN[k][0] * w, 10 + DN[k][1] * (h - 20)];
+    const cur = di >= 0 ? DSTEPS[di] : null;
+    for (let i = 0; i < di; i++) { const [a, b] = DSTEPS[i]; if (a === b) continue; const [x1, y1] = p(a), [x2, y2] = p(b); ctx.strokeStyle = P.border; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]); }
+    Object.keys(DN).forEach((k) => { const [x, y] = p(k); const on = cur && (cur[0] === k || cur[1] === k); CB.box(ctx, x - bw / 2, y - bh / 2, bw, bh, { fill: on ? P.accent : P.surface, stroke: on ? P.accent : P.border, text: DN[k][2], color: on ? "#fff" : P.text, size: 12, r: 10 }); });
+    if (cur && cur[0] !== cur[1]) {
+      const [x1, y1] = p(cur[0]), [x2, y2] = p(cur[1]);
+      CB.arrow(ctx, x1, y1, CB.lerp(x1, x2, Math.min(1, danim)), CB.lerp(y1, y2, Math.min(1, danim)), { color: P.accent2, lw: 3, head: 10 });
+    }
+  }, { aspect: 0.42, minHeight: 240, maxHeight: 320 });
+  function dnsRender() {
+    $("dns-desc").innerHTML = dcached ? "캐시 덕분에 <b>내 컴퓨터</b>가 바로 답을 안다: <b>93.184.215.14</b>. 질문을 하나도 보내지 않았다. 그래서 두 번째 방문은 DNS 시간이 거의 0이다." : di < 0 ? "브라우저 주소창에 <code>www.example.com</code>을 입력했다. “다음 단계”를 눌러 IP 주소를 찾아가 보자." : `<b>${di + 1}/${DSTEPS.length}.</b> ` + DSTEPS[di][2];
+    $("dns-next").disabled = dcached || di >= DSTEPS.length - 1;
+    dcv.redraw();
+  }
+  $("dns-next").onclick = () => { di++; danim = 0; dnsRender(); };
+  $("dns-reset").onclick = () => { di = -1; dcached = false; dnsRender(); };
+  $("dns-cached").onclick = () => { di = -1; dcached = true; dnsRender(); };
+  CB.loop($("cv-dns"), (dt) => { if (danim < 1) { danim += dt * 1.5; dcv.redraw(); } });
+  dnsRender();
+
+  /* ---------------- spy ---------------- */
+  const spyMode = CB.seg("spy-mode", spy);
+  $("spy-pw").addEventListener("input", spy);
+  function spy() {
+    const pw = $("spy-pw").value;
+    const plain = `POST /login HTTP/1.1\nHost: bank.example.com\n\nid=minji&password=${pw}`;
+    $("spy-plain").textContent = plain;
+    if (spyMode() === "http") $("spy-eve").textContent = plain;
+    else {
+      // deterministic pseudo-ciphertext
+      let h = 2166136261; for (const c of plain) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; }
+      const r = CB.rng(h); const hex = Array.from({ length: Math.ceil(plain.length * 1.1) }, () => CB.hex(Math.floor(r() * 256))).join(" ");
+      $("spy-eve").textContent = "[TLS 암호화 데이터 → bank.example.com]\n" + hex;
+    }
+  }
+  spy();
+
+  /* ---------------- HTML ---------------- */
+  const SRC = `<html>
+<body style="font-family:sans-serif">
+  <h1 style="color:#4f46e5">오늘의 할 일</h1>
+  <p>컴퓨터 교과서 <b>11장</b> 읽기</p>
+  <ul>
+    <li>DNS 이해하기</li>
+    <li>HTTPS 원리 알기</li>
+  </ul>
+</body>
+</html>`;
+  const ta = $("html-src"); ta.value = SRC;
+  function tree(node, depth) {
+    const pad = "&nbsp;".repeat(depth * 3);
+    if (node.nodeType === 3) { const t = node.textContent.trim(); return t ? `${pad}<span class="tx">"${t.replace(/</g, "&lt;").slice(0, 40)}"</span><br>` : ""; }
+    if (node.nodeType !== 1) return "";
+    let s = `${pad}<span class="tg">${node.tagName.toLowerCase()}</span><br>`;
+    node.childNodes.forEach((c) => (s += tree(c, depth + 1)));
+    return s;
+  }
+  function renderHTML() {
+    $("html-view").srcdoc = ta.value;
+    const doc = new DOMParser().parseFromString(ta.value, "text/html");
+    $("dom").innerHTML = "<b>DOM 트리</b> (브라우저가 이해한 구조)<br>" + tree(doc.documentElement, 0);
+  }
+  ta.addEventListener("input", renderHTML); renderHTML();
+})();
+</script>
+</body>
+</html>

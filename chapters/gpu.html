@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>GPU: 수천 개의 작은 일꾼 · ComputerBook</title>
+<meta name="description" content="CPU와 GPU의 설계 철학 차이, 픽셀 칠하기 경주로 보는 대량 병렬 처리, 그래픽 파이프라인과 삼각형 래스터화, 픽셀 셰이더, 행렬 곱셈과 인공지능이 GPU를 쓰는 이유.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/gpu.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="GPU: 수천 개의 작은 일꾼 · ComputerBook">
+<meta property="og:description" content="CPU와 GPU의 설계 철학 차이, 픽셀 칠하기 경주로 보는 대량 병렬 처리, 그래픽 파이프라인과 삼각형 래스터화, 픽셀 셰이더, 행렬 곱셈과 인공지능이 GPU를 쓰는 이유.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/gpu.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"GPU: 수천 개의 작은 일꾼","name":"GPU: 수천 개의 작은 일꾼 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/gpu.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/gpu.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":12,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"CPU와 GPU의 설계 철학 차이, 픽셀 칠하기 경주로 보는 대량 병렬 처리, 그래픽 파이프라인과 삼각형 래스터화, 픽셀 셰이더, 행렬 곱셈과 인공지능이 GPU를 쓰는 이유."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"12 GPU: 수천 개의 작은 일꾼","item":"https://computerbook.euiyun.com/chapters/gpu.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .vs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 22px 0; }
+  .vs > div { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; background: var(--bg-elev); }
+  .vs h4 { margin: 0 0 6px; font-size: 17px; }
+  .vs ul { margin: 0 !important; font-size: 15px; }
+  .shader-code { font-family: var(--mono); font-size: 12.5px; white-space: pre; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 18px; overflow-x: auto; line-height: 1.6; }
+  .shader-code .k { color: var(--accent); font-weight: 600; }
+  .shader-code .c { color: var(--text-faint); }
+  .mm { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; padding: 16px 18px; }
+  .mat { display: grid; gap: 3px; }
+  .mat .cell { width: 40px; height: 34px; display: grid; place-items: center; font-weight: 700; font-size: 13px; padding: 0; }
+  .mm .op { font-size: 22px; color: var(--text-dim); }
+  .mm .lbl { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  @media (max-width: 480px) { .mat .cell { width: 30px; height: 28px; font-size: 11.5px; } }
+</style>
+</head>
+<body data-chapter="gpu">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 12</div>
+    <h1>GPU: 수천 개의 작은 일꾼</h1>
+    <p class="lead">4K 모니터에는 약 830만 개의 픽셀이 있다. 게임이 1초에 120장면을 그리려면 1초에 10억 개 가까운 픽셀의 색을 계산해야 한다. 아무리 빠른 요리사(CPU)라도 혼자서는 감당할 수 없다. 그래서 탄생한 것이 단순한 일을 수천 명이 동시에 처리하는 <strong>GPU</strong>다. 그리고 이 “대군의 힘”은 오늘날 인공지능 혁명의 엔진이 되었다.</p>
+    <ul class="objectives">
+      <li>CPU와 GPU가 서로 다른 일에 맞춰 설계된 이유를 설명한다.</li>
+      <li>픽셀 칠하기 경주로 대량 병렬 처리의 위력과 조건을 체험한다.</li>
+      <li>3D 그래픽이 삼각형 → 래스터화 → 픽셀 셰이딩을 거쳐 화면이 되는 과정을 안다.</li>
+      <li>셰이더가 “모든 픽셀에서 동시에 실행되는 작은 프로그램”임을 이해한다.</li>
+      <li>인공지능 계산의 핵심인 행렬 곱셈이 왜 GPU에 잘 맞는지 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="vs">
+    <h2>소수 정예 vs 대군</h2>
+    <p>5장에서 CPU가 빨라지기 위해 파이프라인, 분기 예측, 비순차 실행 같은 정교한 장치를 갖췄다고 했다. 이런 장치들은 칩 면적을 많이 차지한다. CPU 코어 하나는 <b>무엇이든 잘하는 만능 요리사</b>다. 복잡한 판단, 갈림길 많은 코드, 순서대로 해야 하는 일에 강하다.</p>
+    <p><span class="term">GPU</span><span class="en">(Graphics Processing Unit)</span>는 반대 방향을 택했다. 분기 예측 같은 똑똑한 장치를 거의 빼고, 남은 면적에 <b>단순한 계산 유닛을 수천 개</b> 채웠다. 일꾼 하나하나는 느리고 단순하지만, 같은 일을 수천 개 데이터에 동시에 하는 데는 압도적이다.</p>
+    <div class="vs">
+      <div><h4 style="color:var(--accent)">CPU: 셰프 몇 명</h4><ul><li>코어 8~24개, 각각 매우 빠르고 똑똑함</li><li>복잡한 판단·분기에 강함</li><li>지연 시간(한 일의 빠르기) 중심</li><li>운영체제, 브라우저, 게임 로직</li></ul></div>
+      <div><h4 style="color:var(--accent-2)">GPU: 보조 요리사 수천 명</h4><ul><li>연산 유닛 수천~1만 개 이상, 각각 단순함</li><li>같은 계산을 많은 데이터에 반복할 때 강함</li><li>처리량(전체 양) 중심</li><li>그래픽, 영상, 인공지능, 과학 계산</li></ul></div>
+    </div>
+    <div class="callout analogy"><strong>감자 만 개 깎기</strong><p>미슐랭 셰프 8명과 견습생 2,000명이 있다. 새로운 요리를 개발하거나 까다로운 소스를 만드는 일은 셰프들이 훨씬 잘한다. 하지만 감자 1만 개를 깎는 일이라면? 견습생 2,000명이 한 사람당 5개씩 깎으면 순식간이다. 단, 감자 깎기처럼 <b>서로 독립적인 같은 일</b>이어야 한다. “앞 사람이 다 깎아야 다음 사람이 시작할 수 있는 일”이라면 견습생이 아무리 많아도 소용없다(5장의 암달의 법칙).</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="race">
+    <h2>픽셀 칠하기 경주</h2>
+    <p>화면의 각 픽셀 색은 대부분 다른 픽셀과 상관없이 계산할 수 있다. 그래서 그래픽은 병렬 처리에 딱 맞는 일이다. 같은 그림을 CPU와 GPU가 칠하는 경주를 해 보자. 화면용으로 아주 느리게 재생하지만 비율은 실제와 비슷하게 맞췄다.</p>
+    <div class="sim" id="sim-race">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>CPU 8코어 vs GPU 2048개 유닛</h3></div>
+      <div class="sim-view"><canvas id="cv-race"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>그림 크기</span><div class="seg" id="race-size"><button data-value="48">48 × 32</button><button data-value="96" class="on">96 × 64</button><button data-value="160">160 × 108</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="race-go">경주 시작</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">CPU (코어당 1픽셀 = 1 단위)</span><span class="v" id="o-cpu">—</span></div>
+        <div class="stat"><span class="k">GPU (유닛당 1픽셀 = 4 단위)</span><span class="v" id="o-gpu">—</span></div>
+        <div class="stat"><span class="k">GPU가 빠른 배수</span><span class="v" id="o-x">—</span></div>
+      </div>
+      <div class="sim-note">GPU 유닛 하나는 CPU 코어보다 4배 느리다고 가정했다. 그래도 그림이 커질수록 GPU의 이득이 커진다. 반대로 그림이 아주 작으면 일꾼 대부분이 놀아서 이득이 줄어든다. 병렬 처리는 “할 일이 충분히 많을 때” 빛난다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="pipeline">
+    <h2>3D가 화면이 되기까지: 그래픽 파이프라인</h2>
+    <p>게임 속 캐릭터, 건물, 나무는 모두 수많은 작은 <b>삼각형</b>으로 이루어져 있다. 삼각형은 꼭짓점 세 개로 정해지는 가장 단순한 면이라 계산하기 쉽다. 요즘 게임의 한 장면에는 삼각형이 수백만 개 들어간다. GPU는 이 삼각형들을 다음 단계로 처리한다.</p>
+    <ol>
+      <li><b>꼭짓점 처리</b>: 각 꼭짓점의 3D 좌표를 카메라 시점에 맞춰 회전·이동시키고 2D 화면 좌표로 바꾼다(원근 투영).</li>
+      <li><b>래스터화</b>: 화면에 투영된 삼각형이 <b>어느 픽셀들을 덮는지</b> 알아낸다.</li>
+      <li><b>픽셀 셰이딩</b>: 덮인 픽셀마다 색을 계산한다. 텍스처(무늬 그림)를 입히고 조명과 그림자를 계산한다.</li>
+      <li><b>합치기</b>: 가까운 물체가 먼 물체를 가리도록 깊이를 비교하고, 최종 색을 화면 메모리에 쓴다.</li>
+    </ol>
+    <p>래스터화를 직접 해 보자. 삼각형의 꼭짓점 세 개를 끌어 옮기면, GPU가 하듯이 각 픽셀의 중심이 삼각형 안에 있는지 검사해 칠한다. 꼭짓점마다 다른 색을 주면 안쪽 픽셀은 거리에 따라 색을 섞는다.</p>
+    <div class="sim" id="sim-raster">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>래스터화: 꼭짓점을 끌어 보세요</h3></div>
+      <div class="sim-view"><canvas id="cv-raster" style="touch-action:none;cursor:grab"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>화면 해상도 (픽셀 크기) <output id="rres-out"></output></span><input type="range" id="rres" min="0" max="4" value="1"></label>
+        <label class="check"><input type="checkbox" id="rshade" checked> 꼭짓점 색 섞기 (보간)</label>
+        <label class="check"><input type="checkbox" id="rtri" checked> 원래 삼각형 윤곽 보기</label>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">검사한 픽셀</span><span class="v" id="o-rtest">—</span></div>
+        <div class="stat"><span class="k">칠한 픽셀</span><span class="v" id="o-rfill">—</span></div>
+      </div>
+      <div class="sim-note">해상도가 낮으면 가장자리가 계단처럼 보인다(앨리어싱). 게임 설정의 “안티앨리어싱”은 가장자리 픽셀을 여러 번 검사해 부드럽게 섞는 기능이다. 각 픽셀의 검사는 서로 독립적이라 수천 개 유닛이 동시에 처리한다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="shader">
+    <h2>셰이더: 모든 픽셀에서 동시에 도는 작은 프로그램</h2>
+    <p>픽셀 셰이딩 단계에서 각 픽셀의 색을 정하는 짧은 프로그램을 <span class="term">셰이더</span><span class="en">(shader)</span>라 한다. 셰이더는 “나는 화면의 (x, y) 픽셀이다. 내 색은 무엇인가?”라는 질문에만 답한다. GPU는 같은 셰이더 코드를 화면의 수백만 픽셀에서 <b>동시에</b> 실행한다. 아래 셰이더를 바꿔 보자.</p>
+    <div class="sim" id="sim-shader">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>픽셀 셰이더 놀이터</h3></div>
+      <div class="sim-view"><canvas id="cv-shader"></canvas></div>
+      <div class="shader-code" id="shader-code"></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>셰이더</span><div class="seg" id="sh"><button data-value="grad" class="on">그라데이션</button><button data-value="ripple">물결</button><button data-value="light">조명 받은 공</button><button data-value="check">체크무늬</button></div></div>
+        <label class="check"><input type="checkbox" id="sh-anim" checked> 시간에 따라 움직이기 (매 프레임 다시 계산)</label>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">이 캔버스의 픽셀 수</span><span class="v" id="o-px">—</span></div>
+        <div class="stat"><span class="k">초당 셰이더 실행 횟수</span><span class="v" id="o-sps">—</span></div>
+      </div>
+      <div class="sim-note">이 화면은 자바스크립트로 CPU에서 계산하기 때문에 해상도를 낮췄다. 실제 GPU는 4K 화면(830만 픽셀)에서 훨씬 복잡한 셰이더를 1초에 100번 넘게 실행한다.</div>
+    </div>
+    <div class="callout deep"><strong>워프: 32명이 같은 줄을 동시에</strong><p>GPU는 일꾼(스레드)을 보통 32개씩 묶어(워프, warp) <b>같은 명령을 동시에</b> 실행시킨다. 32명이 같은 악보를 함께 연주하는 합창단과 같다. 그런데 셰이더 안에 “만약 ~라면” 분기가 있어 일부는 이쪽, 일부는 저쪽으로 가야 하면, 한쪽 무리가 실행하는 동안 다른 무리는 기다려야 한다. 그래서 GPU 프로그램은 분기를 최소화하도록 짠다. CPU와 GPU에 맞는 프로그래밍 방식이 다른 이유다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="memory">
+    <h2>GPU의 메모리와 데이터 운반</h2>
+    <p>수천 개의 일꾼이 쉬지 않으려면 재료가 엄청난 속도로 공급되어야 한다. 그래서 그래픽 카드에는 전용 메모리(VRAM)가 붙어 있고, 그 대역폭은 일반 메모리의 5~20배(초당 수백 GB~수 TB)에 이른다. 6장의 메모리 계층이 GPU에도 그대로 있다.</p>
+    <p>단점도 있다. CPU의 메모리에 있는 데이터를 GPU로 보내려면 메인보드의 통로(PCIe)를 지나야 하는데, 이 통로는 GPU 내부보다 훨씬 느리다. 그래서 게임은 시작할 때 3D 모델과 텍스처를 미리 GPU 메모리에 올려 두고(로딩 화면!), 장면마다 “무엇을 어디에 그려라”는 짧은 명령만 보낸다. 데이터를 자주 오가게 하면 GPU가 아무리 빨라도 운반 시간에 발목이 잡힌다. 스마트폰과 최신 노트북은 CPU와 GPU가 한 칩 안에서 같은 메모리를 공유해 이 운반 비용을 줄인다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="ai">
+    <h2>인공지능은 왜 GPU를 쓸까: 행렬 곱셈</h2>
+    <p>챗봇이나 이미지 생성 같은 인공지능 모델의 계산은 대부분 <span class="term">행렬 곱셈</span>이다. 숫자 표(행렬) 두 개를 곱하는데, 결과 표의 각 칸은 “한쪽 표의 가로줄과 다른 쪽 표의 세로줄을 짝지어 곱한 뒤 모두 더한 값”이다. 핵심은 결과 표의 <b>각 칸을 서로 독립적으로 계산할 수 있다</b>는 점이다. 픽셀처럼!</p>
+    <div class="sim" id="sim-mm">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>행렬 곱셈: 한 칸씩 vs 모든 칸 동시에</h3></div>
+      <div class="mm" id="mm"></div>
+      <div class="stepdesc" id="mm-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:56px"></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>계산 방식</span><div class="seg" id="mm-mode"><button data-value="seq" class="on">한 칸씩 (CPU 코어 1개)</button><button data-value="par">모든 칸 동시에 (GPU)</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="mm-step">한 단계</button><button class="btn" id="mm-run">끝까지 재생</button><button class="btn" id="mm-reset">처음으로</button></div></div>
+      </div>
+      <div class="sim-note">4×4 행렬 곱은 결과 16칸 × 칸마다 곱셈 4번 = 곱셈 64번이다. 한 칸씩 하면 16단계, 16칸을 동시에 하면 1단계에 끝난다(곱셈 4번은 각 일꾼이 차례로 한다고 치자). 실제 언어 모델은 수천 × 수천 크기의 행렬을 수백 번 곱한다. 단어 하나를 만들 때마다 수십억~수조 번의 곱셈이 필요하다.</div>
+    </div>
+    <p>그래서 2012년 무렵 연구자들이 GPU로 신경망을 학습시키기 시작하자 인공지능은 폭발적으로 발전했다. 요즘 AI용 GPU에는 행렬 곱셈만 전문으로 하는 회로(텐서 코어)까지 들어가 있다. 처음엔 게임 화면을 그리려고 만든 칩이 세상을 바꾸는 계산기가 된 셈이다.</p>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li><b>CPU</b>는 똑똑한 코어 몇 개로 복잡한 일을 빨리, <b>GPU</b>는 단순한 유닛 수천 개로 같은 일을 대량으로 처리한다.</li>
+      <li>GPU는 <b>서로 독립적인 같은 계산이 아주 많을 때</b> 압도적이다. 일이 적거나 순서가 얽혀 있으면 이득이 줄어든다.</li>
+      <li>3D 그래픽은 <b>꼭짓점 처리 → 래스터화 → 픽셀 셰이딩 → 합치기</b>의 파이프라인으로 그린다.</li>
+      <li><b>셰이더</b>는 각 픽셀(또는 꼭짓점)에서 동시에 실행되는 작은 프로그램이다.</li>
+      <li>GPU는 전용 고대역폭 메모리를 쓰며, CPU와의 데이터 운반은 비싸므로 줄여야 한다.</li>
+      <li>인공지능의 핵심 계산인 <b>행렬 곱셈</b>은 각 칸이 독립적이어서 GPU에 딱 맞는다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>GPU가 CPU보다 훨씬 빠르게 처리할 가능성이 큰 일은?</p><div class="opts">
+        <button class="opt">운영체제의 파일 관리</button>
+        <button class="opt" data-correct>사진 1억 장의 밝기를 각각 10% 올리기</button>
+        <button class="opt">한 줄씩 앞의 결과에 의존하는 계산</button>
+        <button class="opt">키보드 입력 처리</button>
+      </div><div class="quiz-exp">서로 독립적인 같은 계산이 대량으로 있어야 수천 개 유닛이 모두 일할 수 있다.</div></div>
+      <div class="quiz-q"><p>래스터화 단계에서 하는 일은?</p><div class="opts">
+        <button class="opt">3D 좌표를 회전시킨다</button>
+        <button class="opt" data-correct>삼각형이 화면의 어느 픽셀들을 덮는지 알아낸다</button>
+        <button class="opt">텍스처 파일을 내려받는다</button>
+        <button class="opt">소리를 만든다</button>
+      </div><div class="quiz-exp">투영된 삼각형과 픽셀 격자를 비교해 덮이는 픽셀을 찾는다. 그다음 셰이더가 그 픽셀들의 색을 정한다.</div></div>
+      <div class="quiz-q"><p>셰이더에 대한 설명으로 옳은 것은?</p><div class="opts">
+        <button class="opt">CPU에서 한 번만 실행되는 프로그램</button>
+        <button class="opt" data-correct>같은 코드가 수많은 픽셀(또는 꼭짓점)에서 동시에 실행되는 작은 프로그램</button>
+        <button class="opt">그림자를 없애는 장치</button>
+        <button class="opt">화면 밝기 조절 기능</button>
+      </div><div class="quiz-exp">셰이더는 “이 픽셀의 색은?”에 답하는 짧은 함수이며, GPU가 모든 픽셀에서 병렬로 실행한다.</div></div>
+      <div class="quiz-q"><p>인공지능 계산에 GPU가 널리 쓰이는 가장 큰 이유는?</p><div class="opts">
+        <button class="opt">GPU에 인공지능이 들어 있어서</button>
+        <button class="opt">GPU가 그림을 잘 그려서</button>
+        <button class="opt" data-correct>핵심 계산인 행렬 곱셈이 서로 독립적인 곱셈·덧셈의 대량 반복이라 병렬 처리에 딱 맞아서</button>
+        <button class="opt">GPU의 클럭이 CPU보다 높아서</button>
+      </div><div class="quiz-exp">결과 행렬의 각 칸을 동시에 계산할 수 있다. 오히려 GPU의 클럭은 CPU보다 낮은 편이다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- race ---------------- */
+  const raceSize = CB.seg("race-size", () => { rt = -1; rcv.redraw(); });
+  let rt = -1;
+  const CPU_N = 8, GPU_N = 2048, GPU_COST = 4;
+  const scene = (u, v) => { // simple colorful landscape
+    const sky = [90 + 120 * v, 150 + 80 * v, 255]; let c = sky;
+    if ((u - 0.75) ** 2 + (v - 0.25) ** 2 < 0.012) c = [255, 210, 70];
+    if (v > 0.62 + 0.1 * Math.sin(u * 7)) c = [60, 150 - 60 * (v - 0.6), 90];
+    return c;
+  };
+  function raceTimes() { const W = Number(raceSize()), H = Math.round(W * (2 / 3)); const n = W * H; return { W, H, n, cpu: Math.ceil(n / CPU_N), gpu: Math.ceil(n / GPU_N) * GPU_COST }; }
+  const rcv = CB.canvas("#cv-race", (ctx, w, h) => {
+    const P = CB.palette();
+    const { W, H, n, cpu, gpu } = raceTimes();
+    const pw = (w - 60) / 2, ph = h - 50;
+    const cell = Math.min(pw / W, ph / H);
+    [["CPU (8코어)", 20, cpu, CPU_N, 1], ["GPU (2048 유닛)", 40 + pw, gpu, GPU_N, GPU_COST]].forEach(([name, ox, T, lanes, cost]) => {
+      const oy = 30;
+      CB.text(ctx, name, ox, 14, { size: 13, bold: true, color: P.text });
+      ctx.fillStyle = P.surface; ctx.fillRect(ox, oy, W * cell, H * cell);
+      const t = rt < 0 ? 0 : rt;
+      const done = Math.min(n, Math.floor(t / cost) * lanes);
+      for (let i = 0; i < done; i++) {
+        const x = i % W, y = Math.floor(i / W);
+        const [r, g, b] = scene((x + 0.5) / W, (y + 0.5) / H);
+        ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`; ctx.fillRect(ox + x * cell, oy + y * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+      // active pixels
+      if (rt >= 0 && done < n) { ctx.fillStyle = P.warn; for (let k = done; k < Math.min(n, done + lanes); k++) { const x = k % W, y = Math.floor(k / W); ctx.fillRect(ox + x * cell, oy + y * cell, Math.ceil(cell), Math.ceil(cell)); } }
+      CB.text(ctx, rt < 0 ? `예상 ${T} 단위` : done >= n ? `완료! ${T} 단위` : `${Math.min(t, T).toFixed(0)} 단위…`, ox, oy + H * cell + 14, { size: 12, mono: true, color: done >= n && rt >= 0 ? P.ok : P.dim });
+    });
+  }, { aspect: 0.42, minHeight: 220, maxHeight: 380 });
+  function upd() { const { cpu, gpu } = raceTimes(); CB.stat("o-cpu", cpu + " 단위"); CB.stat("o-gpu", gpu + " 단위"); CB.stat("o-x", (cpu / gpu).toFixed(1) + "배"); }
+  $("race-go").onclick = () => { rt = 0; upd(); };
+  CB.loop($("cv-race"), (dt) => { if (rt >= 0) { const { cpu } = raceTimes(); if (rt < cpu + 1) { rt += dt * Math.max(60, cpu / 6); rcv.redraw(); } } });
+  upd();
+
+  /* ---------------- raster ---------------- */
+  const RES = [8, 14, 22, 34, 60];
+  let V = [[0.18, 0.15], [0.85, 0.35], [0.4, 0.9]];
+  const VC = [[230, 60, 60], [50, 170, 80], [60, 100, 230]];
+  const rres = CB.range("rres", (v) => RES[v] + "칸", () => rscv.redraw());
+  const rshade = $("rshade"), rtri = $("rtri"); rshade.onchange = rtri.onchange = () => rscv.redraw();
+  const edge = (a, b, p) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+  let geo = null;
+  const rscv = CB.canvas("#cv-raster", (ctx, w, h) => {
+    const P = CB.palette();
+    const N = RES[rres()], M = Math.round(N * (h / w));
+    const cs = w / N, ox = 0, oy = (h - M * cs) / 2;
+    geo = { w, h, cs, ox, oy, N, M };
+    const S = V.map(([x, y]) => [x * w, y * h]);
+    const area = edge(S[0], S[1], S[2]);
+    let fill = 0;
+    for (let j = 0; j < M; j++) for (let i = 0; i < N; i++) {
+      const px = ox + (i + 0.5) * cs, py = oy + (j + 0.5) * cs;
+      const w0 = edge(S[1], S[2], [px, py]) / area, w1 = edge(S[2], S[0], [px, py]) / area, w2 = edge(S[0], S[1], [px, py]) / area;
+      const inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+      if (inside) {
+        fill++;
+        const c = rshade.checked ? [0, 1, 2].map((k) => w0 * VC[0][k] + w1 * VC[1][k] + w2 * VC[2][k]) : [79, 70, 229];
+        ctx.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; ctx.fillRect(ox + i * cs, oy + j * cs, cs, cs);
+      }
+      if (cs > 9) { ctx.fillStyle = inside ? "rgba(255,255,255,.7)" : P.faint; ctx.beginPath(); ctx.arc(px, py, Math.min(2.2, cs * 0.08), 0, 7); ctx.fill(); }
+    }
+    if (cs > 6) { ctx.strokeStyle = P.grid; ctx.lineWidth = 1; for (let i = 0; i <= N; i++) { ctx.beginPath(); ctx.moveTo(ox + i * cs, oy); ctx.lineTo(ox + i * cs, oy + M * cs); ctx.stroke(); } for (let j = 0; j <= M; j++) { ctx.beginPath(); ctx.moveTo(ox, oy + j * cs); ctx.lineTo(ox + N * cs, oy + j * cs); ctx.stroke(); } }
+    if (rtri.checked) { ctx.strokeStyle = P.text; ctx.lineWidth = 1.5; ctx.beginPath(); S.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.stroke(); }
+    S.forEach(([x, y], k) => { ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fillStyle = `rgb(${VC[k].join(",")})`; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke(); });
+    CB.stat("o-rtest", (N * M).toLocaleString()); CB.stat("o-rfill", fill.toLocaleString());
+  }, { aspect: 0.55, minHeight: 260, maxHeight: 420 });
+  (function drag() {
+    const cv = $("cv-raster"); let di = -1;
+    const pt = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+    cv.addEventListener("pointerdown", (e) => { const [x, y] = pt(e); const r = cv.getBoundingClientRect(); let best = 1e9; V.forEach(([vx, vy], k) => { const d = Math.hypot((vx - x) * r.width, (vy - y) * r.height); if (d < 30 && d < best) { best = d; di = k; } }); if (di >= 0) cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener("pointermove", (e) => { if (di < 0) return; const [x, y] = pt(e); V[di] = [CB.clamp(x, 0.02, 0.98), CB.clamp(y, 0.02, 0.98)]; rscv.redraw(); });
+    const up = () => (di = -1); cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  })();
+
+  /* ---------------- shader ---------------- */
+  const CODE = {
+    grad: `<span class="c">// 각 픽셀이 자기 위치(x, y: 0~1)로 색을 정한다</span>
+<span class="k">color</span> shade(x, y, t) {
+  r = x;  g = y;  b = 0.5 + 0.5 * sin(t);
+  <span class="k">return</span> (r, g, b);
+}`,
+    ripple: `<span class="c">// 가운데에서 퍼지는 물결: 중심까지 거리로 밝기를 정한다</span>
+<span class="k">color</span> shade(x, y, t) {
+  d = distance((x, y), (0.5, 0.5));
+  v = 0.5 + 0.5 * sin(d * 40 - t * 4);
+  <span class="k">return</span> (0.2 * v, 0.5 * v, v);
+}`,
+    light: `<span class="c">// 공의 표면 방향과 빛의 방향이 이루는 각도로 밝기 계산</span>
+<span class="k">color</span> shade(x, y, t) {
+  d = distance((x, y), (0.5, 0.5));
+  <span class="k">if</span> (d > 0.35) <span class="k">return</span> 배경색;
+  n = 표면방향(x, y);   L = 빛방향(t);
+  밝기 = max(0, dot(n, L));
+  <span class="k">return</span> 주황 * 밝기 + 하이라이트;
+}`,
+    check: `<span class="c">// 칸 번호의 합이 짝수면 밝게, 홀수면 어둡게</span>
+<span class="k">color</span> shade(x, y, t) {
+  i = floor(x * 8 + t);  j = floor(y * 8);
+  <span class="k">return</span> (i + j) % 2 == 0 ? 흰색 : 남색;
+}`,
+  };
+  let shcv = null;
+  const offCv = document.createElement("canvas");
+  const sh = CB.seg("sh", () => { $("shader-code").innerHTML = CODE[sh()]; if (shcv) shcv.redraw(); });
+  $("shader-code").innerHTML = CODE.grad;
+  const anim = $("sh-anim");
+  let st = 0, img = null, fps = 60;
+  shcv = CB.canvas("#cv-shader", (ctx, w, h) => {
+    const sw = Math.max(80, Math.floor(w / 4)), shh = Math.max(40, Math.floor(h / 4));
+    if (!img || img.width !== sw || img.height !== shh) img = ctx.createImageData(sw, shh);
+    const d = img.data, k = sh(), t = st, asp = sw / shh;
+    const L = [Math.cos(t), -0.6, Math.sin(t) * 0.8 + 0.6];
+    const Ln = Math.hypot(...L);
+    for (let j = 0; j < shh; j++) for (let i = 0; i < sw; i++) {
+      const x = i / sw, y = j / shh; let r = 0, g = 0, b = 0;
+      if (k === "grad") { r = x; g = y; b = 0.5 + 0.5 * Math.sin(t); }
+      else if (k === "ripple") { const dd = Math.hypot((x - 0.5) * asp, y - 0.5); const v = 0.5 + 0.5 * Math.sin(dd * 40 - t * 4); r = 0.2 * v; g = 0.5 * v; b = v; }
+      else if (k === "light") { const dx = (x - 0.5) * asp, dy = y - 0.5, dd = Math.hypot(dx, dy); if (dd > 0.4) { r = 0.08; g = 0.1; b = 0.16; } else { const nz = Math.sqrt(Math.max(0, 0.16 - dd * dd)) / 0.4; const n = [dx / 0.4, dy / 0.4, nz]; const dot = Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / Ln); const spec = Math.pow(dot, 30); r = 0.95 * dot + spec + 0.05; g = 0.55 * dot + spec + 0.03; b = 0.15 * dot + spec + 0.03; } }
+      else { const ii = Math.floor(x * 8 * asp / 1.5 + t), jj = Math.floor(y * 8 / 1.5 * 1.5); const on = (ii + jj) % 2 === 0; r = on ? 0.95 : 0.15; g = on ? 0.95 : 0.15; b = on ? 0.98 : 0.4; }
+      const o = (j * sw + i) * 4; d[o] = CB.clamp(r, 0, 1) * 255; d[o + 1] = CB.clamp(g, 0, 1) * 255; d[o + 2] = CB.clamp(b, 0, 1) * 255; d[o + 3] = 255;
+    }
+    const off = offCv;
+    off.width = sw; off.height = shh; off.getContext("2d").putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(off, 0, 0, w, h);
+    CB.stat("o-px", `${sw} × ${shh} = ${(sw * shh).toLocaleString()}`);
+    CB.stat("o-sps", "약 " + CB.kn(sw * shh * (anim.checked ? fps : 0)) + "번");
+  }, { aspect: 0.45, minHeight: 200, maxHeight: 320 });
+  CB.loop($("cv-shader"), (dt) => { if (!anim.checked) return; fps = CB.lerp(fps, 1 / Math.max(dt, 0.001), 0.05); st += dt; shcv.redraw(); });
+
+  /* ---------------- matmul ---------------- */
+  const A = [[1, 2, 0, 1], [0, 1, 3, 1], [2, 0, 1, 0], [1, 1, 1, 1]];
+  const B = [[2, 0, 1, 1], [1, 3, 0, 0], [0, 1, 2, 1], [1, 0, 0, 2]];
+  const Cm = A.map((row, i) => B[0].map((_, j) => row.reduce((s, a, k) => s + a * B[k][j], 0)));
+  const mmMode = CB.seg("mm-mode", () => mmReset());
+  let mstep = 0, mtimer = null;
+  function mmReset() { mstep = 0; if (mtimer) { clearInterval(mtimer); mtimer = null; } mmRender(); }
+  function mat(M, cls, title) { return `<div><div class="lbl">${title}</div><div class="mat" style="grid-template-columns:repeat(4,auto)">${M.map((row, i) => row.map((v, j) => `<div class="cell ${cls(i, j)}">${v}</div>`).join("")).join("")}</div></div>`; }
+  function mmRender() {
+    const par = mmMode() === "par", total = par ? 1 : 16;
+    const doneCells = par ? (mstep >= 1 ? 16 : 0) : mstep;
+    const cur = par ? (mstep === 1 ? -2 : -1) : mstep - 1; // index of last computed
+    const ci = cur >= 0 ? Math.floor(cur / 4) : -1, cj = cur >= 0 ? cur % 4 : -1;
+    const html = mat(A, (i) => (par && mstep >= 1 ? "hot" : i === ci ? "hot" : ""), "A") + `<div class="op">×</div>` + mat(B, (i, j) => (par && mstep >= 1 ? "hot2" : j === cj ? "hot2" : ""), "B") + `<div class="op">=</div>` +
+      `<div><div class="lbl">결과 C</div><div class="mat" style="grid-template-columns:repeat(4,auto)">${Cm.map((row, i) => row.map((v, j) => { const idx = i * 4 + j; const done = idx < doneCells; return `<div class="cell ${done ? (idx === cur || (par && mstep >= 1) ? "ok" : "") : ""}">${done ? v : "?"}</div>`; }).join("")).join("")}</div></div>`;
+    $("mm").innerHTML = html;
+    let msg;
+    if (mstep === 0) msg = par ? "GPU 방식: 일꾼 16명이 결과 16칸을 하나씩 맡아 <b>동시에</b> 계산한다. “한 단계”를 눌러 보자." : "CPU 코어 1개 방식: 결과의 칸을 왼쪽 위부터 하나씩 계산한다. “한 단계”를 눌러 보자.";
+    else if (!par && cur >= 0) { const terms = A[ci].map((a, k) => `${a}×${B[k][cj]}`).join(" + "); msg = `<b>${mstep}/16단계</b>: C[${ci + 1}행, ${cj + 1}열] = A의 ${ci + 1}행 · B의 ${cj + 1}열 = ${terms} = <b>${Cm[ci][cj]}</b>`; }
+    else msg = `<b>1단계 만에 완료!</b> 16명이 각자 맡은 칸에서 곱셈 4번과 덧셈 3번을 동시에 했다. 총 곱셈 수(64번)는 같지만 걸린 단계는 16분의 1이다.`;
+    if (!par && mstep >= 16) msg += " <b>완료.</b> 16단계가 걸렸다.";
+    $("mm-desc").innerHTML = msg;
+    $("mm-step").disabled = mstep >= total;
+  }
+  $("mm-step").onclick = () => { const total = mmMode() === "par" ? 1 : 16; if (mstep < total) { mstep++; mmRender(); } };
+  $("mm-run").onclick = () => { if (mtimer) return; if (mstep >= (mmMode() === "par" ? 1 : 16)) mstep = 0; mtimer = setInterval(() => { const total = mmMode() === "par" ? 1 : 16; if (mstep >= total) { clearInterval(mtimer); mtimer = null; return; } mstep++; mmRender(); }, 380); };
+  $("mm-reset").onclick = mmReset;
+  mmRender();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>네트워크의 기초 · ComputerBook</title>
+<meta name="description" content="데이터를 패킷으로 나눠 보내는 이유, 편지 봉투처럼 겹겹이 싸는 계층 구조, IP 주소와 포트, 라우터가 길을 찾는 라우팅, TCP가 잃어버린 패킷을 다시 보내는 원리, 대역폭과 지연의 차이.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/network.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="네트워크의 기초 · ComputerBook">
+<meta property="og:description" content="데이터를 패킷으로 나눠 보내는 이유, 편지 봉투처럼 겹겹이 싸는 계층 구조, IP 주소와 포트, 라우터가 길을 찾는 라우팅, TCP가 잃어버린 패킷을 다시 보내는 원리, 대역폭과 지연의 차이.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/network.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"네트워크의 기초","name":"네트워크의 기초 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/network.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/network.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":10,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"데이터를 패킷으로 나눠 보내는 이유, 편지 봉투처럼 겹겹이 싸는 계층 구조, IP 주소와 포트, 라우터가 길을 찾는 라우팅, TCP가 잃어버린 패킷을 다시 보내는 원리, 대역폭과 지연의 차이."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"10 네트워크의 기초","item":"https://computerbook.euiyun.com/chapters/network.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .env { padding: 16px 18px; display: grid; gap: 6px; justify-items: center; }
+  .envbox { border: 2px solid var(--border); border-radius: 10px; padding: 8px 10px 10px; width: 100%; max-width: 640px; transition: all .25s; }
+  .envbox > .tag { font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .envbox > .tag span { font-family: var(--mono); font-weight: 400; color: var(--text-dim); font-size: 11.5px; }
+  .envbox.l4 { border-color: #d98a00; background: color-mix(in srgb, #d98a00 7%, transparent); }
+  .envbox.l3 { border-color: #0e8fa8; background: color-mix(in srgb, #0e8fa8 7%, transparent); }
+  .envbox.l2 { border-color: #1f9d55; background: color-mix(in srgb, #1f9d55 7%, transparent); }
+  .envbox.l1 { border-color: var(--accent); background: var(--accent-soft); }
+  .envbox.l1 .tag { color: var(--accent); } .envbox.l2 .tag { color: #1f9d55; } .envbox.l3 .tag { color: #0e8fa8; } .envbox.l4 .tag { color: #d98a00; }
+  .payload { font-family: var(--mono); font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--bg-elev); border: 1px solid var(--border); text-align: center; }
+  .layer-tbl td:first-child { white-space: nowrap; font-weight: 700; }
+  .pk-msg { font-family: var(--mono); font-size: 14px; padding: 10px 18px; border-top: 1px solid var(--border); min-height: 44px; word-break: break-all; }
+</style>
+</head>
+<body data-chapter="network">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 10</div>
+    <h1>네트워크의 기초</h1>
+    <p class="lead">메시지를 보내면 1초도 안 되어 지구 반대편 친구의 휴대폰에 도착한다. 그 사이에 데이터는 공유기, 통신사 건물, 바닷속 케이블, 수십 대의 라우터를 거친다. 누가 길을 알려 주는 걸까? 중간에 데이터가 사라지면? 이 장에서는 인터넷이라는 거대한 우편 시스템의 규칙을 살펴본다.</p>
+    <ul class="objectives">
+      <li>데이터를 작은 패킷으로 나눠 보내는 이유를 설명한다.</li>
+      <li>응용·전송·네트워크·링크 계층이 편지 봉투처럼 데이터를 겹겹이 싸는 과정을 따라간다.</li>
+      <li>IP 주소, 포트, MAC 주소의 역할을 구분한다.</li>
+      <li>라우터들이 패킷을 한 단계씩 전달하며 고장 난 길을 돌아가는 라우팅을 체험한다.</li>
+      <li>TCP가 확인 응답과 재전송으로 잃어버린 패킷을 되찾는 원리를 이해한다.</li>
+      <li>대역폭과 지연(레이턴시)의 차이, 빛의 속도가 만드는 한계를 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="packet">
+    <h2>통째로 보내지 않고 쪼개서 보낸다</h2>
+    <p>옛날 유선 전화는 통화하는 동안 두 집 사이에 전용 회선을 하나 잡아 두었다. 말을 안 하는 동안에도 회선은 묶여 있다. 인터넷은 다르게 동작한다. 데이터를 수백~1,500바이트 정도의 작은 조각, 즉 <span class="term">패킷</span><span class="en">(packet)</span>으로 나누고, 각 패킷에 받는 사람 주소와 순서 번호를 붙여 따로따로 보낸다. 이를 <span class="term">패킷 교환</span>이라 한다.</p>
+    <div class="callout analogy"><strong>책 한 권을 엽서로 보내기</strong><p>두꺼운 책을 통째로 보내는 대신 한 쪽씩 엽서에 옮겨 적고 “37/200쪽” 같은 번호를 붙여 우체통에 넣는다. 엽서들은 서로 다른 우체국, 다른 트럭을 타고 가서 뒤죽박죽 순서로 도착하지만, 받는 사람은 번호대로 정리해 책을 복원한다. 엽서 하나가 사라지면 그 쪽만 다시 보내 달라고 하면 된다. 그리고 우편 트럭은 여러 사람의 엽서를 섞어 싣고 다니므로 길을 효율적으로 쓴다.</p></div>
+    <div class="sim" id="sim-pk">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>패킷으로 쪼개고, 따로 보내고, 다시 맞추기</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <label class="ctrl"><span>보낼 메시지</span><input type="text" id="pk-text" value="안녕! 오늘 저녁에 같이 밥 먹을래?" maxlength="40"></label>
+        <label class="ctrl"><span>패킷 하나에 담을 글자 수 <output id="pk-size-out"></output></span><input type="range" id="pk-size" min="2" max="10" value="4"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="pk-send">보내기</button></div></div>
+      </div>
+      <div class="sim-view"><canvas id="cv-pk"></canvas></div>
+      <div class="pk-msg" id="pk-recv">받은 메시지: </div>
+      <div class="sim-note">패킷들은 서로 다른 길(위·가운데·아래)을 타서 도착 순서가 뒤섞인다. 받는 쪽은 각 패킷의 번호를 보고 빈자리에 끼워 넣는다. 번호가 없었다면 메시지가 뒤죽박죽이 되었을 것이다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="layers">
+    <h2>계층: 봉투 안의 봉투</h2>
+    <p>패킷 하나가 목적지까지 가려면 해결할 문제가 많다. “어떤 앱의 데이터인가?”, “순서와 분실은 누가 챙기나?”, “지구 반대편까지 어떤 길로 가나?”, “바로 옆 공유기까지는 전파로 어떻게 보내나?” 이 문제들을 한꺼번에 풀면 너무 복잡해서, 인터넷은 일을 <span class="term">계층</span><span class="en">(layer)</span>으로 나눴다. 각 계층은 자기 일만 하고, 데이터를 자기 정보가 적힌 봉투에 넣어 아래 계층에 넘긴다. 이를 <span class="term">캡슐화</span><span class="en">(encapsulation)</span>라 한다.</p>
+    <div class="table-wrap"><table class="layer-tbl">
+      <thead><tr><th>계층</th><th>하는 일</th><th>봉투에 적는 것</th><th>우편 비유</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--accent)">응용</td><td>앱끼리 대화하는 규칙 (HTTP, 메신저 규칙 등)</td><td>요청 내용</td><td>편지 내용</td></tr>
+        <tr><td style="color:#d98a00">전송 (TCP/UDP)</td><td>앱 구분, 순서, 분실 확인</td><td>포트 번호, 순서 번호</td><td>“김철수님께, 3/5쪽”</td></tr>
+        <tr><td style="color:#0e8fa8">네트워크 (IP)</td><td>지구 어디든 찾아가는 길</td><td>보내는·받는 IP 주소</td><td>건물 주소</td></tr>
+        <tr><td style="color:#1f9d55">링크 (이더넷/Wi-Fi)</td><td>바로 옆 장치까지 한 구간 전달</td><td>다음 장치의 MAC 주소</td><td>다음 우체국까지 트럭 번호</td></tr>
+      </tbody>
+    </table></div>
+    <div class="sim" id="sim-enc">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>캡슐화: 한 겹씩 싸고, 한 겹씩 벗기기</h3></div>
+      <div class="env" id="env"></div>
+      <div class="stepdesc" id="enc-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:60px"></div>
+      <div class="sim-controls"><div class="btn-row"><button class="btn" id="enc-prev">← 이전</button><button class="btn primary" id="enc-next">다음 →</button></div></div>
+      <div class="sim-note">보내는 쪽은 위에서 아래로 봉투를 씌우고, 받는 쪽은 아래에서 위로 벗긴다. 중간의 라우터는 IP 봉투까지만 열어 보고 다시 새 링크 봉투에 넣어 다음 구간으로 보낸다. 덕분에 Wi-Fi든 광케이블이든 아래 계층이 바뀌어도 위 계층은 신경 쓰지 않는다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="address">
+    <h2>세 가지 주소: IP, 포트, MAC</h2>
+    <ul>
+      <li><span class="term">IP 주소</span>: 인터넷에서 컴퓨터를 찾는 주소. <code>203.0.113.42</code>처럼 0~255 숫자 네 개(IPv4, 약 43억 개)로 쓰고, 주소가 모자라 <code>2001:db8::1</code>처럼 훨씬 긴 IPv6로 옮겨 가는 중이다. 건물 주소에 해당한다.</li>
+      <li><span class="term">포트 번호</span>: 한 컴퓨터 안에서 어느 프로그램에게 줄지 정하는 번호(0~65535). 웹 서버는 보통 443번, 메일은 25번처럼 관례가 있다. 건물 안의 호수에 해당한다.</li>
+      <li><span class="term">MAC 주소</span>: 네트워크 장치마다 공장에서 붙여 나오는 고유 번호. 같은 공유기에 붙은 이웃 장치끼리 한 구간을 전달할 때 쓴다. 사람의 주민번호처럼 장치에 붙어 다닌다.</li>
+    </ul>
+    <div class="callout tip"><strong>집 공유기의 비밀: NAT</strong><p>집의 휴대폰, 노트북, TV는 모두 <code>192.168.0.x</code> 같은 <b>사설 IP</b>를 받는다. 이 주소는 집 안에서만 통한다. 공유기는 바깥으로 나가는 패킷의 보내는 주소를 자기의 공인 IP로 바꿔 적고, 답장이 오면 누구에게 보낼지 표를 보고 되돌려 준다. 회사 대표 전화번호와 내선 번호의 관계와 같다. 이 덕분에 IPv4 주소 43억 개로 수백억 대의 기기가 인터넷을 쓴다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="routing">
+    <h2>라우팅: 한 걸음씩 길 찾기</h2>
+    <p>패킷이 서울에서 뉴욕으로 갈 때 처음부터 전체 경로를 아는 사람은 없다. 대신 길목마다 있는 <span class="term">라우터</span><span class="en">(router)</span>가 패킷의 목적지 IP를 보고 “이 방향으로 가면 더 가깝다”는 표(라우팅 테이블)에 따라 <b>다음 한 걸음</b>만 결정한다. 라우터들은 서로 정보를 주고받으며 이 표를 계속 갱신하고, 어떤 길이 끊기면 몇 초 안에 다른 길로 돌아간다. 인터넷이 핵전쟁에도 살아남는 통신망을 목표로 연구되었다는 이야기가 나온 이유다.</p>
+    <div class="sim" id="sim-route">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>라우터 네트워크: 연결선을 눌러 끊어 보세요</h3></div>
+      <div class="sim-view"><canvas id="cv-route" style="cursor:pointer"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>목적지</span><div class="seg" id="rdst"><button data-value="H" class="on">뉴욕 서버</button><button data-value="G">런던 서버</button><button data-value="F">도쿄 서버</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="rsend">패킷 보내기</button><button class="btn" id="rfix">모든 선 복구</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">경로</span><span class="v" id="o-path" style="font-size:14px">—</span></div>
+        <div class="stat"><span class="k">거친 라우터 수 (홉)</span><span class="v" id="o-hops">—</span></div>
+        <div class="stat"><span class="k">예상 지연 시간</span><span class="v" id="o-lat">—</span></div>
+      </div>
+      <div class="sim-note">선 위 숫자는 그 구간의 지연 시간(ms)이다. 라우터들은 지연 합이 가장 작은 길을 고른다. 해볼 것: 지금 쓰는 경로의 선을 하나 눌러 끊어 보자. 경로가 바로 다시 계산된다. 모든 길을 끊으면? 목적지에 갈 수 없다.</div>
+    </div>
+    <div class="callout deep"><strong>traceroute</strong><p>컴퓨터의 명령 창에서 <code>tracert google.com</code>(윈도우) 또는 <code>traceroute google.com</code>(맥·리눅스)을 입력하면, 내 패킷이 거쳐 가는 실제 라우터 목록과 각 구간의 지연 시간을 볼 수 있다. 보통 10~20개의 라우터를 거친다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="tcp">
+    <h2>TCP: 잃어버린 패킷 되찾기</h2>
+    <p>IP는 “최선을 다해 배달”할 뿐 보장하지 않는다. 라우터가 너무 바쁘면 패킷을 버리고, 순서가 바뀌기도 한다. 그 위의 <span class="term">TCP</span><span class="en">(Transmission Control Protocol)</span>가 신뢰성을 책임진다. 받는 쪽은 패킷을 받을 때마다 “몇 번까지 잘 받았다”는 확인 응답(<span class="term">ACK</span>)을 보낸다. 보내는 쪽은 일정 시간 안에 ACK가 오지 않으면 그 패킷이 사라졌다고 보고 <b>다시 보낸다</b>.</p>
+    <p>ACK를 기다리느라 패킷 하나 보내고 쉬면 너무 느리므로, TCP는 ACK를 받기 전에도 여러 개(<span class="term">윈도우</span> 크기만큼)를 연달아 보낸다.</p>
+    <div class="sim" id="sim-tcp">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>TCP 전송 타임라인</h3></div>
+      <div class="sim-view"><canvas id="cv-tcp"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>패킷 손실률 <output id="loss-out"></output></span><input type="range" id="loss" min="0" max="40" step="5" value="15"></label>
+        <label class="ctrl"><span>윈도우 크기 (확인 전에 보낼 수 있는 수) <output id="win-out"></output></span><input type="range" id="win" min="1" max="6" value="3"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="tcp-go">10개 보내기</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">보낸 패킷 (재전송 포함)</span><span class="v" id="o-sent">—</span></div>
+        <div class="stat"><span class="k">잃어버린 패킷</span><span class="v" id="o-lostp">—</span></div>
+        <div class="stat"><span class="k">완료 시간</span><span class="v" id="o-done">—</span></div>
+      </div>
+      <div class="sim-note">왼쪽 세로줄은 보내는 쪽, 오른쪽은 받는 쪽, 아래로 갈수록 시간이 흐른다. 파란 화살표 = 데이터, 초록 = ACK, ✕ = 도중에 사라짐, 주황 = 재전송. 해볼 것: 윈도우를 1로 하면 한 번에 하나씩 보내고 기다리느라 느리다. 윈도우를 키우면 같은 손실률에서도 훨씬 빨리 끝난다.</div>
+    </div>
+    <p>영상 통화나 온라인 게임은 TCP 대신 <span class="term">UDP</span>를 많이 쓴다. UDP는 확인도 재전송도 하지 않는다. 0.5초 전에 사라진 영상 조각을 다시 받아 봐야 이미 늦었기 때문이다. 정확성이 중요한 파일 전송과 웹은 TCP, 실시간성이 중요한 통화와 게임은 UDP를 주로 쓴다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="speed">
+    <h2>대역폭과 지연: 도로의 폭과 길이</h2>
+    <p>인터넷이 “빠르다”는 말에는 두 가지 뜻이 섞여 있다.</p>
+    <ul>
+      <li><span class="term">대역폭</span><span class="en">(bandwidth)</span>: 1초에 보낼 수 있는 데이터 양(예: 1 Gbps). <b>도로의 차선 수</b>. 큰 파일을 내려받을 때 중요하다.</li>
+      <li><span class="term">지연</span><span class="en">(latency)</span>: 패킷 하나가 도착하는 데 걸리는 시간(예: 30 ms). <b>도로의 길이</b>. 게임, 영상 통화, 웹 페이지가 처음 뜨는 속도에 중요하다.</li>
+    </ul>
+    <p>차선을 늘리면 한 번에 더 많은 차가 가지만, 서울에서 부산까지 걸리는 시간은 줄지 않는다. 지연에는 넘을 수 없는 한계가 있다. 빛은 광섬유 안에서 1초에 약 20만 km를 간다. 아래 계산기로 거리별 최소 지연을 확인해 보자.</p>
+    <div class="sim" id="sim-light">
+      <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>빛의 속도로 계산한 최소 왕복 시간</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>서울에서</span><div class="seg" id="city"><button data-value="325">부산 (325 km)</button><button data-value="1160" class="on">도쿄 (1,160 km)</button><button data-value="8900">런던 (8,900 km)</button><button data-value="11000">뉴욕 (11,000 km)</button><button data-value="36000">정지 위성 (36,000 km)</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">광섬유 직선거리 왕복</span><span class="v" id="o-rtt">—</span></div>
+        <div class="stat"><span class="k">실제 경로 (보통 1.5~2배)</span><span class="v" id="o-real">—</span></div>
+        <div class="stat"><span class="k">CPU 박자로 치면</span><span class="v" id="o-cyc2">—</span></div>
+      </div>
+      <div class="sim-note">정지 위성 인터넷은 전파가 진공에서 빛의 속도로 가지만 거리가 워낙 멀어(지상 → 위성 → 지상 → 다시 돌아오기) 지연이 크다. 그래서 저궤도(수백 km) 위성 인터넷이 등장했다.</div>
+    </div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>인터넷은 데이터를 <b>패킷</b>으로 쪼개 번호를 붙여 따로 보내고, 받는 쪽이 다시 맞춘다.</li>
+      <li>통신은 <b>응용 → 전송(TCP/UDP) → 네트워크(IP) → 링크</b> 계층으로 나뉘고, 각 계층이 봉투를 한 겹씩 씌운다(캡슐화).</li>
+      <li><b>IP 주소</b>는 컴퓨터, <b>포트</b>는 그 안의 프로그램, <b>MAC 주소</b>는 바로 옆 장치를 가리킨다.</li>
+      <li><b>라우터</b>는 다음 한 걸음만 결정한다. 길이 끊기면 경로를 다시 계산해 돌아간다.</li>
+      <li><b>TCP</b>는 ACK와 재전송으로 분실을 복구하고, 윈도우로 여러 패킷을 겹쳐 보내 속도를 높인다.</li>
+      <li><b>대역폭</b>은 도로의 폭, <b>지연</b>은 도로의 길이다. 지연은 빛의 속도라는 물리 한계에 묶여 있다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>패킷에 순서 번호를 붙이는 이유는?</p><div class="opts">
+        <button class="opt">패킷을 암호화하려고</button>
+        <button class="opt" data-correct>서로 다른 길로 와서 순서가 뒤섞여도 원래대로 맞추고, 빠진 것을 알아내려고</button>
+        <button class="opt">라우터가 길을 찾으려고</button>
+        <button class="opt">크기를 줄이려고</button>
+      </div><div class="quiz-exp">번호가 있어야 뒤섞인 패킷을 정렬하고, 몇 번이 안 왔는지 알아 재전송을 요청할 수 있다.</div></div>
+      <div class="quiz-q"><p>한 컴퓨터에서 웹 브라우저와 메신저가 동시에 데이터를 받는다. 도착한 패킷을 어느 프로그램에게 줄지 정하는 것은?</p><div class="opts">
+        <button class="opt">IP 주소</button><button class="opt">MAC 주소</button><button class="opt" data-correct>포트 번호</button><button class="opt">라우터</button>
+      </div><div class="quiz-exp">IP 주소로 컴퓨터(건물)를 찾고, 포트 번호로 그 안의 프로그램(호수)을 찾는다.</div></div>
+      <div class="quiz-q"><p>라우터가 패킷을 받았을 때 하는 일은?</p><div class="opts">
+        <button class="opt">목적지까지 전체 경로를 계산해 패킷에 적는다</button>
+        <button class="opt" data-correct>목적지 IP를 보고 라우팅 테이블에 따라 다음 장치로 넘긴다</button>
+        <button class="opt">패킷 내용을 읽고 고친다</button>
+        <button class="opt">모든 이웃에게 복사해 보낸다</button>
+      </div><div class="quiz-exp">각 라우터는 “다음 한 걸음”만 결정한다. 그 결정들이 이어져 전체 경로가 된다.</div></div>
+      <div class="quiz-q"><p>TCP에서 보낸 패킷의 ACK가 정해진 시간 안에 오지 않으면?</p><div class="opts">
+        <button class="opt">연결을 끊는다</button>
+        <button class="opt" data-correct>패킷이 사라졌다고 보고 다시 보낸다</button>
+        <button class="opt">다음 패킷을 건너뛴다</button>
+        <button class="opt">UDP로 바꾼다</button>
+      </div><div class="quiz-exp">시간 초과 후 재전송이 TCP 신뢰성의 핵심이다.</div></div>
+      <div class="quiz-q"><p>인터넷 요금제를 100 Mbps에서 1 Gbps로 올렸다. 가장 덜 좋아지는 것은?</p><div class="opts">
+        <button class="opt">대용량 게임 다운로드 시간</button>
+        <button class="opt">4K 영상 여러 개 동시 시청</button>
+        <button class="opt" data-correct>해외 게임 서버와의 핑(지연 시간)</button>
+      </div><div class="quiz-exp">대역폭(도로 폭)이 늘어도 거리와 빛의 속도가 정하는 지연(도로 길이)은 거의 그대로다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- packets ---------------- */
+  const pkSize = CB.range("pk-size", (v) => v + "글자", null);
+  let pkts = [], pt = 0, recv = [];
+  function send() {
+    const chars = [...$("pk-text").value]; const n = pkSize(); pkts = [];
+    for (let i = 0; i * n < chars.length; i++) pkts.push({ seq: i, txt: chars.slice(i * n, i * n + n).join(""), lane: i % 3, delay: (i * 0.35) + [0, 0.9, 0.35][i % 3] + Math.random() * 0.5, speed: [1, 0.55, 0.8][i % 3] });
+    pt = 0; recv = new Array(pkts.length).fill(null); pkRender();
+  }
+  $("pk-send").onclick = send;
+  function pkRender() { $("pk-recv").innerHTML = "받은 메시지: " + recv.map((r) => (r == null ? '<span style="color:var(--text-faint)">□</span>' : r.replace(/ /g, "&nbsp;"))).join(""); }
+  const pkcv = CB.canvas("#cv-pk", (ctx, w, h) => {
+    const P = CB.palette();
+    const sx = 70, ex = w - 70, lanes = [h * 0.25, h * 0.5, h * 0.75];
+    CB.box(ctx, 8, h / 2 - 28, 54, 56, { text: "보내는\n쪽", size: 12, fill: P.surface });
+    CB.box(ctx, w - 62, h / 2 - 28, 54, 56, { text: "받는\n쪽", size: 12, fill: P.surface });
+    lanes.forEach((y, i) => { ctx.strokeStyle = P.border; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(sx, h / 2); ctx.lineTo(sx + 40, y); ctx.lineTo(ex - 40, y); ctx.lineTo(ex, h / 2); ctx.stroke(); ctx.setLineDash([]); CB.text(ctx, ["빠른 길", "느린 길", "보통 길"][i], (sx + ex) / 2, y - 16, { align: "center", size: 10.5, color: P.faint }); });
+    pkts.forEach((p) => {
+      const prog = (pt - p.delay) * p.speed * 0.45;
+      if (prog <= 0 || prog >= 1) return;
+      const y = lanes[p.lane];
+      let x, yy;
+      if (prog < 0.1) { x = CB.lerp(sx, sx + 40, prog / 0.1); yy = CB.lerp(h / 2, y, prog / 0.1); }
+      else if (prog > 0.9) { x = CB.lerp(ex - 40, ex, (prog - 0.9) / 0.1); yy = CB.lerp(y, h / 2, (prog - 0.9) / 0.1); }
+      else { x = CB.lerp(sx + 40, ex - 40, (prog - 0.1) / 0.8); yy = y; }
+      const bw = Math.max(46, p.txt.length * 13 + 26);
+      CB.box(ctx, x - bw / 2, yy - 13, bw, 26, { fill: P.accent, stroke: P.accent, text: `#${p.seq} ${p.txt}`, color: "#fff", size: 11.5, r: 6 });
+    });
+  }, { aspect: 0.32, minHeight: 200, maxHeight: 260 });
+  CB.loop($("cv-pk"), (dt) => {
+    if (!pkts.length) return;
+    pt += dt;
+    let changed = false;
+    pkts.forEach((p) => { if (recv[p.seq] == null && (pt - p.delay) * p.speed * 0.45 >= 1) { recv[p.seq] = p.txt; changed = true; } });
+    if (changed) pkRender();
+    pkcv.redraw();
+  });
+  send();
+
+  /* ---------------- encapsulation ---------------- */
+  const ENC = [
+    { d: 1, side: "보내는 쪽", msg: "<b>응용 계층</b>: 메신저 앱이 보낼 내용을 만든다. “안녕!”이라는 메시지와 받는 사람 정보를 메신저의 약속된 형식으로 적는다." },
+    { d: 2, side: "보내는 쪽", msg: "<b>전송 계층(TCP)</b>: 봉투를 씌우고 <b>포트 번호</b>(어느 프로그램에게)와 <b>순서 번호</b>를 적는다. 분실 확인도 이 계층이 맡는다." },
+    { d: 3, side: "보내는 쪽", msg: "<b>네트워크 계층(IP)</b>: 또 봉투를 씌우고 보내는 컴퓨터와 받는 컴퓨터의 <b>IP 주소</b>를 적는다. 라우터들은 이 주소를 보고 길을 찾는다." },
+    { d: 4, side: "보내는 쪽", msg: "<b>링크 계층(Wi-Fi)</b>: 마지막 봉투에 <b>바로 다음 장치(공유기)의 MAC 주소</b>를 적는다. 이제 전파로 공유기까지 날아간다." },
+    { d: 3, side: "중간 라우터", msg: "<b>라우터</b>: 링크 봉투를 벗기고 IP 주소만 확인한다. 다음 라우터로 보내기 위해 <b>새 링크 봉투</b>를 씌운다. 안쪽 봉투(TCP, 내용)는 열어 보지 않는다." },
+    { d: 4, side: "중간 라우터", msg: "새 링크 봉투(광케이블용)를 씌워 다음 구간으로 보낸다. 이 과정이 목적지까지 10~20번 반복된다." },
+    { d: 3, side: "받는 쪽", msg: "<b>받는 컴퓨터</b>: 링크 봉투를 벗긴다. IP 주소가 내 것이 맞다." },
+    { d: 2, side: "받는 쪽", msg: "IP 봉투를 벗긴다. TCP 봉투의 순서 번호로 정리하고 ACK를 보낸다. 포트 번호를 보니 메신저 앱 것이다." },
+    { d: 1, side: "받는 쪽", msg: "TCP 봉투까지 벗겨 메신저 앱에게 내용을 건넨다. 화면에 “안녕!”이 뜬다." },
+  ];
+  let ei = 0;
+  function encRender() {
+    const s = ENC[ei];
+    const L = [["l1", "응용 데이터", "메신저 형식"], ["l4", "TCP", "포트 443 · 순서 #3"], ["l3", "IP", "보냄 192.168.0.7 → 받음 203.0.113.42"], ["l2", s.side === "중간 라우터" ? "링크 (광케이블)" : "링크 (Wi-Fi)", s.side === "중간 라우터" ? "다음 라우터 MAC" : "공유기 MAC a4:5e:…"]];
+    let inner = `<div class="payload">“안녕!”</div>`;
+    for (let k = 1; k < s.d; k++) { const [c, n, sub] = L[k]; inner = `<div class="envbox ${c}"><div class="tag">${n}<span>${sub}</span></div>${inner}</div>`; }
+    inner = `<div class="envbox l1" style="max-width:${s.d === 1 ? 640 : 680}px"><div class="tag">${s.side}<span>${s.d}겹</span></div>${inner}</div>`;
+    $("env").innerHTML = inner;
+    $("enc-desc").innerHTML = `<b>${ei + 1}/${ENC.length} · ${s.side}</b> — ` + s.msg;
+    $("enc-prev").disabled = ei === 0; $("enc-next").disabled = ei === ENC.length - 1;
+  }
+  $("enc-next").onclick = () => { ei = Math.min(ENC.length - 1, ei + 1); encRender(); };
+  $("enc-prev").onclick = () => { ei = Math.max(0, ei - 1); encRender(); };
+  encRender();
+
+  /* ---------------- routing ---------------- */
+  const NODES = { S: [0.07, 0.5, "서울(나)"], A: [0.25, 0.2, "R1"], B: [0.25, 0.8, "R2"], C: [0.47, 0.35, "R3"], D: [0.47, 0.78, "R4"], E: [0.68, 0.18, "R5"], F: [0.92, 0.12, "도쿄"], G: [0.92, 0.5, "런던"], H: [0.92, 0.88, "뉴욕"], I: [0.7, 0.62, "R6"] };
+  const EDGES = [["S", "A", 5], ["S", "B", 8], ["A", "C", 12], ["B", "C", 9], ["B", "D", 15], ["A", "E", 20], ["C", "E", 10], ["C", "I", 18], ["D", "I", 12], ["E", "F", 14], ["E", "G", 60], ["I", "G", 45], ["I", "H", 70], ["D", "H", 95], ["E", "I", 15]];
+  let broken = new Set(), rpath = [], rpkt = null;
+  const rdst = CB.seg("rdst", () => { compute(); rcv.redraw(); });
+  function compute() {
+    const dst = rdst(); const dist = {}, prev = {}; Object.keys(NODES).forEach((k) => (dist[k] = Infinity)); dist.S = 0;
+    const Q = new Set(Object.keys(NODES));
+    while (Q.size) { let u = null; Q.forEach((k) => { if (u == null || dist[k] < dist[u]) u = k; }); Q.delete(u); if (dist[u] === Infinity) break;
+      EDGES.forEach((e, i) => { if (broken.has(i)) return; const [a, b, wgt] = e; let v = a === u ? b : b === u ? a : null; if (v && Q.has(v) && dist[u] + wgt < dist[v]) { dist[v] = dist[u] + wgt; prev[v] = u; } }); }
+    rpath = []; if (dist[dst] < Infinity) { let c = dst; while (c) { rpath.unshift(c); c = prev[c]; } }
+    CB.stat("o-path", rpath.length ? rpath.map((k) => NODES[k][2]).join(" → ") : "<span style='color:var(--bad)'>갈 수 있는 길이 없다</span>");
+    CB.stat("o-hops", rpath.length ? rpath.length - 2 + "개" : "—");
+    CB.stat("o-lat", rpath.length ? dist[dst] + " ms" : "—");
+  }
+  const pos = (k, w, h) => [NODES[k][0] * w, 20 + NODES[k][1] * (h - 40)];
+  const rcv = CB.canvas("#cv-route", (ctx, w, h) => {
+    const P = CB.palette();
+    const onPath = (a, b) => { for (let i = 0; i < rpath.length - 1; i++) if ((rpath[i] === a && rpath[i + 1] === b) || (rpath[i] === b && rpath[i + 1] === a)) return true; return false; };
+    EDGES.forEach(([a, b, wgt], i) => {
+      const [x1, y1] = pos(a, w, h), [x2, y2] = pos(b, w, h);
+      const br = broken.has(i), op = onPath(a, b);
+      ctx.strokeStyle = br ? P.bad : op ? P.accent : P.border; ctx.lineWidth = op ? 4 : 2.5; ctx.setLineDash(br ? [4, 5] : []);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      if (br) CB.text(ctx, "✕", mx, my, { align: "center", size: 16, bold: true, color: P.bad });
+      else { CB.rrect(ctx, mx - 13, my - 9, 26, 18, 5); ctx.fillStyle = P.bg; ctx.fill(); CB.text(ctx, String(wgt), mx, my, { align: "center", size: 10.5, mono: true, color: op ? P.accent : P.dim }); }
+    });
+    Object.keys(NODES).forEach((k) => {
+      const [x, y] = pos(k, w, h); const end = k === "S" || "FGH".includes(k);
+      const isDst = k === rdst();
+      ctx.beginPath(); ctx.arc(x, y, end ? 20 : 15, 0, 7); ctx.fillStyle = isDst ? P.accent2 : k === "S" ? P.accent : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1.5; ctx.stroke();
+      CB.text(ctx, NODES[k][2], x, y + (end ? 32 : 26), { align: "center", size: 11.5, bold: end, color: P.text });
+      if (!end) CB.text(ctx, "⇄", x, y, { align: "center", size: 12, color: P.dim });
+    });
+    if (rpkt && rpath.length > 1) {
+      const seg = Math.floor(rpkt.t), f = rpkt.t - seg;
+      if (seg < rpath.length - 1) { const [x1, y1] = pos(rpath[seg], w, h), [x2, y2] = pos(rpath[seg + 1], w, h); CB.box(ctx, CB.lerp(x1, x2, f) - 14, CB.lerp(y1, y2, f) - 10, 28, 20, { fill: P.warn, stroke: P.warn, text: "📦", size: 12 }); }
+    }
+  }, { aspect: 0.5, minHeight: 300, maxHeight: 420 });
+  $("cv-route").addEventListener("click", (ev) => {
+    const r = ev.target.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, w = r.width, h = r.height;
+    let best = -1, bd = 14;
+    EDGES.forEach(([a, b], i) => { const [x1, y1] = pos(a, w, h), [x2, y2] = pos(b, w, h); const dx = x2 - x1, dy = y2 - y1; const t = CB.clamp(((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy), 0, 1); const d = Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy)); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0) { broken.has(best) ? broken.delete(best) : broken.add(best); compute(); rcv.redraw(); }
+  });
+  $("rfix").onclick = () => { broken.clear(); compute(); rcv.redraw(); };
+  $("rsend").onclick = () => { rpkt = { t: 0 }; };
+  CB.loop($("cv-route"), (dt) => { if (rpkt) { rpkt.t += dt * 1.6; if (rpkt.t >= rpath.length - 1) rpkt = null; rcv.redraw(); } });
+  compute();
+
+  /* ---------------- TCP ---------------- */
+  const loss = CB.range("loss", (v) => v + "%", null);
+  const win = CB.range("win", (v) => v + "개", null);
+  let tcpEv = null, tcpT = 0, tcpEnd = 0;
+  function tcpSim() {
+    const N = 10, W = win(), p = loss() / 100, D = 2, TO = 5.5;
+    const r = Math.random;
+    const ev = []; // {kind:'data'|'ack', seq, t0, t1, lost, retx}
+    const acked = new Array(N).fill(false), lastSend = new Array(N).fill(-1), sendCount = new Array(N).fill(0);
+    let base = 0, next = 0, t = 0, sent = 0, lost = 0;
+    const recvd = new Array(N).fill(false);
+    const pending = []; // ack arrivals
+    while (base < N && t < 200) {
+      // process ack arrivals at time t
+      pending.filter((a) => a.at <= t + 1e-9 && !a.done).forEach((a) => { a.done = true; acked[a.seq] = true; });
+      while (base < N && acked[base]) base++;
+      // timeouts
+      for (let s = base; s < Math.min(N, base + W); s++) {
+        if (!acked[s] && lastSend[s] >= 0 && t - lastSend[s] >= TO) { sendOne(s, true); }
+      }
+      // new sends
+      while (next < N && next < base + W) { sendOne(next, false); next++; }
+      t += 0.25;
+    }
+    function sendOne(s, retx) {
+      const isLost = r() < p; lastSend[s] = t; sent++; sendCount[s]++;
+      ev.push({ kind: "data", seq: s, t0: t, t1: t + D, lost: isLost, retx });
+      if (isLost) { lost++; t += 0.6; return; }
+      recvd[s] = true;
+      const ackLost = r() < p * 0.5;
+      ev.push({ kind: "ack", seq: s, t0: t + D, t1: t + 2 * D, lost: ackLost });
+      if (ackLost) lost++; else pending.push({ seq: s, at: t + 2 * D });
+      t += 0.6; // 패킷을 연달아 보낼 때의 간격
+    }
+    tcpEnd = Math.max(...ev.map((e) => e.t1));
+    CB.stat("o-sent", sent + "개"); CB.stat("o-lostp", lost + "개"); CB.stat("o-done", tcpEnd.toFixed(1) + " 단위");
+    return ev;
+  }
+  $("tcp-go").onclick = () => { tcpEv = tcpSim(); tcpT = 0; };
+  const tcv = CB.canvas("#cv-tcp", (ctx, w, h) => {
+    const P = CB.palette();
+    const lx = w * 0.22, rx = w * 0.78, top = 30, bot = h - 14;
+    CB.text(ctx, "보내는 쪽", lx, 14, { align: "center", size: 12, bold: true, color: P.dim });
+    CB.text(ctx, "받는 쪽", rx, 14, { align: "center", size: 12, bold: true, color: P.dim });
+    ctx.strokeStyle = P.border; ctx.lineWidth = 3; [lx, rx].forEach((x) => { ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bot); ctx.stroke(); });
+    if (!tcpEv) { CB.text(ctx, "“10개 보내기”를 누르세요", w / 2, h / 2, { align: "center", size: 13, color: P.faint }); return; }
+    const total = Math.max(tcpEnd, 14);
+    const Y = (t) => top + (t / total) * (bot - top);
+    tcpEv.forEach((e) => {
+      if (e.t0 > tcpT) return;
+      const tEnd = Math.min(e.t1, tcpT); const frac = (tEnd - e.t0) / (e.t1 - e.t0);
+      const fromX = e.kind === "data" ? lx : rx, toX = e.kind === "data" ? rx : lx;
+      const lostFrac = e.lost ? Math.min(frac, 0.55) : frac;
+      const x2 = CB.lerp(fromX, toX, lostFrac), y2 = CB.lerp(Y(e.t0), Y(e.t1), lostFrac);
+      const col = e.kind === "ack" ? P.ok : e.retx ? P.warn : P.accent;
+      if (lostFrac > 0) CB.arrow(ctx, fromX, Y(e.t0), x2, y2, { color: col, lw: 1.8, head: e.lost ? 0.01 : 7 });
+      if (e.lost && frac >= 0.55) CB.text(ctx, "✕", x2, y2, { align: "center", size: 15, bold: true, color: P.bad });
+      if (e.kind === "data") CB.text(ctx, (e.retx ? "↻" : "") + "#" + e.seq, fromX - 8, Y(e.t0), { align: "right", size: 10.5, mono: true, color: col });
+      else CB.text(ctx, "ACK " + e.seq, rx + 8, Y(e.t0), { align: "left", size: 10, mono: true, color: P.ok });
+    });
+  }, { aspect: 0.75, minHeight: 360, maxHeight: 520 });
+  CB.loop($("cv-tcp"), (dt) => { if (tcpEv && tcpT < tcpEnd + 0.1) { tcpT += dt * 3; tcv.redraw(); } });
+
+  /* ---------------- light ---------------- */
+  const city = CB.seg("city", calc);
+  function calc() {
+    const km = Number(city()); const sat = km === 36000;
+    const one = sat ? (km * 2) / 300000 : km / 200000; // seconds one-way (sat: up+down)
+    const rtt = one * 2;
+    CB.stat("o-rtt", (rtt * 1000).toFixed(1) + " ms");
+    CB.stat("o-real", sat ? "≈ " + Math.round(rtt * 1000 + 100) + " ms" : (rtt * 1500).toFixed(0) + "~" + (rtt * 2000).toFixed(0) + " ms");
+    CB.stat("o-cyc2", "약 " + CB.kn(rtt / 0.3e-9) + " 박자");
+  }
+  calc();
+})();
+</script>
+</body>
+</html>
