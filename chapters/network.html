@@ -55,6 +55,38 @@
   <section id="packet">
     <h2>통째로 보내지 않고 쪼개서 보낸다</h2>
     <p>옛날 유선 전화는 통화하는 동안 두 집 사이에 전용 회선을 하나 잡아 두었다. 말을 안 하는 동안에도 회선은 묶여 있다. 인터넷은 다르게 동작한다. 데이터를 수백~1,500바이트 정도의 작은 조각, 즉 <span class="term">패킷</span><span class="en">(packet)</span>으로 나누고, 각 패킷에 받는 사람 주소와 순서 번호를 붙여 따로따로 보낸다. 이를 <span class="term">패킷 교환</span>이라 한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="회선 교환과 패킷 교환 비교">
+        <defs><marker id="nw-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="200" y="22" text-anchor="middle" class="t" style="font-weight:700">회선 교환 (옛 전화)</text>
+        <text x="600" y="22" text-anchor="middle" class="t" style="font-weight:700">패킷 교환 (인터넷)</text>
+        <g transform="translate(20,40)">
+          <circle cx="30" cy="70" r="24" class="f-acc-soft"/><text x="30" y="75" text-anchor="middle" class="t-mono">A</text>
+          <circle cx="330" cy="70" r="24" class="f-acc-soft"/><text x="330" y="75" text-anchor="middle" class="t-mono">B</text>
+          <circle cx="120" cy="30" r="14" class="f-surface"/><circle cx="240" cy="30" r="14" class="f-surface"/><circle cx="120" cy="110" r="14" class="f-surface"/><circle cx="240" cy="110" r="14" class="f-surface"/>
+          <g stroke="var(--border)" stroke-width="2"><path d="M54 70 L106 30 M54 70 L106 110 M134 30 H226 M134 110 H226 M134 30 L226 110 M254 30 L306 70 M254 110 L306 70"/></g>
+          <path d="M54 70 L106 30 M134 30 H226 M254 30 L306 70" stroke="var(--accent)" stroke-width="5" fill="none"/>
+          <text x="180" y="150" text-anchor="middle" class="t-dim">통화하는 동안 이 길 전체를 독차지.</text>
+          <text x="180" y="170" text-anchor="middle" class="t-dim">말이 없어도 다른 사람이 못 쓴다.</text>
+        </g>
+        <g transform="translate(420,40)">
+          <circle cx="30" cy="70" r="24" class="f-acc-soft"/><text x="30" y="75" text-anchor="middle" class="t-mono">A</text>
+          <circle cx="330" cy="70" r="24" class="f-acc-soft"/><text x="330" y="75" text-anchor="middle" class="t-mono">B</text>
+          <circle cx="120" cy="30" r="14" class="f-surface"/><circle cx="240" cy="30" r="14" class="f-surface"/><circle cx="120" cy="110" r="14" class="f-surface"/><circle cx="240" cy="110" r="14" class="f-surface"/>
+          <g stroke="var(--border)" stroke-width="2"><path d="M54 70 L106 30 M54 70 L106 110 M134 30 H226 M134 110 H226 M134 30 L226 110 M254 30 L306 70 M254 110 L306 70"/></g>
+          <g class="t-mono" style="font-size:10px">
+            <rect x="70" y="36" width="22" height="16" rx="3" fill="var(--accent)"/><text x="81" y="48" text-anchor="middle" style="fill:#fff">1</text>
+            <rect x="166" y="22" width="22" height="16" rx="3" fill="var(--accent)"/><text x="177" y="34" text-anchor="middle" style="fill:#fff">2</text>
+            <rect x="166" y="102" width="22" height="16" rx="3" fill="var(--accent)"/><text x="177" y="114" text-anchor="middle" style="fill:#fff">3</text>
+            <rect x="270" y="88" width="22" height="16" rx="3" fill="var(--accent)"/><text x="281" y="100" text-anchor="middle" style="fill:#fff">4</text>
+            <rect x="196" y="62" width="22" height="16" rx="3" fill="var(--warn)"/><text x="207" y="74" text-anchor="middle" style="fill:#fff">x</text>
+          </g>
+          <text x="180" y="150" text-anchor="middle" class="t-dim">조각마다 따로, 빈 길로 간다.</text>
+          <text x="180" y="170" text-anchor="middle" class="t-dim">다른 사람의 패킷(주황)과 길을 나눠 쓴다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 10-1.</b> 회선 교환과 패킷 교환. 인터넷은 길을 예약하지 않고, 조각마다 그때그때 비어 있는 길로 보낸다. 그래서 수십억 명이 같은 망을 함께 쓸 수 있다.</figcaption>
+    </figure>
     <div class="callout analogy"><strong>책 한 권을 엽서로 보내기</strong><p>두꺼운 책을 통째로 보내는 대신 한 쪽씩 엽서에 옮겨 적고 “37/200쪽” 같은 번호를 붙여 우체통에 넣는다. 엽서들은 서로 다른 우체국, 다른 트럭을 타고 가서 뒤죽박죽 순서로 도착하지만, 받는 사람은 번호대로 정리해 책을 복원한다. 엽서 하나가 사라지면 그 쪽만 다시 보내 달라고 하면 된다. 그리고 우편 트럭은 여러 사람의 엽서를 섞어 싣고 다니므로 길을 효율적으로 쓴다.</p></div>
     <div class="sim" id="sim-pk">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>패킷으로 쪼개고, 따로 보내고, 다시 맞추기</h3></div>
@@ -100,12 +132,55 @@
       <li><span class="term">MAC 주소</span>: 네트워크 장치마다 공장에서 붙여 나오는 고유 번호. 같은 공유기에 붙은 이웃 장치끼리 한 구간을 전달할 때 쓴다. 사람의 주민번호처럼 장치에 붙어 다닌다.</li>
     </ul>
     <div class="callout tip"><strong>집 공유기의 비밀: NAT</strong><p>집의 휴대폰, 노트북, TV는 모두 <code>192.168.0.x</code> 같은 <b>사설 IP</b>를 받는다. 이 주소는 집 안에서만 통한다. 공유기는 바깥으로 나가는 패킷의 보내는 주소를 자기의 공인 IP로 바꿔 적고, 답장이 오면 누구에게 보낼지 표를 보고 되돌려 준다. 회사 대표 전화번호와 내선 번호의 관계와 같다. 이 덕분에 IPv4 주소 43억 개로 수백억 대의 기기가 인터넷을 쓴다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="공유기의 NAT 변환표">
+        <defs><marker id="nt-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="20" y="20" width="200" height="210" rx="14" class="f-surface"/><text x="120" y="42" text-anchor="middle" class="t-dim">우리 집 (사설 IP)</text>
+        <g class="t-mono" style="font-size:12px">
+          <rect x="36" y="56" width="168" height="44" rx="8" class="f-elev"/><text x="48" y="74">휴대폰</text><text x="48" y="92">192.168.0.7</text>
+          <rect x="36" y="110" width="168" height="44" rx="8" class="f-elev"/><text x="48" y="128">노트북</text><text x="48" y="146">192.168.0.12</text>
+          <rect x="36" y="164" width="168" height="44" rx="8" class="f-elev"/><text x="48" y="182">TV</text><text x="48" y="200">192.168.0.20</text>
+        </g>
+        <path d="M220 125 H270" class="s-acc" marker-end="url(#nt-a)" marker-start="url(#nt-a)"/>
+        <rect x="270" y="40" width="300" height="170" rx="14" class="f-acc-soft"/><text x="420" y="64" text-anchor="middle" class="t" style="font-weight:700">공유기의 변환표</text>
+        <g class="t-mono" style="font-size:12px">
+          <text x="286" y="90" style="fill:var(--text-dim)">안쪽 주소:포트</text><text x="440" y="90" style="fill:var(--text-dim)">바깥 포트</text>
+          <text x="286" y="116">192.168.0.7:51200</text><text x="440" y="116">→ 40001</text>
+          <text x="286" y="140">192.168.0.12:61000</text><text x="440" y="140">→ 40002</text>
+          <text x="286" y="164">192.168.0.20:52300</text><text x="440" y="164">→ 40003</text>
+        </g>
+        <text x="420" y="196" text-anchor="middle" class="t-dim">답장이 40002번으로 오면 → 노트북에게</text>
+        <path d="M570 125 H620" class="s-acc" marker-end="url(#nt-a)" marker-start="url(#nt-a)"/>
+        <rect x="620" y="80" width="160" height="90" rx="14" class="f-surface"/><text x="700" y="112" text-anchor="middle" class="t" style="font-weight:700">인터넷</text><text x="700" y="134" text-anchor="middle" class="t-mono">공인 IP 하나</text><text x="700" y="152" text-anchor="middle" class="t-mono">203.0.113.42</text>
+      </svg>
+      <figcaption><b>그림 10-2.</b> NAT. 바깥에서는 집 전체가 공인 IP 하나로 보인다. 공유기가 포트 번호로 누구의 대화인지 구분해 답장을 제자리로 돌려준다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
   <section id="routing">
     <h2>라우팅: 한 걸음씩 길 찾기</h2>
     <p>패킷이 서울에서 뉴욕으로 갈 때 처음부터 전체 경로를 아는 사람은 없다. 대신 길목마다 있는 <span class="term">라우터</span><span class="en">(router)</span>가 패킷의 목적지 IP를 보고 “이 방향으로 가면 더 가깝다”는 표(라우팅 테이블)에 따라 <b>다음 한 걸음</b>만 결정한다. 라우터들은 서로 정보를 주고받으며 이 표를 계속 갱신하고, 어떤 길이 끊기면 몇 초 안에 다른 길로 돌아간다. 인터넷이 핵전쟁에도 살아남는 통신망을 목표로 연구되었다는 이야기가 나온 이유다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 230" role="img" aria-label="서울의 집에서 뉴욕의 서버까지 패킷이 지나는 길">
+        <defs><marker id="rt-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g>
+          <rect x="10" y="60" width="92" height="56" rx="10" class="f-acc"/><text x="56" y="84" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">내 폰</text><text x="56" y="102" text-anchor="middle" style="fill:#fff" class="t-mono">Wi-Fi</text>
+          <rect x="126" y="60" width="92" height="56" rx="10" class="f-elev"/><text x="172" y="84" text-anchor="middle" class="t">공유기</text><text x="172" y="102" text-anchor="middle" class="t-mono">NAT</text>
+          <rect x="242" y="60" width="104" height="56" rx="10" class="f-elev"/><text x="294" y="84" text-anchor="middle" class="t">통신사 망</text><text x="294" y="102" text-anchor="middle" class="t-mono">라우터 3~6개</text>
+          <rect x="370" y="60" width="140" height="56" rx="10" fill="color-mix(in srgb, var(--accent-2) 18%, transparent)" stroke="var(--accent-2)"/><text x="440" y="84" text-anchor="middle" class="t" style="font-weight:700">해저 광케이블</text><text x="440" y="102" text-anchor="middle" class="t-mono">태평양 약 1만 km</text>
+          <rect x="534" y="60" width="104" height="56" rx="10" class="f-elev"/><text x="586" y="84" text-anchor="middle" class="t">미국 통신망</text><text x="586" y="102" text-anchor="middle" class="t-mono">라우터 여러 개</text>
+          <rect x="662" y="60" width="128" height="56" rx="10" class="f-acc-soft"/><text x="726" y="84" text-anchor="middle" class="t" style="font-weight:700">데이터센터</text><text x="726" y="102" text-anchor="middle" class="t-mono">뉴욕 서버</text>
+        </g>
+        <g><path d="M102 88 H122" class="s-acc" marker-end="url(#rt-a)"/><path d="M218 88 H238" class="s-acc" marker-end="url(#rt-a)"/><path d="M346 88 H366" class="s-acc" marker-end="url(#rt-a)"/><path d="M510 88 H530" class="s-acc" marker-end="url(#rt-a)"/><path d="M638 88 H658" class="s-acc" marker-end="url(#rt-a)"/></g>
+        <g class="t-mono" style="font-size:12px">
+          <text x="112" y="144" text-anchor="middle">~2 ms</text><text x="230" y="144" text-anchor="middle">~1 ms</text><text x="356" y="144" text-anchor="middle">~5 ms</text><text x="440" y="144" text-anchor="middle" style="fill:var(--accent-2);font-weight:700">~60 ms</text><text x="586" y="144" text-anchor="middle">~10 ms</text><text x="726" y="144" text-anchor="middle">~1 ms</text>
+        </g>
+        <text x="20" y="184" class="t-dim">한쪽 방향 합계 약 80 ms, 왕복(핑) 약 160 ms. 가장 긴 구간은 거의 언제나 바다를 건너는 부분이다.</text>
+        <text x="20" y="206" class="t-dim">각 라우터는 전체 경로를 모른 채 “뉴욕 쪽은 이 선으로”라는 표만 보고 다음 장비로 넘긴다.</text>
+      </svg>
+      <figcaption><b>그림 10-3.</b> 서울에서 뉴욕까지(대략). 숫자는 구간별 한쪽 방향 지연의 대표적인 크기다. 전 세계 대륙은 400개가 넘는 해저 케이블로 이어져 있다.</figcaption>
+    </figure>
     <div class="sim" id="sim-route">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>라우터 네트워크: 연결선을 눌러 끊어 보세요</h3></div>
       <div class="sim-view"><canvas id="cv-route" style="cursor:pointer"></canvas></div>
