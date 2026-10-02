@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>CPU: 명령을 수행하는 두뇌 · ComputerBook</title>
+<meta name="description" content="레지스터, ALU, 제어 장치, 프로그램 카운터로 이루어진 CPU의 구조와 명령어 사이클(가져오기·해석·실행)을 장난감 CPU 시뮬레이터로 한 단계씩 실행하며 배운다.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .toy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  @media (min-width: 760px) { .toy { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); } .toy .mem { border-left: 1px solid var(--border); } }
+  .toy .cpu, .toy .mem { padding: 16px 18px; }
+  .toy h4 { margin: 0 0 10px; font-size: 13px; letter-spacing: .08em; color: var(--text-faint); }
+  .regs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .reg { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 8px 10px; transition: background .2s, border-color .2s; }
+  .reg .n { font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; gap: 6px; }
+  .reg .n i { font-style: normal; color: var(--text-faint); font-size: 11px; }
+  .reg .val { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .reg .sub { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .reg.flash { border-color: var(--accent); background: var(--accent-soft); }
+  .reg.wide { grid-column: span 2; }
+  .phases { display: flex; gap: 6px; margin: 12px 0 0; flex-wrap: wrap; }
+  .phases span { flex: 1; min-width: 80px; text-align: center; font-size: 13px; padding: 6px 8px; border-radius: 8px; background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); }
+  .phases span.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+  .alu { margin-top: 10px; border: 1px dashed var(--border); border-radius: 10px; padding: 8px 10px; font-family: var(--mono); font-size: 13px; color: var(--text-dim); min-height: 40px; }
+  .alu.flash { border-color: var(--accent-2); color: var(--text); background: var(--accent-2-soft); }
+  .memgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .memgrid .cell { padding: 6px 4px; text-align: center; white-space: normal; }
+  .memgrid .cell .op { display: block; font-weight: 700; font-size: 12.5px; color: var(--text); }
+  .memgrid .cell .raw { display: block; font-size: 10.5px; color: var(--text-faint); }
+  .memgrid .cell.pc { box-shadow: inset 0 0 0 2px var(--accent); }
+  .memgrid .cell { position: relative; }
+  .memgrid .cell .pcmark { position: absolute; top: 2px; right: 4px; font-size: 9.5px; color: var(--accent); font-weight: 700; }
+  .outbox { margin-top: 12px; font-family: var(--mono); font-size: 15px; padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); min-height: 40px; }
+  .outbox b { color: var(--accent); }
+  .isa td:first-child, .isa td:nth-child(2) { font-family: var(--mono); white-space: nowrap; }
+  .stepdesc { padding: 12px 18px; border-top: 1px solid var(--border); font-size: 15px; min-height: 56px; background: var(--bg-elev); }
+  .stepdesc b { color: var(--accent); }
+  #asm { min-height: 200px; }
+</style>
+</head>
+<body data-chapter="cpu">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 04</div>
+    <h1>CPU: 명령을 수행하는 두뇌</h1>
+    <p class="lead">CPU는 똑똑해 보이지만 실제로 하는 일은 놀랄 만큼 단순하다. <strong>메모리에서 명령 하나를 가져와서, 무슨 뜻인지 해석하고, 실행한다.</strong> 그리고 다음 명령으로 넘어간다. 이것을 1초에 수십억 번 반복할 뿐이다. 이 장에서는 명령어 8개짜리 장난감 CPU를 직접 한 박자씩 돌려 보며 그 반복을 눈으로 확인한다.</p>
+    <ul class="objectives">
+      <li>CPU의 구성 요소(제어 장치, ALU, 레지스터, 프로그램 카운터)의 역할을 설명한다.</li>
+      <li>명령어도 숫자이며, 숫자 안에 “무엇을 할지”와 “어디에 할지”가 들어 있음을 안다.</li>
+      <li>명령어 사이클(가져오기 → 해석하기 → 실행하기)을 단계별로 따라간다.</li>
+      <li>조건 점프 하나로 “만약 ~라면”과 “반복”을 만드는 원리를 이해한다.</li>
+      <li>장난감 CPU와 실제 CPU(x86, ARM)의 공통점과 차이를 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="inside">
+    <h2>CPU 안의 네 식구</h2>
+    <p>CPU 내부는 몇 개의 핵심 부품으로 나뉜다. 1장의 주방 비유를 이어 가면, 요리사 한 명의 머리와 손을 나눠 보는 셈이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="CPU 내부 구조">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="20" y="20" width="500" height="260" rx="16" class="f-acc-soft"/>
+        <text x="40" y="48" class="t-acc">CPU</text>
+        <g transform="translate(45,65)"><rect width="200" height="80" rx="10" class="f-elev"/><text x="100" y="34" text-anchor="middle" class="t" style="font-weight:700">제어 장치</text><text x="100" y="56" text-anchor="middle" class="t-dim">명령을 해석하고 지시한다</text></g>
+        <g transform="translate(290,65)"><rect width="200" height="80" rx="10" class="f-elev"/><text x="100" y="34" text-anchor="middle" class="t" style="font-weight:700">ALU (산술 논리 장치)</text><text x="100" y="56" text-anchor="middle" class="t-dim">더하기·빼기·비교</text></g>
+        <g transform="translate(45,170)"><rect width="445" height="90" rx="10" class="f-elev"/><text x="20" y="28" class="t" style="font-weight:700">레지스터 (아주 빠른 소형 기억 장소)</text>
+          <rect x="20" y="42" width="90" height="34" rx="6" class="f-acc2-soft"/><text x="65" y="64" text-anchor="middle" class="t-mono">PC</text>
+          <rect x="120" y="42" width="90" height="34" rx="6" class="f-acc2-soft"/><text x="165" y="64" text-anchor="middle" class="t-mono">IR</text>
+          <rect x="220" y="42" width="90" height="34" rx="6" class="f-acc2-soft"/><text x="265" y="64" text-anchor="middle" class="t-mono">A</text>
+          <rect x="320" y="42" width="105" height="34" rx="6" class="f-acc2-soft"/><text x="372" y="64" text-anchor="middle" class="t-mono">플래그</text></g>
+        <g transform="translate(590,40)"><rect width="190" height="220" rx="14" class="f-elev"/><text x="95" y="30" text-anchor="middle" class="t" style="font-weight:700">메모리</text>
+          <g class="t-mono"><rect x="20" y="45" width="150" height="26" rx="5" class="f-surface"/><text x="95" y="63" text-anchor="middle" class="t-mono">0: LOAD 14</text>
+          <rect x="20" y="76" width="150" height="26" rx="5" class="f-surface"/><text x="95" y="94" text-anchor="middle" class="t-mono">1: ADD 15</text>
+          <rect x="20" y="107" width="150" height="26" rx="5" class="f-surface"/><text x="95" y="125" text-anchor="middle" class="t-mono">2: STORE 13</text>
+          <text x="95" y="152" text-anchor="middle" class="t-dim">⋮</text>
+          <rect x="20" y="165" width="150" height="26" rx="5" class="f-surface"/><text x="95" y="183" text-anchor="middle" class="t-mono">15: 7 (데이터)</text></g></g>
+        <path d="M525 150 H585" class="s-acc" marker-end="url(#ar)" marker-start="url(#ar)"/>
+        <text x="555" y="140" text-anchor="middle" class="t-dim">버스</text>
+      </svg>
+      <figcaption><b>그림 4-1.</b> CPU의 기본 구성. 제어 장치가 메모리에서 명령을 가져와 해석하고, ALU와 레지스터에게 일을 시킨다.</figcaption>
+    </figure>
+    <div class="table-wrap"><table>
+      <thead><tr><th>부품</th><th>하는 일</th><th>주방에서는</th></tr></thead>
+      <tbody>
+        <tr><td><b>제어 장치</b><br><span class="en">Control Unit</span></td><td>명령을 해석해서 각 부품에 “지금 이걸 해”라고 신호를 보낸다.</td><td>레시피를 읽고 손에게 지시하는 요리사의 머리</td></tr>
+        <tr><td><b>ALU</b></td><td>덧셈, 뺄셈, 비교, AND/OR 같은 실제 계산을 한다(3장의 덧셈기).</td><td>칼질하고 섞는 손놀림</td></tr>
+        <tr><td><b>프로그램 카운터 (PC)</b></td><td>다음에 실행할 명령이 메모리 몇 번지에 있는지 기억한다.</td><td>레시피의 “지금 몇 번째 줄” 손가락</td></tr>
+        <tr><td><b>명령 레지스터 (IR)</b></td><td>방금 가져온 명령을 붙잡아 둔다.</td><td>지금 읽고 있는 레시피 한 줄</td></tr>
+        <tr><td><b>범용 레지스터 (A)</b></td><td>계산에 쓰는 값을 잠시 쥐고 있다. 장난감 CPU는 A 하나, 실제 CPU는 16~32개.</td><td>손에 쥔 재료</td></tr>
+        <tr><td><b>플래그</b></td><td>“방금 결과가 0이었나?” 같은 짧은 상태를 기록한다.</td><td>“냄비가 끓었나?” 확인 표시</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="isa">
+    <h2>명령어도 숫자다</h2>
+    <p>1장에서 프로그램도 데이터처럼 메모리에 저장된다고 했다. 메모리에는 숫자만 들어가니 명령어도 숫자여야 한다. CPU 설계자는 “이 숫자는 이 명령”이라는 약속표를 만드는데, 이것을 <span class="term">명령어 집합</span><span class="en">(ISA, Instruction Set Architecture)</span>이라 한다.</p>
+    <p>이 장의 장난감 CPU는 명령어가 8비트다. <b>앞 4비트</b>는 무엇을 할지(<span class="term">연산 코드</span>, opcode), <b>뒤 4비트</b>는 메모리 몇 번지를 대상으로 할지(주소)를 나타낸다. 예를 들어 <code>ADD 15</code>는 <code>0010 1111</code>이다. “0010 = 더하기”, “1111 = 15번지”.</p>
+    <div class="table-wrap"><table class="isa">
+      <thead><tr><th>명령</th><th>코드</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>LOAD n</td><td>0001 nnnn</td><td>메모리 n번지의 값을 A로 가져온다</td></tr>
+        <tr><td>ADD n</td><td>0010 nnnn</td><td>A ← A + (n번지 값)</td></tr>
+        <tr><td>SUB n</td><td>0011 nnnn</td><td>A ← A − (n번지 값)</td></tr>
+        <tr><td>STORE n</td><td>0100 nnnn</td><td>A의 값을 메모리 n번지에 저장한다</td></tr>
+        <tr><td>JUMP n</td><td>0101 nnnn</td><td>다음 명령을 n번지에서 가져온다 (PC ← n)</td></tr>
+        <tr><td>JZ n</td><td>0110 nnnn</td><td>A가 0이면 n번지로 점프, 아니면 그냥 다음 명령</td></tr>
+        <tr><td>OUT</td><td>1110 0000</td><td>A의 값을 화면에 출력한다</td></tr>
+        <tr><td>HALT</td><td>1111 0000</td><td>멈춘다</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout tip"><strong>같은 숫자, 다른 의미</strong><p>메모리에 <code>00100111</code>(39)이 있다면 이것은 “ADD 7”이라는 명령일까, 그냥 숫자 39일까? 메모리는 모른다. <b>PC가 가리켜서 명령으로 가져가면 명령</b>이고, LOAD로 읽으면 데이터다. 2장에서 말한 “모든 것은 해석의 약속”이 여기서도 그대로 적용된다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="cycle">
+    <h2>명령어 사이클: 가져오기 → 해석 → 실행</h2>
+    <p>CPU는 전원이 켜져 있는 동안 다음 세 단계를 끝없이 반복한다.</p>
+    <ol>
+      <li><b>가져오기</b><span class="en">(Fetch)</span>: PC가 가리키는 메모리 번지에서 명령을 읽어 IR에 넣는다. 그리고 PC를 1 늘려 다음 줄을 가리키게 한다.</li>
+      <li><b>해석하기</b><span class="en">(Decode)</span>: 제어 장치가 IR의 앞 4비트를 보고 무슨 명령인지, 뒤 4비트로 대상 주소가 어디인지 알아낸다.</li>
+      <li><b>실행하기</b><span class="en">(Execute)</span>: ALU로 계산하거나, 메모리에 쓰거나, PC를 바꾸는(점프) 등 실제 동작을 한다.</li>
+    </ol>
+    <p>이제 직접 돌려 보자. <b>한 단계</b> 버튼을 누를 때마다 위 세 단계 중 하나가 진행된다. 무엇이 어디로 움직이는지 반짝이는 칸을 따라가 보자.</p>
+
+    <div class="sim" id="sim-toy">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>장난감 CPU</h3></div>
+      <div class="sim-controls" style="border-top:0;border-bottom:1px solid var(--border)">
+        <div class="ctrl"><span>예제 프로그램</span><div class="seg" id="prog"><button data-value="add" class="on">두 수 더하기</button><button data-value="count">카운트다운</button><button data-value="sum">1부터 N까지 합</button><button data-value="custom">직접 작성</button></div></div>
+        <div class="ctrl"><span>실행 <output id="cyc-out">0 사이클</output></span><div class="btn-row"><button class="btn primary" id="b-step">한 단계</button><button class="btn" id="b-instr">명령 하나</button><button class="btn" id="b-run">자동 실행</button><button class="btn" id="b-reset">처음으로</button></div></div>
+      </div>
+      <div class="toy">
+        <div class="cpu">
+          <h4>CPU</h4>
+          <div class="regs">
+            <div class="reg" id="r-pc"><div class="n">PC <i>다음 명령 주소</i></div><div class="val">0</div><div class="sub">0000</div></div>
+            <div class="reg" id="r-a"><div class="n">A <i>계산용</i></div><div class="val">0</div><div class="sub">00000000</div></div>
+            <div class="reg wide" id="r-ir"><div class="n">IR <i>가져온 명령</i></div><div class="val">—</div><div class="sub">&nbsp;</div></div>
+            <div class="reg" id="r-z"><div class="n">Z 플래그 <i>A가 0인가</i></div><div class="val">1</div></div>
+            <div class="reg" id="r-st"><div class="n">상태</div><div class="val" style="font-size:16px">준비</div></div>
+          </div>
+          <div class="phases"><span id="ph-f">① 가져오기</span><span id="ph-d">② 해석</span><span id="ph-e">③ 실행</span></div>
+          <div class="alu" id="alu">ALU 대기 중</div>
+          <div class="outbox" id="out">출력: </div>
+        </div>
+        <div class="mem">
+          <h4>메모리 (16칸, 0~15번지)</h4>
+          <div class="memgrid" id="mem"></div>
+        </div>
+      </div>
+      <div class="stepdesc" id="desc"><b>한 단계</b>를 눌러 시작하세요. 먼저 PC가 가리키는 0번지에서 명령을 가져옵니다.</div>
+      <div id="custom-box" style="display:none;border-top:1px solid var(--border)" class="sim-controls">
+        <label class="ctrl"><span>어셈블리 (한 줄 = 한 칸, 0번지부터. 숫자만 쓰면 데이터. // 뒤는 주석)</span><textarea id="asm" spellcheck="false"></textarea></label>
+        <div class="btn-row"><button class="btn primary" id="b-asm">메모리에 넣기</button><span class="scale-note" id="asm-msg"></span></div>
+      </div>
+      <div class="sim-note">해볼 것: “두 수 더하기”를 <b>한 단계</b>씩 끝까지 실행해 보자. PC는 가져오기 단계마다 1씩 늘어나고, JUMP·JZ만이 PC를 다른 값으로 바꾼다. “1부터 N까지 합”에서는 12번지 값(N)을 바꾸려면 “직접 작성” 탭에서 수정하면 된다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="branch">
+    <h2>점프 하나로 판단과 반복을</h2>
+    <p>“카운트다운” 프로그램을 다시 보자. CPU에는 “반복하라”는 명령이 없다. 대신 <b>JUMP</b>로 앞쪽 줄로 되돌아가면 반복이 되고, <b>JZ</b>(0이면 점프)로 반복을 빠져나간다.</p>
+    <div class="codebox"><span class="c">// 카운트다운: 5, 4, 3, 2, 1, 0 을 출력</span>
+<span class="n">0</span>  <span class="k">LOAD</span> 15   <span class="c">// A ← 5</span>
+<span class="n">1</span>  <span class="k">OUT</span>       <span class="c">// A 출력          ◀──┐</span>
+<span class="n">2</span>  <span class="k">SUB</span>  14   <span class="c">// A ← A − 1          │</span>
+<span class="n">3</span>  <span class="k">JZ</span>   5    <span class="c">// A가 0이면 5번지로  │ (탈출)</span>
+<span class="n">4</span>  <span class="k">JUMP</span> 1    <span class="c">// 아니면 1번지로 ────┘ (반복)</span>
+<span class="n">5</span>  <span class="k">OUT</span>       <span class="c">// 0 출력</span>
+<span class="n">6</span>  <span class="k">HALT</span></div>
+    <p>우리가 프로그래밍 언어에서 쓰는 <code>if</code>(만약), <code>while</code>(~하는 동안), <code>for</code>(~번 반복)는 모두 결국 이런 <strong>조건 점프</strong>로 번역된다(13장). 아무리 복잡한 앱도 CPU에게는 “계산하고, 저장하고, 조건에 따라 다른 줄로 점프하기”의 반복일 뿐이다.</p>
+    <div class="callout deep"><strong>튜링 완전</strong><p>놀랍게도 “메모리 읽기/쓰기, 더하기/빼기, 조건 점프” 정도만 있으면 (메모리가 충분하다는 가정하에) 어떤 계산이든 할 수 있다는 것이 증명되어 있다. 이런 성질을 <b>튜링 완전</b>이라 한다. 장난감 CPU도 원리적으로는 슈퍼컴퓨터와 같은 문제를 풀 수 있다. 다만 엄청나게 느리고 메모리가 작을 뿐이다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="real">
+    <h2>실제 CPU는 무엇이 다를까</h2>
+    <p>원리는 장난감 CPU와 같다. 하지만 규모가 다르다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th></th><th>장난감 CPU</th><th>요즘 실제 CPU</th></tr></thead>
+      <tbody>
+        <tr><td>한 번에 다루는 비트</td><td class="num">8</td><td class="num">64</td></tr>
+        <tr><td>범용 레지스터</td><td class="num">1개</td><td class="num">16~32개 (+ 벡터 레지스터)</td></tr>
+        <tr><td>명령어 종류</td><td class="num">8개</td><td class="num">수백~수천 개</td></tr>
+        <tr><td>메모리 주소</td><td class="num">16칸</td><td class="num">2⁴⁸ 칸 이상 (수백 TB)</td></tr>
+        <tr><td>클럭</td><td class="num">손가락</td><td class="num">3~5.5 GHz</td></tr>
+        <tr><td>한 박자에 처리하는 명령</td><td class="num">1/3개</td><td class="num">여러 개 (파이프라인·슈퍼스칼라, 5장)</td></tr>
+        <tr><td>코어(CPU 두뇌) 수</td><td class="num">1</td><td class="num">8~24개 이상</td></tr>
+      </tbody>
+    </table></div>
+    <p>실제 명령어 집합으로는 PC와 서버에서 쓰는 <b>x86-64</b>(인텔, AMD)와 스마트폰과 최신 맥에서 쓰는 <b>ARM</b>이 대표적이다. 같은 일도 ISA에 따라 다른 숫자로 적는다. 그래서 윈도우용 프로그램이 그대로 스마트폰에서 돌아가지 않는다. 같은 레시피라도 다른 언어로 써야 하는 것이다.</p>
+    <div class="codebox"><span class="c">// a = b + c 를 각 ISA로 적으면 (개념적 예)</span>
+<span class="c">장난감:</span>  <span class="k">LOAD</span> b    <span class="k">ADD</span> c    <span class="k">STORE</span> a
+<span class="c">x86-64:</span>  <span class="k">mov</span> eax, [b]   <span class="k">add</span> eax, [c]   <span class="k">mov</span> [a], eax
+<span class="c">ARM64:</span>   <span class="k">ldr</span> w0, [b]    <span class="k">ldr</span> w1, [c]    <span class="k">add</span> w0, w0, w1    <span class="k">str</span> w0, [a]</div>
+    <div class="callout deep"><strong>CISC와 RISC</strong><p>x86은 한 명령이 복잡한 일(메모리에서 읽어 더하기까지)을 한꺼번에 하는 <b>CISC</b> 전통에서, ARM은 단순한 명령만 두고 대신 빠르게 많이 실행하는 <b>RISC</b> 전통에서 출발했다. 요즘은 x86도 내부에서 복잡한 명령을 단순한 조각으로 쪼개 실행하기 때문에 둘의 차이는 많이 줄었다. 전력 효율이 중요한 스마트폰에서는 ARM이 우세하다.</p></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>CPU는 <b>제어 장치</b>(해석·지시), <b>ALU</b>(계산), <b>레지스터</b>(초고속 소형 기억)로 이루어진다.</li>
+      <li><b>PC(프로그램 카운터)</b>는 다음 명령의 주소를 가리킨다. 레시피를 짚는 손가락이다.</li>
+      <li>명령어도 숫자다. 앞부분은 연산 종류(opcode), 뒷부분은 대상(주소·레지스터)을 담는다. 이 약속표가 ISA다.</li>
+      <li>CPU는 <b>가져오기 → 해석 → 실행</b>을 끝없이 반복한다.</li>
+      <li>반복과 조건 판단은 모두 <b>점프와 조건 점프</b>로 만든다.</li>
+      <li>실제 CPU는 원리는 같지만 비트 폭, 레지스터, 명령어 수, 속도, 코어 수가 훨씬 크다. x86과 ARM은 서로 다른 ISA다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>프로그램 카운터(PC)가 저장하는 것은?</p><div class="opts">
+        <button class="opt">지금까지 실행한 명령의 개수</button>
+        <button class="opt" data-correct>다음에 실행할 명령이 있는 메모리 주소</button>
+        <button class="opt">계산 결과</button>
+        <button class="opt">CPU의 온도</button>
+      </div><div class="quiz-exp">이름에 “카운터”가 들어가지만 개수를 세는 것이 아니라 “다음 줄 번호”를 가리킨다. 가져오기 단계마다 1씩 늘어난다.</div></div>
+      <div class="quiz-q"><p>장난감 CPU에서 <code>0011 1110</code>은 어떤 명령인가?</p><div class="opts">
+        <button class="opt">ADD 14</button><button class="opt" data-correct>SUB 14</button><button class="opt">LOAD 3</button><button class="opt">STORE 14</button>
+      </div><div class="quiz-exp">앞 4비트 0011은 SUB, 뒤 4비트 1110은 14. A에서 14번지 값을 뺀다.</div></div>
+      <div class="quiz-q"><p>명령어 사이클의 올바른 순서는?</p><div class="opts">
+        <button class="opt">실행 → 가져오기 → 해석</button>
+        <button class="opt">해석 → 실행 → 가져오기</button>
+        <button class="opt" data-correct>가져오기 → 해석 → 실행</button>
+      </div><div class="quiz-exp">메모리에서 명령을 가져와야(Fetch) 해석(Decode)하고 실행(Execute)할 수 있다.</div></div>
+      <div class="quiz-q"><p>CPU가 “반복문”을 실행할 수 있게 해 주는 것은?</p><div class="opts">
+        <button class="opt">반복 전용 회로</button>
+        <button class="opt" data-correct>PC를 앞쪽 주소로 되돌리는 점프 명령</button>
+        <button class="opt">메모리를 복사하는 기능</button>
+        <button class="opt">클럭을 멈추는 기능</button>
+      </div><div class="quiz-exp">점프로 PC를 이전 주소로 바꾸면 같은 명령들이 다시 실행된다. 조건 점프로 빠져나올 시점을 정한다.</div></div>
+      <div class="quiz-q"><p>윈도우 PC용 프로그램이 스마트폰에서 그대로 실행되지 않는 근본 이유 중 하나는?</p><div class="opts">
+        <button class="opt">화면 크기가 달라서</button>
+        <button class="opt" data-correct>CPU의 명령어 집합(ISA, x86과 ARM)이 달라 같은 숫자가 다른 명령을 뜻해서</button>
+        <button class="opt">스마트폰 메모리가 작아서</button>
+        <button class="opt">스마트폰에는 클럭이 없어서</button>
+      </div><div class="quiz-exp">기계어는 특정 ISA의 약속표로 적혀 있다. 다른 ISA의 CPU는 그 숫자를 다른 뜻으로 해석한다(운영체제 차이도 또 다른 이유다).</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const OPS = { LOAD: 1, ADD: 2, SUB: 3, STORE: 4, JUMP: 5, JZ: 6, OUT: 14, HALT: 15 };
+  const NAMES = Object.fromEntries(Object.entries(OPS).map(([k, v]) => [v, k]));
+  const PROGS = {
+    add: "LOAD 14   // A ← 14번지 값\nADD 15    // A ← A + 15번지 값\nSTORE 13  // 결과를 13번지에 저장\nOUT       // 화면에 출력\nHALT\n0\n0\n0\n0\n0\n0\n0\n0\n0   // 13: 결과 자리\n5   // 14: 첫 번째 수\n7   // 15: 두 번째 수",
+    count: "LOAD 15   // A ← 5\nOUT       // 출력\nSUB 14    // A ← A - 1\nJZ 5      // 0이면 5번지로 탈출\nJUMP 1    // 아니면 1번지로 반복\nOUT       // 0 출력\nHALT\n0\n0\n0\n0\n0\n0\n0\n1   // 14: 상수 1\n5   // 15: 시작 값",
+    sum: "LOAD 13   // A ← 합계\nADD 12    // A ← 합계 + i\nSTORE 13  // 합계 ← A\nLOAD 12   // A ← i\nSUB 14    // A ← i - 1\nSTORE 12  // i ← A\nJZ 8      // i가 0이면 끝\nJUMP 0    // 아니면 반복\nLOAD 13\nOUT       // 합계 출력\nHALT\n0\n5   // 12: i (N부터 시작)\n0   // 13: 합계\n1   // 14: 상수 1\n0",
+  };
+  PROGS.custom = PROGS.sum;
+  let mem = new Array(16).fill(0), pc = 0, a = 0, ir = null, z = 1, phase = 0, halted = false, out = [], cycles = 0, dec = null;
+  const $ = (id) => document.getElementById(id);
+  const memEl = $("mem");
+  for (let i = 0; i < 16; i++) { const c = document.createElement("div"); c.className = "cell"; memEl.appendChild(c); }
+
+  function assemble(src) {
+    const lines = src.split("\n");
+    const m = new Array(16).fill(0); let errs = [];
+    let addr = 0;
+    for (const raw of lines) {
+      const line = raw.replace(/\/\/.*$/, "").trim();
+      if (!line) { if (raw.trim()) continue; else continue; }
+      if (addr > 15) { errs.push("16칸을 넘었다"); break; }
+      const [op, arg] = line.toUpperCase().split(/\s+/);
+      if (/^-?\d+$/.test(op)) m[addr] = ((Number(op) % 256) + 256) % 256;
+      else if (OPS[op] != null) {
+        const n = arg == null ? 0 : Number(arg);
+        if (!(op === "OUT" || op === "HALT") && (isNaN(n) || n < 0 || n > 15)) errs.push(`${addr}번지: 주소는 0~15`);
+        m[addr] = (OPS[op] << 4) | (op === "OUT" || op === "HALT" ? 0 : n & 15);
+      } else errs.push(`${addr}번지: '${op}'는 모르는 명령`);
+      addr++;
+    }
+    return { m, errs };
+  }
+  const decode = (v) => { const op = v >> 4, n = v & 15; const nm = NAMES[op]; if (!nm) return null; return { op: nm, n, txt: nm === "OUT" || nm === "HALT" ? nm : `${nm} ${n}` }; };
+  const sgn = (v) => (v > 127 ? v - 256 : v);
+
+  function load(key) {
+    const src = PROGS[key];
+    if (key === "custom" && !$("asm").value) $("asm").value = src;
+    const { m } = assemble(key === "custom" ? $("asm").value : src);
+    mem = m; reset();
+  }
+  function reset() { pc = 0; a = 0; ir = null; z = 1; phase = 0; halted = false; out = []; cycles = 0; dec = null; stopRun(); render([]); $("desc").innerHTML = "<b>한 단계</b>를 눌러 시작하세요. 먼저 PC가 가리키는 0번지에서 명령을 가져옵니다."; $("alu").textContent = "ALU 대기 중"; }
+
+  function flash(ids) { ids.forEach((id) => { const el = $(id); if (el) { el.classList.add("flash"); } }); }
+  function render(hl, memHl = {}) {
+    ["r-pc", "r-a", "r-ir", "r-z", "r-st", "alu"].forEach((id) => $(id).classList.remove("flash"));
+    $("r-pc").querySelector(".val").textContent = pc; $("r-pc").querySelector(".sub").textContent = CB.bin(pc, 4);
+    $("r-a").querySelector(".val").textContent = sgn(a); $("r-a").querySelector(".sub").textContent = CB.bin(a, 8);
+    const d = ir == null ? null : decode(ir);
+    $("r-ir").querySelector(".val").textContent = ir == null ? "—" : d ? d.txt : ir;
+    $("r-ir").querySelector(".sub").innerHTML = ir == null ? "&nbsp;" : CB.bin(ir >> 4, 4) + " " + CB.bin(ir & 15, 4) + (d ? `  (연산 ${d.op} · 주소 ${d.n})` : "");
+    $("r-z").querySelector(".val").textContent = z;
+    $("r-st").querySelector(".val").textContent = halted ? "멈춤" : ["가져올 차례", "해석할 차례", "실행할 차례"][phase];
+    ["ph-f", "ph-d", "ph-e"].forEach((id, i) => $(id).classList.toggle("on", !halted && phase === i));
+    flash(hl);
+    [...memEl.children].forEach((c, i) => {
+      const v = mem[i]; const dd = decode(v);
+      c.className = "cell" + (memHl[i] ? " " + memHl[i] : "") + (i === pc && !halted ? " pc" : "");
+      c.innerHTML = `<span class="addr">${i}번지</span><span class="op">${dd ? dd.txt : v}</span><span class="raw">${CB.bin(v, 8)}</span>${i === pc && !halted ? '<span class="pcmark">PC</span>' : ""}`;
+    });
+    $("out").innerHTML = "출력: " + out.map((v) => `<b>${v}</b>`).join(", ");
+    $("cyc-out").textContent = cycles + " 단계";
+    ["b-step", "b-instr"].forEach((id) => ($(id).disabled = halted));
+  }
+
+  function step() {
+    if (halted) return;
+    cycles++;
+    let hl = [], mh = {}, msg = "";
+    if (phase === 0) {
+      const at = pc;
+      ir = mem[pc]; pc = (pc + 1) & 15;
+      hl = ["r-ir", "r-pc"]; mh[at] = "hot";
+      msg = `<b>① 가져오기:</b> PC가 가리키던 ${at}번지의 값 <code>${CB.bin(ir, 8)}</code>을 IR로 가져왔다. 그리고 PC를 1 늘려 ${pc}로 만들었다(다음 줄 준비).`;
+      phase = 1;
+    } else if (phase === 1) {
+      dec = decode(ir);
+      hl = ["r-ir"];
+      if (!dec) msg = `<b>② 해석:</b> 앞 4비트 <code>${CB.bin(ir >> 4, 4)}</code>는 약속표에 없는 명령이다! 이 칸은 데이터인데 PC가 잘못 가리켰다. 멈춘다.`;
+      else {
+        const what = { LOAD: `${dec.n}번지 값을 A로 가져오기`, ADD: `A에 ${dec.n}번지 값을 더하기`, SUB: `A에서 ${dec.n}번지 값을 빼기`, STORE: `A를 ${dec.n}번지에 저장하기`, JUMP: `${dec.n}번지로 점프하기`, JZ: `A가 0이면 ${dec.n}번지로 점프하기`, OUT: "A를 출력하기", HALT: "멈추기" }[dec.op];
+        msg = `<b>② 해석:</b> 앞 4비트 <code>${CB.bin(ir >> 4, 4)}</code> = <b>${dec.op}</b>, 뒤 4비트 <code>${CB.bin(ir & 15, 4)}</code> = ${dec.n}. 제어 장치가 “${what}”로 이해했다.`;
+        if (["LOAD", "ADD", "SUB", "STORE"].includes(dec.op)) mh[dec.n] = "hot2";
+      }
+      phase = dec ? 2 : 0; if (!dec) halted = true;
+    } else {
+      const { op, n } = dec;
+      let aluTxt = "ALU 대기 중";
+      if (op === "LOAD") { a = mem[n]; hl = ["r-a"]; mh[n] = "hot2"; msg = `<b>③ 실행:</b> ${n}번지의 값 ${sgn(mem[n])}을 A에 넣었다.`; }
+      else if (op === "ADD" || op === "SUB") {
+        const before = a; a = op === "ADD" ? (a + mem[n]) & 255 : (a - mem[n] + 256) & 255; hl = ["r-a", "alu"]; mh[n] = "hot2";
+        aluTxt = `ALU: ${sgn(before)} ${op === "ADD" ? "+" : "−"} ${sgn(mem[n])} = ${sgn(a)}`;
+        msg = `<b>③ 실행:</b> ALU가 ${sgn(before)} ${op === "ADD" ? "+" : "−"} ${sgn(mem[n])}을 계산해 A에 ${sgn(a)}를 넣었다.`;
+      } else if (op === "STORE") { mem[n] = a; mh[n] = "ok"; msg = `<b>③ 실행:</b> A의 값 ${sgn(a)}을 메모리 ${n}번지에 저장했다.`; }
+      else if (op === "JUMP") { pc = n; hl = ["r-pc"]; msg = `<b>③ 실행:</b> PC를 ${n}으로 바꿨다. 다음에는 ${n}번지의 명령을 가져온다.`; }
+      else if (op === "JZ") { if (a === 0) { pc = n; hl = ["r-pc"]; msg = `<b>③ 실행:</b> A가 0이다(Z=1). PC를 ${n}으로 바꿔 점프한다.`; } else msg = `<b>③ 실행:</b> A가 ${sgn(a)}로 0이 아니다(Z=0). 점프하지 않고 그대로 다음 줄(${pc}번지)로 간다.`; }
+      else if (op === "OUT") { out.push(sgn(a)); msg = `<b>③ 실행:</b> A의 값 ${sgn(a)}을 출력했다.`; }
+      else if (op === "HALT") { halted = true; msg = `<b>③ 실행:</b> HALT. 프로그램이 끝났다. 출력: ${out.join(", ") || "없음"}`; }
+      z = a === 0 ? 1 : 0;
+      $("alu").textContent = aluTxt; if (hl.includes("alu")) $("alu").classList.add("flash");
+      phase = 0;
+      if (cycles > 600 && !halted) { halted = true; msg += " (너무 오래 실행되어 시뮬레이터가 멈췄다. 무한 반복일까?)"; }
+    }
+    render(hl, mh);
+    if (hl.includes("alu")) $("alu").classList.add("flash");
+    $("desc").innerHTML = msg;
+  }
+  function instr() { if (halted) return; do { step(); } while (phase !== 0 && !halted); }
+  let timer = null;
+  function stopRun() { if (timer) { clearInterval(timer); timer = null; } $("b-run").textContent = "자동 실행"; }
+  $("b-step").onclick = () => { stopRun(); step(); };
+  $("b-instr").onclick = () => { stopRun(); instr(); };
+  $("b-reset").onclick = () => { const k = prog(); if (k === "custom") { const { m } = assemble($("asm").value); mem = m; } else mem = assemble(PROGS[k]).m; reset(); };
+  $("b-run").onclick = () => { if (timer) return stopRun(); if (halted) $("b-reset").onclick(); $("b-run").textContent = "멈춤"; timer = setInterval(() => { step(); if (halted) stopRun(); }, 450); };
+  const prog = CB.seg("prog", (v) => { $("custom-box").style.display = v === "custom" ? "" : "none"; load(v); });
+  $("b-asm").onclick = () => { const { m, errs } = assemble($("asm").value); $("asm-msg").textContent = errs.length ? "⚠ " + errs.join(", ") : "✓ 메모리에 넣었습니다"; if (!errs.length) { mem = m; reset(); } };
+  load("add");
+})();
+</script>
+</body>
+</html>
