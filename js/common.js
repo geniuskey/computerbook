@@ -11,18 +11,18 @@
     { slug: "intro",    num: "01", part: "시작하기", title: "컴퓨터는 무엇인가",          desc: "입력·처리·저장·출력. 컴퓨터 속 부품을 둘러보고, 나노초의 세계를 사람의 시간으로 느껴 본다.", tags: ["기초", "sim"] },
     { slug: "bits",     num: "02", part: "시작하기", title: "0과 1로 모든 것을",          desc: "비트와 이진수, 16진수, 글자·색·사진·소리를 숫자로 바꾸는 법. 바이트 단위 감각까지.", tags: ["데이터", "sim"] },
     { slug: "logic",    num: "03", part: "시작하기", title: "트랜지스터와 논리 게이트",    desc: "스위치에서 AND·OR·NOT으로, 게이트를 엮어 덧셈기와 1비트 기억 소자를 만든다.", tags: ["하드웨어", "sim"] },
-    { slug: "cpu",      num: "04", part: "CPU",      title: "CPU: 명령을 수행하는 두뇌",   desc: "레지스터, ALU, 제어 장치, 프로그램 카운터. 장난감 CPU로 명령어 사이클을 한 단계씩 돌려 본다.", tags: ["CPU", "sim"] },
+    { slug: "cpu",      num: "04", part: "CPU",      title: "CPU: 명령을 수행하는 두뇌",   desc: "레지스터, ALU, 버스와 데이터 경로. 장난감 CPU로 명령어 사이클을 돌리고, 기계어를 해독하고, 함수 호출까지.", tags: ["CPU", "sim"] },
     { slug: "cpu-perf", num: "05", part: "CPU",      title: "더 빠른 CPU의 비밀",          desc: "클럭, 파이프라인, 분기 예측, 멀티코어와 암달의 법칙, 전력과 발열의 벽.", tags: ["CPU", "sim"] },
     { slug: "memory",   num: "06", part: "메모리",   title: "메모리와 캐시",               desc: "주소와 RAM, 메모리 계층, 캐시 적중과 실패, 지역성. 왜 '가까운 곳'이 빠른가.", tags: ["메모리", "sim"] },
     { slug: "storage",  num: "07", part: "메모리",   title: "저장장치와 파일",             desc: "HDD와 SSD의 동작 원리, 블록과 파일 시스템, 지워도 남는 데이터.", tags: ["메모리", "sim"] },
     { slug: "os",       num: "08", part: "운영체제", title: "운영체제: 컴퓨터의 관리자",   desc: "커널과 시스템 콜, 프로세스와 스레드, CPU 스케줄링, 인터럽트, 경쟁 상태와 잠금.", tags: ["OS", "sim"] },
-    { slug: "vm",       num: "09", part: "운영체제", title: "가상 메모리",                 desc: "프로그램마다 주어지는 가짜 주소 공간. 페이지 테이블, 페이지 폴트, 교체 알고리즘.", tags: ["OS", "sim"] },
+    { slug: "vm",       num: "09", part: "운영체제", title: "가상 메모리",                 desc: "프로그램마다 주어지는 가짜 주소 공간. 페이지 테이블, TLB, 페이지 폴트, 교체 알고리즘, 스래싱.", tags: ["OS", "sim"] },
     { slug: "network",  num: "10", part: "네트워크", title: "네트워크의 기초",             desc: "패킷과 계층, IP 주소와 라우팅, TCP의 신뢰성. 데이터가 바다 건너가는 법.", tags: ["네트워크", "sim"] },
     { slug: "web",      num: "11", part: "네트워크", title: "웹 페이지가 열리기까지",      desc: "URL을 입력한 순간부터 DNS, TCP 연결, HTTPS 암호화, HTTP 요청, 화면 그리기까지.", tags: ["네트워크", "sim"] },
     { slug: "gpu",      num: "12", part: "GPU",      title: "GPU: 수천 개의 작은 일꾼",    desc: "CPU와 GPU의 차이, 대량 병렬 처리, 그래픽 파이프라인과 래스터화, AI가 GPU를 쓰는 이유.", tags: ["GPU", "sim"] },
     { slug: "program",  num: "13", part: "프로그램", title: "프로그램은 어떻게 실행되는가", desc: "소스 코드 → 컴파일 → 기계어 → 로딩 → 실행. 스택과 힙, 함수 호출을 눈으로 따라간다.", tags: ["소프트웨어", "sim"] },
     { slug: "journey",  num: "14", part: "종합",     title: "클릭 한 번의 여행",           desc: "키를 누른 순간부터 화면이 바뀔 때까지, 모든 계층이 함께 일하는 모습을 따라간다.", tags: ["종합", "sim"] },
-    { slug: "glossary", num: "15", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 140여 개를 검색하고, 26문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
+    { slug: "glossary", num: "15", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 145개를 검색하고, 26문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
   ];
 
   const CB = (window.CB = {});
