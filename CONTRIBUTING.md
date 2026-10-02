@@ -59,7 +59,8 @@
 - 콜아웃: `.callout`(기본), `.tip`, `.warn`, `.analogy`(비유), `.deep`(더 알아보기)
 - 코드: `<div class="codebox">` (`.k` 키워드, `.c` 주석, `.n` 숫자, `.s` 문자열, `.hl` 강조 줄)
 - 비트 토글: `<button class="bit">0<small>128</small></button>`, 메모리 칸: `.cell` (+ `.hot .hot2 .ok .bad .warn`)
-- 퀴즈: `.quiz-q > p + .opts > button.opt[data-correct]` + `.quiz-exp`
+- 퀴즈: `.quiz-q > p + .opts > button.opt[data-correct]` + `.quiz-exp` (고른 답은 자동으로 진도에 저장·복원된다)
+- 용어: `.term` 안의 글자가 `js/terms.js`의 표제어(괄호 앞부분, 영어 이름 포함)나 `CB_TERM_ALIAS`와 맞으면 자동으로 툴팁이 붙는다. 새 용어는 `CB_TERMS`에 `[한국어, 영어, 설명, 장 slug]`로 그 장 묶음 안에 추가한다.
 
 ## JS 헬퍼 (`js/common.js`, 전역 `CB`)
 - `CB.canvas(el, (ctx,w,h)=>{}, {aspect, height, minHeight, maxHeight})` → `{redraw()}` HiDPI, 리사이즈·테마 변경 시 자동 redraw.
@@ -68,4 +69,5 @@
 - `CB.range(id, fmt, onInput)`, `CB.seg(id, onChange)`, `CB.stat(id, html)`
 - 그리기: `CB.rrect`, `CB.box(ctx,x,y,w,h,{fill,stroke,text,color,size,bold,mono,r})`, `CB.arrow`, `CB.text`
 - 숫자: `CB.bin(n,bits)`, `CB.hex(n,digits)`, `CB.bytes(b)`, `CB.time(s)`, `CB.kn(n)`(만·억·조), `CB.fmt`, `CB.si`
+- 진도: `CB.progress.get(slug)`, `.last()`, `.doneCount()`, `.reset()` (localStorage `cb-progress-v1`)
 - 기타: `CB.palette()`, `CB.color(name)`, `CB.isDark()`, `CB.onTheme(cb)`, `CB.rng(seed)`, `CB.clamp/lerp/map`, `CB.CHAPTERS`

@@ -25,7 +25,8 @@
     { slug: "io",       num: "15", part: "더 깊이",  title: "입출력과 버스",               desc: "장치와 대화하는 법. 폴링·인터럽트·DMA, USB·PCIe 대역폭, 화면이 그려지는 원리와 화면 찢김.", tags: ["하드웨어", "sim"] },
     { slug: "security", num: "16", part: "더 깊이",  title: "보안의 기초",                 desc: "해시와 비밀번호, 무차별 대입, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증.", tags: ["보안", "sim"] },
     { slug: "ai",       num: "17", part: "더 깊이",  title: "AI는 어떻게 계산하나",        desc: "인공 뉴런과 학습, 경사 하강, 신경망과 행렬, 다음 단어 예측, 모델 크기와 GPU 메모리.", tags: ["AI", "sim"] },
-    { slug: "glossary", num: "18", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 180개를 검색하고, 32문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
+    { slug: "build",    num: "18", part: "실습",     title: "나만의 컴퓨터 만들기",        desc: "예산 안에서 부품을 골라 조립하고, 부팅·게임·영상 편집·AI 작업을 돌려 병목을 찾는 미션 놀이터.", tags: ["실습", "sim"] },
+    { slug: "glossary", num: "19", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 199개를 검색하고, 35문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
   ];
 
   const CB = (window.CB = {});
@@ -363,6 +364,18 @@
   /** 통계 표시: CB.stat('snr', '32.1 dB') → id 요소의 textContent 설정(HTML 허용) */
   CB.stat = function (id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
+
+  /* ------------------------------------------------------------ 학습 진도 (브라우저에만 저장) */
+  const PKEY = "cb-progress-v1";
+  CB.progress = {
+    load() { try { return JSON.parse(localStorage.getItem(PKEY)) || { ch: {} }; } catch (e) { return { ch: {} }; } },
+    save(d) { try { localStorage.setItem(PKEY, JSON.stringify(d)); } catch (e) {} },
+    get(slug) { return this.load().ch[slug] || null; },
+    update(slug, fn) { const d = this.load(); d.ch = d.ch || {}; const c = (d.ch[slug] = d.ch[slug] || { pct: 0 }); fn(c, d); this.save(d); return c; },
+    last() { return this.load().last || null; },
+    reset() { try { localStorage.removeItem(PKEY); } catch (e) {} },
+    doneCount() { const ch = this.load().ch || {}; return CHAPTERS.filter((c) => ch[c.slug] && ch[c.slug].done).length; },
+  };
   /* ------------------------------------------------------------ layout build */
   const LOGO = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="cbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-2)"/></linearGradient></defs><rect x="2" y="2" width="28" height="28" rx="8" fill="url(#cbg)"/><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"><path d="M12 6v3M16 6v3M20 6v3M12 23v3M16 23v3M20 23v3M6 12h3M6 16h3M6 20h3M23 12h3M23 16h3M23 20h3"/></g><rect x="10" y="10" width="12" height="12" rx="2.5" fill="#fff"/><text x="16" y="19.2" text-anchor="middle" font-family="monospace" font-size="7.5" font-weight="700" fill="var(--accent)">01</text></svg>`;
   const ICON_MENU = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
@@ -392,7 +405,7 @@
     let lastPart = "";
     drawer.innerHTML = `<h4>Chapters</h4><ul class="sb-chlist">
       <li><a href="${href("")}" class="${curSlug ? "" : "active"}"><span class="num">00</span><span>홈 · 로드맵</span></a></li>
-      ${CHAPTERS.map((c) => { const head = c.part !== lastPart ? `<li class="part">${c.part}</li>` : ""; lastPart = c.part; return head + `<li><a href="${href(c.slug)}" class="${c.slug === curSlug ? "active" : ""}"><span class="num">${c.num}</span><span>${c.title}</span></a></li>`; }).join("")}
+      ${CHAPTERS.map((c) => { const head = c.part !== lastPart ? `<li class="part">${c.part}</li>` : ""; lastPart = c.part; return head + `<li><a href="${href(c.slug)}" data-slug="${c.slug}" class="${c.slug === curSlug ? "active" : ""}"><span class="num">${c.num}</span><span class="t">${c.title}</span><i class="sb-st"></i></a></li>`; }).join("")}
     </ul>`;
     const backdrop = document.createElement("div");
     backdrop.className = "sb-drawer-backdrop";
@@ -475,6 +488,125 @@
         q.dispatchEvent(new CustomEvent("answered", { bubbles: true, detail: { correct: b.hasAttribute("data-correct") } }));
       }));
     });
+
+
+    // 학습 진도: 읽은 비율, 마지막 섹션, 퀴즈 답
+    const paintDrawer = () => {
+      const ch = CB.progress.load().ch || {};
+      drawer.querySelectorAll("a[data-slug]").forEach((a) => {
+        const c = ch[a.dataset.slug], st = a.querySelector(".sb-st");
+        st.className = "sb-st" + (c && c.done ? " done" : c && c.pct > 2 ? " part" : "");
+        st.style.setProperty("--p", (c ? Math.round(c.pct) : 0) + "%");
+        st.title = c && c.done ? "다 읽음" : c && c.pct > 2 ? `${Math.round(c.pct)}% 읽음` : "";
+      });
+    };
+    paintDrawer();
+    if (main && curSlug) {
+      const secs = [...main.querySelectorAll("section[id]")];
+      const quizQs = [...main.querySelectorAll(".quiz-q")];
+      const saved = CB.progress.get(curSlug);
+      // 지난 퀴즈 답 복원
+      if (saved && saved.ans) {
+        quizQs.forEach((q, qi) => {
+          const pick = saved.ans[qi]; if (pick == null) return;
+          const opts = [...q.querySelectorAll("button.opt")]; const b = opts[pick]; if (!b) return;
+          opts.forEach((o) => { o.disabled = true; if (o.hasAttribute("data-correct")) o.classList.add("right"); });
+          if (!b.hasAttribute("data-correct")) b.classList.add("wrong");
+          q.classList.add("done");
+        });
+        const qs = main.querySelector(".quiz-sec .quiz");
+        if (qs && Object.keys(saved.ans).length) {
+          const bar = document.createElement("div"); bar.className = "quiz-restore";
+          bar.innerHTML = `<span>지난번에 푼 답을 불러왔습니다.</span><button class="btn" type="button">다시 풀기</button>`;
+          bar.querySelector("button").onclick = () => {
+            CB.progress.update(curSlug, (c) => { c.ans = {}; });
+            quizQs.forEach((q) => { q.classList.remove("done"); q.querySelectorAll("button.opt").forEach((o) => { o.disabled = false; o.classList.remove("right", "wrong"); }); });
+            bar.remove();
+          };
+          qs.before(bar);
+        }
+      }
+      quizQs.forEach((q, qi) => {
+        const opts = [...q.querySelectorAll("button.opt")];
+        opts.forEach((b, bi) => b.addEventListener("click", () => CB.progress.update(curSlug, (c) => { c.ans = c.ans || {}; c.ans[qi] = bi; })));
+      });
+      // 읽은 위치 기록
+      let tmr = 0;
+      const record = () => {
+        tmr = 0;
+        const h = document.documentElement.scrollHeight - innerHeight;
+        const pct = h > 0 ? Math.min(100, (scrollY / h) * 100) : 100;
+        let sec = null; for (const s of secs) { if (s.getBoundingClientRect().top < innerHeight * 0.35) sec = s.id; }
+        CB.progress.update(curSlug, (c, d) => {
+          c.pct = Math.max(c.pct || 0, pct); c.t = Date.now();
+          if (sec) c.sec = sec;
+          if (c.pct >= 92) c.done = true;
+          d.last = { slug: curSlug, sec: c.sec || null, t: c.t };
+        });
+        paintDrawer();
+      };
+      addEventListener("scroll", () => { if (!tmr) tmr = setTimeout(record, 600); }, { passive: true });
+      setTimeout(record, 1500);
+      // 이어 읽기 안내
+      if (saved && saved.sec && !location.hash && !saved.done && secs.length && saved.sec !== secs[0].id) {
+        const target = document.getElementById(saved.sec);
+        if (target) {
+          const h = target.querySelector("h2");
+          const toast = document.createElement("div"); toast.className = "sb-resume";
+          toast.innerHTML = `<span>지난번에 <b>${(h ? h.textContent.replace(/^\d\d/, "") : "").trim()}</b>까지 읽었어요.</span><button class="btn primary" type="button">이어 읽기</button><button class="x" type="button" aria-label="닫기">×</button>`;
+          const close = () => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); };
+          toast.querySelector(".primary").onclick = () => { target.scrollIntoView({ behavior: "smooth" }); close(); };
+          toast.querySelector(".x").onclick = close;
+          body.appendChild(toast); requestAnimationFrame(() => toast.classList.add("show"));
+          setTimeout(close, 12000);
+        }
+      }
+    }
+
+    // 용어 툴팁: 본문의 .term에 용어집 설명을 붙인다
+    if (main && curSlug !== "glossary" && main.querySelector(".term")) {
+      const bind = () => {
+        const T = window.CB_TERMS, AL = window.CB_TERM_ALIAS || {};
+        if (!T) return;
+        const norm = (x) => x.replace(/\s+/g, "").toLowerCase();
+        const idx = new Map();
+        const put = (k, t) => { k = norm(k); if (!k) return; const l = idx.get(k) || []; if (!l.includes(t)) l.push(t); idx.set(k, l); };
+        T.forEach((t) => { [t[0], t[0].replace(/\(.*?\)/g, ""), t[1], t[1].replace(/\(.*?\)/g, "")].forEach((k) => put(k, t)); t[0].split(/[\/·]/).forEach((k) => put(k, t)); });
+        const find = (txt) => { const a = AL[txt.trim()]; const l = idx.get(norm(a || txt)); if (!l) return null; return l.find((t) => t[3] === curSlug) || l[0]; };
+        const tip = document.createElement("div"); tip.className = "sb-tip"; tip.id = "sb-tip"; tip.setAttribute("role", "tooltip"); body.appendChild(tip);
+        let cur = null, hideT = 0;
+        const esc = (x) => x.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+        const show = (el, t) => {
+          clearTimeout(hideT); cur = el;
+          const c = CHAPTERS.find((x) => x.slug === t[3]);
+          tip.innerHTML = `<div class="tt-h"><b>${esc(t[0])}</b><span>${esc(t[1])}</span></div><p>${esc(t[2])}</p><div class="tt-l">` +
+            (c && c.slug !== curSlug ? `<a href="${href(c.slug)}">${c.num}장 ${esc(c.title)}에서 자세히 →</a>` : "") +
+            `<a href="${href("glossary")}?q=${encodeURIComponent(t[0].replace(/\(.*?\)/g, ""))}">용어집</a></div>`;
+          tip.classList.add("show"); el.setAttribute("aria-describedby", "sb-tip");
+          const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+          let x = Math.max(12, Math.min(innerWidth - tw - 12, r.left + r.width / 2 - tw / 2));
+          let y = r.top - th - 10; if (y < 70) y = r.bottom + 10;
+          tip.style.left = x + "px"; tip.style.top = y + "px";
+        };
+        const hide = (now) => { clearTimeout(hideT); hideT = setTimeout(() => { tip.classList.remove("show"); if (cur) cur.removeAttribute("aria-describedby"); cur = null; }, now ? 0 : 220); };
+        tip.addEventListener("mouseenter", () => clearTimeout(hideT));
+        tip.addEventListener("mouseleave", () => hide());
+        main.querySelectorAll(".term").forEach((el) => {
+          const t = find(el.textContent); if (!t) return;
+          el.classList.add("has-tip"); el.tabIndex = 0;
+          el.addEventListener("mouseenter", () => show(el, t));
+          el.addEventListener("mouseleave", () => hide());
+          el.addEventListener("focus", () => show(el, t));
+          el.addEventListener("blur", () => hide());
+          el.addEventListener("click", (e) => { e.stopPropagation(); cur === el && tip.classList.contains("show") ? hide(true) : show(el, t); });
+        });
+        document.addEventListener("click", (e) => { if (!tip.contains(e.target)) hide(true); });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") hide(true); });
+        addEventListener("scroll", () => { if (cur) hide(true); }, { passive: true });
+      };
+      if (window.CB_TERMS) bind();
+      else { const sc = document.createElement("script"); sc.src = root + "js/terms.js"; sc.onload = bind; document.head.appendChild(sc); }
+    }
 
     // KaTeX
     const renderMath = () => {
