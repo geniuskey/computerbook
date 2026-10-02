@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>저장장치와 파일 · ComputerBook</title>
+<meta name="description" content="회전하는 하드디스크와 반도체 SSD의 동작 원리, 플래시 메모리의 쓰기·지우기와 수명, 파일 시스템이 파일을 블록에 나눠 담는 방법, 지워도 남는 데이터의 정체.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .disk { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; padding: 14px 18px; }
+  @media (max-width: 560px) { .disk { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+  .disk .blk { aspect-ratio: 1; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); font-family: var(--mono); font-size: 10px; display: grid; place-items: center; color: #fff; font-weight: 700; position: relative; }
+  .disk .blk.ghost { background: repeating-linear-gradient(45deg, var(--surface), var(--surface) 4px, var(--surface-2) 4px, var(--surface-2) 8px); color: var(--text-faint); }
+  .ftable { padding: 0 18px 14px; font-size: 14px; }
+  .ftable table { font-size: 13.5px; }
+  .ftable td { padding: 6px 10px; }
+  .flash { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px 18px; }
+  @media (max-width: 520px) { .flash { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .fblock { border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: var(--bg-elev); }
+  .fblock h5 { margin: 0 0 6px; font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; }
+  .fblock .pg { height: 26px; border-radius: 5px; margin: 3px 0; border: 1px solid var(--border); display: grid; place-items: center; font-family: var(--mono); font-size: 11.5px; }
+  .fblock .pg.free { background: var(--surface); color: var(--text-faint); }
+  .fblock .pg.valid { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .fblock .pg.invalid { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); border-color: var(--bad); text-decoration: line-through; }
+  .fblock.erasing { outline: 2px solid var(--warn); }
+</style>
+</head>
+<body data-chapter="storage">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 07</div>
+    <h1>저장장치와 파일</h1>
+    <p class="lead">RAM은 빠르지만 전원을 끄면 모든 것을 잊는다. 사진, 앱, 운영체제처럼 오래 남아야 하는 것은 <strong>저장장치</strong>에 둔다. 주방으로 치면 창고다. 이 장에서는 창고가 어떻게 생겼는지(HDD와 SSD), 그 안의 물건을 어떻게 정리하는지(파일 시스템), 그리고 버렸다고 생각한 물건이 왜 여전히 창고에 남아 있는지를 알아본다.</p>
+    <ul class="objectives">
+      <li>휘발성 메모리와 비휘발성 저장장치의 차이를 설명한다.</li>
+      <li>하드디스크(HDD)가 느린 이유를 “기계가 움직이는 시간”으로 이해한다.</li>
+      <li>SSD의 플래시 메모리가 전자를 가둬 기억하는 원리와 “덮어쓰기 불가” 특성을 안다.</li>
+      <li>파일 시스템이 파일을 블록에 나눠 담고 목록으로 관리하는 방식을 따라간다.</li>
+      <li>파일을 지워도 데이터가 남는 이유와 안전하게 지우는 방법을 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="volatile">
+    <h2>잊지 않는 기억: 비휘발성</h2>
+    <p>6장에서 본 DRAM은 전하가 새서 계속 새로 채워야 했다. 전원이 꺼지면 모든 것이 사라진다. 이런 성질을 <span class="term">휘발성</span><span class="en">(volatile)</span>이라 한다. 반대로 전원 없이도 수년간 데이터를 유지하는 장치를 <span class="term">비휘발성</span><span class="en">(non-volatile)</span> 저장장치라 한다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th></th><th>메모리 (DRAM)</th><th>SSD</th><th>HDD</th></tr></thead>
+      <tbody>
+        <tr><td>전원이 꺼지면</td><td>사라짐</td><td>남음</td><td>남음</td></tr>
+        <tr><td>기억 방법</td><td>새는 커패시터의 전하</td><td>절연막에 갇힌 전자</td><td>원판 표면의 자석 방향</td></tr>
+        <tr><td>무작위 읽기 시간</td><td class="num">≈ 0.1 µs</td><td class="num">≈ 50~100 µs</td><td class="num">≈ 5~10 ms</td></tr>
+        <tr><td>1 GB당 가격 (대략)</td><td>가장 비쌈</td><td>중간</td><td>가장 쌈</td></tr>
+        <tr><td>움직이는 부품</td><td>없음</td><td>없음</td><td>있음 (회전 원판, 헤드)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="hdd">
+    <h2>하드디스크: 레코드판과 바늘</h2>
+    <p><span class="term">하드디스크</span><span class="en">(HDD, Hard Disk Drive)</span>는 자성 물질을 입힌 금속 원판이 1분에 5,400~7,200번 돌고, 그 위를 머리카락보다 얇은 높이로 떠 있는 <b>헤드</b>가 오가며 자석의 방향(N/S)으로 0과 1을 읽고 쓴다. 레코드판과 바늘을 떠올리면 된다.</p>
+    <p>데이터를 읽으려면 두 가지를 기다려야 한다. ① 헤드가 원하는 동심원(트랙)까지 팔을 움직이는 시간(<b>탐색 시간</b>), ② 원판이 돌아서 원하는 위치가 헤드 밑에 올 때까지 기다리는 시간(<b>회전 지연</b>). 둘 다 기계가 실제로 움직이는 시간이라 밀리초 단위다. CPU 기준으로는 몇 달이다(1장).</p>
+    <div class="sim" id="sim-hdd">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>HDD vs SSD 읽기 경주</h3></div>
+      <div class="sim-view"><canvas id="cv-hdd"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>읽을 데이터의 위치</span><div class="seg" id="hpat"><button data-value="seq" class="on">연속 (한 트랙에 모여 있음)</button><button data-value="rand">흩어짐 (여기저기)</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="hgo">8조각 읽기 시작</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">HDD 걸린 시간</span><span class="v" id="o-hdd">—</span></div>
+        <div class="stat"><span class="k">SSD 걸린 시간</span><span class="v" id="o-ssd">—</span></div>
+        <div class="stat"><span class="k">차이</span><span class="v" id="o-ratio">—</span></div>
+      </div>
+      <div class="sim-note">애니메이션은 실제보다 약 100배 느리게 재생된다. 해볼 것: “흩어짐”을 고르면 HDD는 조각마다 팔을 움직이고 회전을 기다려야 해서 크게 느려진다. 움직이는 부품이 없는 SSD는 위치와 상관없이 거의 일정하다. 예전에 “디스크 조각 모음”을 하던 이유가 여기에 있다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="ssd">
+    <h2>SSD: 전자를 가두는 감옥</h2>
+    <p><span class="term">SSD</span><span class="en">(Solid State Drive)</span>는 움직이는 부품 없이 반도체 칩으로만 데이터를 저장한다. 그 칩이 <span class="term">플래시 메모리</span>(정확히는 NAND 플래시)다. 플래시 셀은 트랜지스터 안에 사방이 절연체로 막힌 작은 방을 하나 더 두고, 높은 전압으로 전자를 억지로 밀어 넣어 <b>가둔다</b>. 갇힌 전자는 전원이 꺼져도 빠져나가지 못해 수년간 남는다. 전자가 갇혀 있는지 아닌지로 0과 1을 구분한다.</p>
+    <div class="callout analogy"><strong>잉크로 쓰는 공책</strong><p>플래시는 연필이 아니라 <b>잉크</b>로 쓰는 공책과 비슷하다. 빈 줄에는 언제든 쓸 수 있지만, 이미 쓴 줄을 고쳐 쓸 수는 없다. 지우려면 여러 쪽이 묶인 <b>한 장(블록)을 통째로 표백</b>해야 한다. 그래서 내용을 고칠 때는 새 빈 줄에 다시 쓰고, 옛 줄에는 “무효” 표시만 해 둔다. 무효 줄이 쌓이면 아직 유효한 줄만 다른 장으로 옮겨 적고 그 장을 통째로 지운다.</p></div>
+    <div class="sim" id="sim-flash">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>플래시 메모리의 쓰기와 지우기</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>파일 A~D를 계속 수정해 보세요</span><div class="btn-row"><button class="btn" data-f="A">A 수정</button><button class="btn" data-f="B">B 수정</button><button class="btn" data-f="C">C 수정</button><button class="btn" data-f="D">D 수정</button><button class="btn primary" id="frand">아무거나 10번</button><button class="btn" id="freset">초기화</button></div></div>
+      </div>
+      <div class="flash" id="flash"></div>
+      <div class="stepdesc" id="fdesc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px">처음에는 A, B, C, D 네 파일이 각각 한 페이지씩 들어 있다.</div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">사용자가 요청한 쓰기</span><span class="v" id="o-uw">0</span></div>
+        <div class="stat"><span class="k">실제 플래시 쓰기</span><span class="v" id="o-fw">0</span></div>
+        <div class="stat"><span class="k">블록 지우기 횟수</span><span class="v" id="o-er">0</span></div>
+      </div>
+      <div class="sim-note">파랑 = 유효한 데이터, 빨간 취소선 = 무효(옛 버전), 회색 = 빈 페이지. 빈 페이지가 바닥나면 SSD가 알아서 <b>가비지 컬렉션</b>을 한다: 무효가 가장 많은 블록의 유효 데이터를 옮기고 블록을 통째로 지운다. 옮겨 쓰는 만큼 “실제 쓰기”가 요청보다 많아진다. 플래시 셀은 수천 번 지우면 닳기 때문에 SSD는 지우기를 여러 블록에 고르게 나눈다(웨어 레벨링).</div>
+    </div>
+    <p>이런 복잡한 관리는 SSD 안에 들어 있는 작은 컴퓨터(컨트롤러)가 혼자 처리한다. 운영체제는 “5번 블록에 써 줘”라고만 말하고, 컨트롤러가 실제로는 빈 페이지 어딘가에 쓰고 그 위치를 자기만의 표에 적어 둔다. 9장에서 배울 가상 메모리와 놀랄 만큼 닮은 아이디어다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="fs">
+    <h2>파일 시스템: 창고의 정리 규칙</h2>
+    <p>저장장치는 그 자체로는 번호 붙은 블록(보통 4 KB)이 길게 늘어선 공간일 뿐이다. 여기에는 “사진.jpg”나 “문서” 폴더 같은 개념이 없다. 이름 붙은 파일과 폴더라는 정리 방식을 제공하는 것이 운영체제의 <span class="term">파일 시스템</span><span class="en">(file system)</span>이다. 윈도우의 NTFS, 맥의 APFS, 리눅스의 ext4가 대표적이다.</p>
+    <p>파일 시스템은 저장장치 한쪽에 <b>목록</b>을 두고, “사진.jpg = 크기 12 KB, 블록 5, 6, 7번”처럼 파일 이름과 데이터가 들어 있는 블록 번호를 적어 둔다. 도서관의 도서 목록 카드와 같다. 아래에서 파일을 만들고 지워 보자.</p>
+    <div class="sim" id="sim-fs">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>파일 시스템: 블록과 목록</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>새 파일 크기 <output id="fsz-out"></output></span><input type="range" id="fsz" min="1" max="8" value="3"></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="fcreate">파일 만들기</button><button class="btn" id="fdel">가장 오래된 파일 지우기</button><button class="btn" id="fdefrag">조각 모음</button><button class="btn" id="fclear">초기화</button></div></div>
+      </div>
+      <div class="disk" id="disk"></div>
+      <div class="ftable"><div class="table-wrap" style="margin:0"><table><thead><tr><th>파일 이름</th><th>크기</th><th>블록 목록</th><th>조각 수</th></tr></thead><tbody id="ftbody"></tbody></table></div></div>
+      <div class="sim-note">빗금 칸은 지운 파일이 있던 자리다. 목록에서는 사라졌지만 <b>내용은 그대로 남아 있다</b>. 파일을 만들고 지우기를 반복하면 빈 자리가 여기저기 흩어져 새 파일이 여러 조각으로 나뉜다(단편화). HDD에서는 이것이 느려지는 원인이었다.</div>
+    </div>
+    <p>폴더도 사실은 특별한 파일이다. “이 폴더 안에는 이런 이름의 파일들이 있고, 각각의 목록 정보는 여기 있다”라는 내용을 담은 파일이다. 그래서 폴더 안에 폴더를 끝없이 넣을 수 있다. 파일을 다른 폴더로 옮기는 일이 아무리 큰 파일이어도 순식간에 끝나는 이유도 이것이다. 데이터를 옮기는 게 아니라 목록의 한 줄만 다른 폴더로 옮겨 적기 때문이다(같은 저장장치 안에서는).</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="delete">
+    <h2>지워도 남는 데이터</h2>
+    <p>위 시뮬레이터에서 보았듯이 파일을 지우면 파일 시스템은 목록에서 그 줄만 지우고 블록을 “빈 자리”로 표시한다. 내용을 일일이 0으로 덮어쓰지 않는다. 그게 훨씬 빠르기 때문이다. 그래서 새 파일이 그 자리를 덮어쓰기 전까지는 <strong>복구 프로그램으로 되살릴 수 있다</strong>. 실수로 지운 사진을 살리는 데는 고마운 일이지만, 중고로 파는 컴퓨터에서 개인 정보가 새어 나가는 원인이 되기도 한다.</p>
+    <div class="callout warn"><strong>저장장치를 넘기기 전에</strong><p>컴퓨터나 휴대폰을 팔거나 버릴 때는 단순히 파일을 지우는 대신 <b>공장 초기화</b>나 <b>저장장치 전체 암호화 후 초기화</b>를 하자. 요즘 스마트폰과 노트북은 저장장치를 기본으로 암호화해 두고, 초기화할 때 암호 열쇠를 버린다. 열쇠가 없으면 남은 데이터는 의미 없는 숫자 더미다.</p></div>
+    <div class="callout deep"><strong>SSD의 TRIM</strong><p>SSD에서는 운영체제가 파일을 지울 때 <b>TRIM</b>이라는 신호로 “이 블록들은 이제 안 쓴다”고 컨트롤러에 알려 준다. 컨트롤러는 그 페이지를 무효로 표시하고 가비지 컬렉션 때 지운다. 그래서 SSD는 HDD보다 지운 파일이 복구되기 어렵다. 다만 언제 실제로 지워질지는 컨트롤러 마음이다.</p></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>RAM은 <b>휘발성</b>, SSD와 HDD는 <b>비휘발성</b>이다. 오래 둘 데이터는 저장장치에, 작업 중인 데이터는 RAM에 둔다.</li>
+      <li><b>HDD</b>는 회전 원판과 움직이는 헤드로 읽는다. 기계가 움직이는 시간 때문에 흩어진 데이터를 읽을 때 특히 느리다.</li>
+      <li><b>SSD</b>는 플래시 셀에 전자를 가둬 기억한다. 덮어쓰기가 안 되고 블록 단위로 지워야 하며, 지울수록 닳는다. 컨트롤러가 이를 숨겨 준다.</li>
+      <li><b>파일 시스템</b>은 블록 공간 위에 파일 이름, 폴더, 블록 목록이라는 정리 체계를 만든다.</li>
+      <li>파일을 지우면 대개 <b>목록만 지워지고 내용은 남는다</b>. 기기를 넘길 때는 암호화와 초기화가 필요하다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>HDD가 흩어진 작은 파일 여러 개를 읽을 때 특히 느린 이유는?</p><div class="opts">
+        <button class="opt">전기가 부족해서</button>
+        <button class="opt" data-correct>조각마다 헤드를 움직이고 원판 회전을 기다려야 해서</button>
+        <button class="opt">파일 이름이 길어서</button>
+        <button class="opt">캐시가 없어서</button>
+      </div><div class="quiz-exp">탐색 시간과 회전 지연은 기계적 움직임이라 밀리초 단위다. 조각이 많을수록 이 기다림이 반복된다.</div></div>
+      <div class="quiz-q"><p>플래시 메모리(SSD)에 이미 데이터가 쓰인 페이지를 수정하려면?</p><div class="opts">
+        <button class="opt">그 자리에 바로 덮어쓴다</button>
+        <button class="opt" data-correct>새 빈 페이지에 쓰고 옛 페이지는 무효로 표시한다</button>
+        <button class="opt">저장장치 전체를 지운다</button>
+        <button class="opt">수정할 수 없다</button>
+      </div><div class="quiz-exp">플래시는 블록 단위로만 지울 수 있어서 제자리 덮어쓰기가 안 된다. 컨트롤러가 새 자리에 쓰고 위치 표를 고친다.</div></div>
+      <div class="quiz-q"><p>휴지통까지 비운 파일을 복구 프로그램으로 되살릴 수 있는 경우가 있는 이유는?</p><div class="opts">
+        <button class="opt">클라우드에 자동 백업되어서</button>
+        <button class="opt" data-correct>파일 시스템이 목록만 지우고 블록 내용은 덮어쓰기 전까지 남겨 두어서</button>
+        <button class="opt">RAM에 남아 있어서</button>
+        <button class="opt">운영체제가 몰래 복사해 두어서</button>
+      </div><div class="quiz-exp">삭제는 “이 자리 비었음” 표시일 뿐이다. 새 데이터가 덮어쓰기 전까지 내용은 그대로다.</div></div>
+      <div class="quiz-q"><p>같은 SSD 안에서 10 GB짜리 영상 파일을 다른 폴더로 “이동”하면 순식간에 끝나는 이유는?</p><div class="opts">
+        <button class="opt">SSD가 매우 빨라서</button>
+        <button class="opt">압축해서 옮기기 때문에</button>
+        <button class="opt" data-correct>데이터 블록은 그대로 두고 목록 정보만 다른 폴더로 옮기기 때문에</button>
+      </div><div class="quiz-exp">폴더는 “이름 → 파일 정보”를 담은 목록이다. 이동은 목록 한 줄을 옮겨 적는 일일 뿐이다. 다른 저장장치로 옮길 때는 실제 복사가 필요하다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- HDD vs SSD ---------------- */
+  const hpat = CB.seg("hpat", () => { reqs = makeReqs(); hdone = 0; resetRace(); });
+  function makeReqs() {
+    const r = CB.rng(hpat() === "seq" ? 3 : 11);
+    if (hpat() === "seq") { const tr = 0.62; const a0 = 2.4; return Array.from({ length: 8 }, (_, i) => ({ track: tr, ang: a0 - i * 0.25 })); }
+    return Array.from({ length: 8 }, () => ({ track: 0.3 + r() * 0.62, ang: r() * Math.PI * 2 }));
+  }
+  let reqs = makeReqs(), angle = 0, head = 0.5, target = null, phase = "idle", hdone = 0, hTime = 0, sTime = 0, sdone = 0, running = false;
+  const RPM_RAD = 2 * Math.PI * (7200 / 60); // rad/s real
+  const SLOW = 100; // animation slowdown
+  function resetRace() { phase = "idle"; hdone = 0; sdone = 0; hTime = 0; sTime = 0; running = false; head = 0.5; CB.stat("o-hdd", "—"); CB.stat("o-ssd", "—"); CB.stat("o-ratio", "—"); hcv.redraw(); }
+  $("hgo").onclick = () => { reqs = makeReqs(); resetRace(); running = true; phase = "seek"; };
+  const hcv = CB.canvas("#cv-hdd", (ctx, w, h) => {
+    const P = CB.palette();
+    const R = Math.min(h * 0.42, w * 0.25), cx = R + 30, cy = h / 2;
+    // platter
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fillStyle = P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.stroke();
+    for (let t = 0.3; t < 1; t += 0.08) { ctx.beginPath(); ctx.arc(cx, cy, R * t, 0, 7); ctx.strokeStyle = P.grid; ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.16, 0, 7); ctx.fillStyle = P.border; ctx.fill();
+    // data chunks
+    reqs.forEach((q, i) => { const a = q.ang + angle; const x = cx + Math.cos(a) * R * q.track, y = cy + Math.sin(a) * R * q.track; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fillStyle = i < hdone ? P.ok : P.accent; ctx.fill(); });
+    // arm: pivot at top-right
+    const px = cx + R + 18, py = cy - R * 0.9;
+    const hx = cx + R * head, hy = cy; // head reads along +x axis (angle 0)
+    ctx.strokeStyle = P.dim; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(hx, hy); ctx.stroke(); ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.arc(px, py, 8, 0, 7); ctx.fillStyle = P.dim; ctx.fill();
+    ctx.fillStyle = P.warn; ctx.fillRect(hx - 5, hy - 5, 10, 10);
+    CB.text(ctx, "HDD", cx, cy + R + 14, { align: "center", size: 12, bold: true, color: P.dim });
+    CB.text(ctx, phase === "seek" ? "팔 이동 중 (탐색)" : phase === "rot" ? "회전 기다리는 중" : phase === "done" ? "완료" : "", cx, 14, { align: "center", size: 12, color: P.warn });
+    // SSD panel
+    const sx = Math.max(cx + R + 60, w * 0.58), sw = w - sx - 20;
+    CB.text(ctx, "SSD (움직이는 부품 없음)", sx, 18, { size: 12, bold: true, color: P.dim });
+    for (let i = 0; i < 8; i++) { const col = i % 4, row = Math.floor(i / 4); CB.box(ctx, sx + col * (sw / 4) + 3, 34 + row * 46, sw / 4 - 6, 38, { fill: i < sdone ? P.ok : P.surface, text: i < sdone ? "✓" : "칩", size: 12, color: i < sdone ? "#fff" : P.faint }); }
+    // progress bars
+    const by = 150;
+    const maxT = Math.max(hTime, 0.001);
+    CB.text(ctx, "HDD " + (hTime * 1000).toFixed(1) + " ms", sx, by, { size: 12.5, mono: true, color: P.text });
+    CB.rrect(ctx, sx, by + 10, sw, 12, 6); ctx.fillStyle = P.surface; ctx.fill();
+    CB.rrect(ctx, sx, by + 10, sw * Math.min(1, hdone / 8), 12, 6); ctx.fillStyle = P.warn; ctx.fill();
+    CB.text(ctx, "SSD " + (sTime * 1000).toFixed(2) + " ms", sx, by + 40, { size: 12.5, mono: true, color: P.text });
+    CB.rrect(ctx, sx, by + 50, sw, 12, 6); ctx.fillStyle = P.surface; ctx.fill();
+    CB.rrect(ctx, sx, by + 50, sw * Math.min(1, sdone / 8), 12, 6); ctx.fillStyle = P.ok; ctx.fill();
+  }, { aspect: 0.42, minHeight: 240, maxHeight: 320 });
+  CB.loop($("cv-hdd"), (dt) => {
+    const rdt = dt / SLOW; // real seconds
+    angle += RPM_RAD * rdt;
+    if (running) {
+      // SSD: 0.08 ms per chunk
+      if (sdone < 8) { sTime += rdt; sdone = Math.min(8, Math.floor(sTime / 0.00008)); if (sdone >= 8) sTime = 8 * 0.00008; }
+      if (hdone < 8) {
+        hTime += rdt;
+        const q = reqs[hdone];
+        const norm = (x) => ((x % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        if (phase === "seek") { const d = q.track - head; const sp = 60 * rdt; if (Math.abs(d) <= sp) { head = q.track; phase = "rot"; q.prevA = norm(q.ang + angle - RPM_RAD * rdt); } else head += Math.sign(d) * sp; }
+        if (phase === "rot") { const a = norm(q.ang + angle); if (q.prevA != null && a < q.prevA) { hdone++; phase = hdone < 8 ? "seek" : "done"; } else q.prevA = a; }
+      } else if (phase !== "done") phase = "done";
+      if (hdone >= 8 && sdone >= 8) { running = false; CB.stat("o-hdd", (hTime * 1000).toFixed(1) + " ms"); CB.stat("o-ssd", (sTime * 1000).toFixed(2) + " ms"); CB.stat("o-ratio", "SSD가 약 " + Math.round(hTime / sTime) + "배 빠름"); }
+    }
+    hcv.redraw();
+  });
+
+  /* ---------------- flash ---------------- */
+  const NB = 4, NP = 4;
+  let blocks, where, uw, fw, er, ver;
+  function freset() {
+    blocks = Array.from({ length: NB }, () => ({ pages: Array.from({ length: NP }, () => ({ s: "free", f: "" })), erase: 0 }));
+    where = {}; ver = {}; uw = 0; fw = 0; er = 0;
+    ["A", "B", "C", "D"].forEach((f, i) => { blocks[0].pages[i] = { s: "valid", f: f + "1" }; where[f] = [0, i]; ver[f] = 1; });
+    renderFlash(-1); $("fdesc").textContent = "처음에는 A, B, C, D 네 파일이 각각 한 페이지씩 들어 있다.";
+  }
+  function freePage() { for (let b = 0; b < NB; b++) for (let p = 0; p < NP; p++) if (blocks[b].pages[p].s === "free") return [b, p]; return null; }
+  function gc() {
+    // choose block with most invalid pages (with tie: least erased)
+    let best = -1, bi = -1;
+    blocks.forEach((B, i) => { const inv = B.pages.filter((p) => p.s === "invalid").length; const score = inv * 100 - B.erase; if (inv > 0 && score > best) { best = score; bi = i; } });
+    if (bi < 0) return -1;
+    const valid = blocks[bi].pages.filter((p) => p.s === "valid");
+    blocks[bi].pages.forEach((p) => { if (p.s === "valid") p.s = "moving"; });
+    // temporarily mark as invalid so freePage skips; copy valid to others
+    const saved = valid.map((p) => p.f);
+    blocks[bi].pages = Array.from({ length: NP }, () => ({ s: "invalid", f: "" }));
+    saved.forEach((name) => { const fp = freePage(); if (!fp) return; blocks[fp[0]].pages[fp[1]] = { s: "valid", f: name }; where[name[0]] = fp; fw++; });
+    blocks[bi].pages = Array.from({ length: NP }, () => ({ s: "free", f: "" }));
+    // move again to fill? (valid moved before erase; if no room, place into this erased block)
+    blocks[bi].erase++; er++;
+    // relocate any lost (if not placed) into erased block
+    saved.forEach((name) => { const [b, p] = where[name[0]]; if (blocks[b].pages[p].f !== name) { const fp = freePage(); blocks[fp[0]].pages[fp[1]] = { s: "valid", f: name }; where[name[0]] = fp; fw++; } });
+    return { bi, moved: saved.length };
+  }
+  function modify(f) {
+    uw++;
+    let msg = "";
+    let fp = freePage();
+    if (!fp) { const g = gc(); msg = `빈 페이지가 없다 → <b>가비지 컬렉션</b>: 블록 ${g.bi}의 유효 페이지 ${g.moved}개를 옮겨 적고 블록 ${g.bi}를 통째로 지웠다. `; fp = freePage(); }
+    const [ob, op] = where[f]; blocks[ob].pages[op].s = "invalid";
+    ver[f]++; blocks[fp[0]].pages[fp[1]] = { s: "valid", f: f + ver[f] }; where[f] = fp; fw++;
+    msg += `${f}를 수정: 새 버전 ${f}${ver[f]}을(를) 블록 ${fp[0]}의 빈 페이지에 쓰고, 옛 버전은 무효로 표시했다.`;
+    $("fdesc").innerHTML = msg;
+    renderFlash(fp[0]);
+  }
+  function renderFlash(hl) {
+    $("flash").innerHTML = blocks.map((B, i) => `<div class="fblock ${i === hl ? "" : ""}"><h5><span>블록 ${i}</span><span>지운 횟수 ${B.erase}</span></h5>${B.pages.map((p) => `<div class="pg ${p.s}">${p.s === "free" ? "빈칸" : p.f}</div>`).join("")}</div>`).join("");
+    CB.stat("o-uw", uw); CB.stat("o-fw", fw); CB.stat("o-er", er);
+  }
+  document.querySelectorAll("#sim-flash [data-f]").forEach((b) => (b.onclick = () => modify(b.dataset.f)));
+  $("frand").onclick = () => { const r = Math.random; for (let i = 0; i < 10; i++) modify("ABCD"[Math.floor(r() * 4)]); };
+  $("freset").onclick = freset;
+  freset();
+
+  /* ---------------- file system ---------------- */
+  const NBLK = 48;
+  const COLORS = ["#4f46e5", "#0e8fa8", "#d98a00", "#1f9d55", "#d64545", "#8a4fd6", "#c2410c", "#0f766e"];
+  let disk, files, nextId, ghost;
+  const fsz = CB.range("fsz", (v) => v + " 블록 (" + v * 4 + " KB)", null);
+  const NAMES = ["사진", "노래", "문서", "메모", "영상", "표", "발표", "게임", "책", "지도"];
+  function fclear() { disk = new Array(NBLK).fill(null); ghost = new Array(NBLK).fill(null); files = []; nextId = 0; renderFS(); }
+  function renderFS() {
+    $("disk").innerHTML = disk.map((d, i) => { if (d != null) { const f = files.find((x) => x.id === d); return `<div class="blk" style="background:${f.color};border-color:${f.color}" title="블록 ${i}">${f.name[0]}</div>`; } if (ghost[i]) return `<div class="blk ghost" title="지운 데이터가 남아 있음">${ghost[i]}</div>`; return `<div class="blk" style="color:var(--text-faint);font-weight:400">${i}</div>`; }).join("");
+    $("ftbody").innerHTML = files.length ? files.map((f) => { let frags = 1; for (let k = 1; k < f.blocks.length; k++) if (f.blocks[k] !== f.blocks[k - 1] + 1) frags++; return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${f.color};margin-right:6px"></span>${f.name}</td><td>${f.blocks.length * 4} KB</td><td class="mono">${f.blocks.join(", ")}</td><td>${frags > 1 ? `<b style="color:var(--warn)">${frags}</b>` : 1}</td></tr>`; }).join("") : `<tr><td colspan="4" style="color:var(--text-faint)">파일이 없습니다</td></tr>`;
+  }
+  $("fcreate").onclick = () => {
+    const n = fsz(); const free = []; for (let i = 0; i < NBLK && free.length < n; i++) if (disk[i] == null) free.push(i);
+    if (free.length < n) { $("fcreate").textContent = "공간 부족!"; setTimeout(() => ($("fcreate").textContent = "파일 만들기"), 1200); return; }
+    const id = nextId++; const f = { id, name: NAMES[id % NAMES.length] + (id >= NAMES.length ? Math.floor(id / NAMES.length) + 1 : "") + ".dat", color: COLORS[id % COLORS.length], blocks: free };
+    free.forEach((b) => { disk[b] = id; ghost[b] = null; }); files.push(f); renderFS();
+  };
+  $("fdel").onclick = () => { const f = files.shift(); if (!f) return; f.blocks.forEach((b) => { disk[b] = null; ghost[b] = f.name[0]; }); renderFS(); };
+  $("fdefrag").onclick = () => { let k = 0; disk.fill(null); ghost.fill(null); files.forEach((f) => { f.blocks = f.blocks.map(() => k++); f.blocks.forEach((b) => (disk[b] = f.id)); }); renderFS(); };
+  $("fclear").onclick = fclear;
+  fclear();
+  // starter files
+  [3, 2, 4, 2, 3].forEach((n) => { fsz.set(n); $("fcreate").click(); });
+  $("fdel").click(); $("fdel").click(); fsz.set(7); $("fcreate").click(); fsz.set(3);
+})();
+</script>
+</body>
+</html>
