@@ -98,6 +98,30 @@
     <h2>DNS: 인터넷의 전화번호부</h2>
     <p>컴퓨터는 <code>www.example.com</code> 같은 이름으로는 연결할 수 없다. 10장에서 본 IP 주소가 필요하다. 이름을 IP 주소로 바꿔 주는 시스템이 <span class="term">DNS</span><span class="en">(Domain Name System)</span>다. 사람 이름으로 전화번호를 찾는 전화번호부와 같다.</p>
     <p>전 세계 수억 개의 도메인을 한 곳에서 관리할 수는 없으므로 DNS는 <b>계층</b>으로 나뉜다. 주소를 오른쪽부터 읽는다. <code>.com</code>을 아는 서버, <code>example.com</code>을 아는 서버를 차례로 물어 찾아간다. 한 번 찾은 결과는 여러 곳에 캐시해 두어 다음에는 바로 답한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 260" role="img" aria-label="DNS의 계층 구조">
+        <g stroke="var(--border)" stroke-width="2" fill="none">
+          <path d="M400 54 L160 104 M400 54 L330 104 M400 54 L480 104 M400 54 L640 104"/>
+          <path d="M330 136 L250 186 M330 136 L420 186"/>
+          <path d="M250 218 L180 236 M250 218 L320 236"/>
+        </g>
+        <rect x="340" y="18" width="120" height="36" rx="18" class="f-acc"/><text x="400" y="41" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">루트 ( . )</text>
+        <g><rect x="110" y="104" width="100" height="32" rx="16" class="f-acc2-soft"/><text x="160" y="125" text-anchor="middle" class="t">.kr</text>
+          <rect x="280" y="104" width="100" height="32" rx="16" class="f-acc2-soft" stroke-width="2.5"/><text x="330" y="125" text-anchor="middle" class="t" style="font-weight:700">.com</text>
+          <rect x="430" y="104" width="100" height="32" rx="16" class="f-acc2-soft"/><text x="480" y="125" text-anchor="middle" class="t">.org</text>
+          <rect x="590" y="104" width="100" height="32" rx="16" class="f-acc2-soft"/><text x="640" y="125" text-anchor="middle" class="t">.net</text></g>
+        <g><rect x="180" y="186" width="140" height="32" rx="16" class="f-acc-soft" stroke-width="2.5"/><text x="250" y="207" text-anchor="middle" class="t" style="font-weight:700">example.com</text>
+          <rect x="360" y="186" width="120" height="32" rx="16" class="f-surface"/><text x="420" y="207" text-anchor="middle" class="t">google.com</text></g>
+        <g class="t-mono"><text x="180" y="252" text-anchor="middle" style="fill:var(--accent);font-weight:700">www</text><text x="320" y="252" text-anchor="middle">mail</text></g>
+        <g transform="translate(540,160)">
+          <rect width="250" height="90" rx="12" class="f-surface"/>
+          <text x="14" y="26" class="t" style="font-weight:700">주소는 오른쪽부터 읽는다</text>
+          <text x="14" y="50" class="t-mono">www . example . com .</text>
+          <text x="14" y="72" class="t-dim">← 좁은 범위      넓은 범위 →</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 11-1.</b> DNS의 나무 구조. 루트 서버는 .com을 아는 서버를, .com 서버는 example.com을 아는 서버를 알려 준다. 각 단계가 자기 아래만 책임지므로 수억 개의 이름도 나눠서 관리할 수 있다.</figcaption>
+    </figure>
     <div class="sim" id="sim-dns">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>DNS 조회 따라가기</h3></div>
       <div class="sim-view"><canvas id="cv-dns"></canvas></div>
@@ -119,11 +143,11 @@
         <text x="550" y="22" text-anchor="middle" class="t" style="font-weight:700">웹 서버</text>
         <line x1="150" y1="34" x2="150" y2="220" class="s-axis" stroke-width="3"/>
         <line x1="550" y1="34" x2="550" y2="220" class="s-axis" stroke-width="3"/>
-        <path d="M150 50 L545 95" class="s-acc" marker-end="url(#hs)"/><text x="350" y="62" text-anchor="middle" class="t-acc">① SYN: 연결해도 될까요?</text>
-        <path d="M550 110 L155 155" class="s-acc" marker-end="url(#hs)"/><text x="350" y="122" text-anchor="middle" class="t-acc">② SYN-ACK: 좋아요, 들려요</text>
-        <path d="M150 170 L545 215" class="s-acc" marker-end="url(#hs)"/><text x="350" y="182" text-anchor="middle" class="t-acc">③ ACK: 저도 들려요. 시작합시다</text>
+        <path d="M150 50 L545 95" class="s-acc" marker-end="url(#hs)"/><text x="350" y="54" text-anchor="middle" class="t-acc">① SYN: 연결해도 될까요?</text>
+        <path d="M550 110 L155 155" class="s-acc" marker-end="url(#hs)"/><text x="350" y="114" text-anchor="middle" class="t-acc">② SYN-ACK: 좋아요, 들려요</text>
+        <path d="M150 170 L545 215" class="s-acc" marker-end="url(#hs)"/><text x="350" y="174" text-anchor="middle" class="t-acc">③ ACK: 저도 들려요. 시작합시다</text>
       </svg>
-      <figcaption><b>그림 11-1.</b> TCP 연결에는 왕복 한 번 반의 시간이 든다. 서버가 멀수록 이 악수가 느려진다.</figcaption>
+      <figcaption><b>그림 11-2.</b> TCP 연결에는 왕복 한 번 반의 시간이 든다. 서버가 멀수록 이 악수가 느려진다.</figcaption>
     </figure>
   </section>
 
@@ -144,6 +168,21 @@
       <div class="sim-note">HTTPS에서도 도청자는 “어느 사이트(서버 IP)와 통신하는지”, “데이터 양”은 알 수 있다. 하지만 어떤 페이지를 보고 무엇을 입력했는지는 알 수 없다. 여기서 보이는 암호문은 설명을 위해 흉내 낸 것이다.</div>
     </div>
     <div class="callout analogy"><strong>열린 자물쇠 보내기</strong><p>처음 만난 두 사람이 비밀 열쇠를 어떻게 안전하게 나눠 가질까? 서버가 <b>열린 자물쇠</b>(공개 키)를 누구나 가져갈 수 있게 뿌린다. 브라우저는 새로 만든 비밀 열쇠를 상자에 넣고 그 자물쇠로 “찰칵” 잠가 보낸다. 잠근 자물쇠는 서버만 가진 <b>진짜 열쇠</b>(개인 키)로만 열린다. 도청자는 자물쇠도, 잠긴 상자도 보지만 열 수 없다. 이렇게 나눈 비밀 열쇠로 그 뒤의 대화를 빠르게 암호화한다. 이 원리를 <b>공개 키 암호</b>라 한다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="HTTPS 연결이 비밀 열쇠를 나누는 과정">
+        <defs><marker id="tl2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="130" y="22" text-anchor="middle" class="t" style="font-weight:700">내 브라우저</text>
+        <text x="670" y="22" text-anchor="middle" class="t" style="font-weight:700">은행 서버</text>
+        <line x1="130" y1="32" x2="130" y2="290" class="s-axis" stroke-width="3"/><line x1="670" y1="32" x2="670" y2="290" class="s-axis" stroke-width="3"/>
+        <path d="M134 56 L664 76" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="56" text-anchor="middle" class="t-acc">① 안녕하세요, 이런 암호 방식을 쓸 수 있어요</text>
+        <path d="M666 104 L136 124" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="104" text-anchor="middle" class="t-acc">② 인증서 + 열린 자물쇠(공개 키)를 보냅니다</text>
+        <rect x="140" y="138" width="250" height="40" rx="8" class="f-surface"/><text x="150" y="155" class="t-dim">③ 인증서가 진짜인지 확인 (서명 검사)</text><text x="150" y="171" class="t-dim">    → 새 비밀 열쇠를 만든다</text>
+        <path d="M134 196 L664 216" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="196" text-anchor="middle" class="t-acc">④ 비밀 열쇠를 자물쇠로 잠가 보냄 🔒</text>
+        <rect x="420" y="226" width="240" height="26" rx="6" class="f-surface"/><text x="430" y="244" class="t-dim">⑤ 개인 키로 열어 비밀 열쇠를 얻음</text>
+        <rect x="140" y="262" width="520" height="28" rx="8" class="f-acc-soft"/><text x="400" y="281" text-anchor="middle" class="t" style="font-weight:700">⑥ 이제부터 모든 대화를 같은 비밀 열쇠로 빠르게 암호화</text>
+      </svg>
+      <figcaption><b>그림 11-3.</b> HTTPS(TLS)의 열쇠 나누기를 단순화한 모습. 느린 공개 키 암호는 처음에 비밀 열쇠를 안전하게 건네는 데만 쓰고, 그 뒤는 빠른 대칭 키 암호로 대화한다. 요즘 방식은 이 과정을 왕복 한 번 안에 끝낸다.</figcaption>
+    </figure>
     <p>그런데 도청자가 “내가 그 서버야”라며 가짜 자물쇠를 보내면 어떡할까? 그래서 서버는 믿을 수 있는 기관(인증 기관)이 “이 자물쇠는 진짜 example.com의 것”이라고 서명한 <span class="term">인증서</span>를 함께 보낸다. 브라우저 주소창의 자물쇠 아이콘은 “암호화되어 있고, 인증서가 유효하다”는 뜻이다. 사이트가 착한 곳이라는 보증은 아니다. 피싱 사이트도 자물쇠를 달 수 있으니 주소를 꼭 확인하자.</p>
   </section>
 
@@ -191,6 +230,24 @@ Cache-Control: max-age=600
       <li><b>레이아웃</b>: 화면 폭에 맞춰 각 상자의 위치와 크기를 계산한다. 글자가 몇 줄로 꺾일지도 여기서 정한다.</li>
       <li><b>페인트·합성</b>: 픽셀을 칠하고 여러 층을 합친다. 이 단계의 많은 부분을 GPU가 맡는다(12장).</li>
     </ol>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 230" role="img" aria-label="브라우저 렌더링 파이프라인">
+        <defs><marker id="rd-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="10" y="30" width="110" height="44" rx="8" class="f-surface"/><text x="65" y="57" text-anchor="middle" class="t-mono">HTML 글자</text>
+        <rect x="10" y="130" width="110" height="44" rx="8" class="f-surface"/><text x="65" y="157" text-anchor="middle" class="t-mono">CSS 글자</text>
+        <rect x="160" y="30" width="110" height="44" rx="8" class="f-acc-soft"/><text x="215" y="57" text-anchor="middle" class="t" style="font-weight:700">DOM 트리</text>
+        <rect x="160" y="130" width="110" height="44" rx="8" class="f-acc-soft"/><text x="215" y="157" text-anchor="middle" class="t" style="font-weight:700">스타일 규칙</text>
+        <rect x="310" y="80" width="120" height="44" rx="8" class="f-acc2-soft"/><text x="370" y="101" text-anchor="middle" class="t" style="font-weight:700">렌더 트리</text><text x="370" y="117" text-anchor="middle" class="t-mono">보일 것 + 모양</text>
+        <rect x="470" y="80" width="100" height="44" rx="8" class="f-acc2-soft"/><text x="520" y="101" text-anchor="middle" class="t" style="font-weight:700">레이아웃</text><text x="520" y="117" text-anchor="middle" class="t-mono">위치·크기</text>
+        <rect x="610" y="80" width="80" height="44" rx="8" class="f-acc2-soft"/><text x="650" y="107" text-anchor="middle" class="t" style="font-weight:700">페인트</text>
+        <rect x="710" y="80" width="80" height="44" rx="8" class="f-acc"/><text x="750" y="101" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">합성</text><text x="750" y="117" text-anchor="middle" style="fill:#fff" class="t-mono">GPU</text>
+        <path d="M120 52 H156" class="s-acc" marker-end="url(#rd-a)"/><path d="M120 152 H156" class="s-acc" marker-end="url(#rd-a)"/>
+        <path d="M270 52 Q300 52 306 96" class="s-acc" fill="none" marker-end="url(#rd-a)"/><path d="M270 152 Q300 152 306 110" class="s-acc" fill="none" marker-end="url(#rd-a)"/>
+        <path d="M430 102 H466" class="s-acc" marker-end="url(#rd-a)"/><path d="M570 102 H606" class="s-acc" marker-end="url(#rd-a)"/><path d="M690 102 H706" class="s-acc" marker-end="url(#rd-a)"/>
+        <text x="20" y="200" class="t-dim">글자 크기 하나만 바꿔도 레이아웃부터 다시 계산해야 한다.</text><text x="20" y="218" class="t-dim">그래서 움직이는 효과는 레이아웃을 건드리지 않고 합성 단계(GPU)에서만 처리하는 것이 빠르다.</text>
+      </svg>
+      <figcaption><b>그림 11-4.</b> 브라우저의 렌더링 파이프라인. 화면이 1초에 60번 바뀐다면 이 과정을 약 16 ms 안에 끝내야 한다.</figcaption>
+    </figure>
     <p>왼쪽 HTML을 고쳐 보자. 오른쪽 화면과 아래 DOM 트리가 바로 바뀐다.</p>
     <div class="sim" id="sim-html">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>미니 브라우저: HTML → DOM → 화면</h3></div>

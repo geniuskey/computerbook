@@ -67,6 +67,33 @@
   <section id="gates">
     <h2>논리 게이트: 스위치로 판단하기</h2>
     <p>스위치 두 개를 <strong>일렬로(직렬)</strong> 이으면 둘 다 켜져야 전기가 통한다. “A <b>그리고</b> B”다. 이것을 <span class="term">AND 게이트</span>라 한다. 스위치 두 개를 <strong>나란히(병렬)</strong> 이으면 하나만 켜져도 통한다. “A <b>또는</b> B”, <span class="term">OR 게이트</span>다. 입력을 뒤집는 <span class="term">NOT 게이트</span>도 트랜지스터 두 개로 만든다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="직렬 스위치는 AND, 병렬 스위치는 OR">
+        <defs><marker id="lg-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="200" y="22" text-anchor="middle" class="t" style="font-weight:700">직렬 = AND</text>
+        <text x="600" y="22" text-anchor="middle" class="t" style="font-weight:700">병렬 = OR</text>
+        <g transform="translate(30,40)" fill="none" stroke-width="2.5">
+          <path d="M20 40 H90" stroke="var(--text-dim)"/><path d="M90 40 L130 22" stroke="var(--accent)"/><circle cx="90" cy="40" r="4" fill="var(--text-dim)"/><circle cx="134" cy="40" r="4" fill="var(--text-dim)"/>
+          <path d="M134 40 H180" stroke="var(--text-dim)"/><path d="M180 40 L220 22" stroke="var(--accent)"/><circle cx="180" cy="40" r="4" fill="var(--text-dim)"/><circle cx="224" cy="40" r="4" fill="var(--text-dim)"/>
+          <path d="M224 40 H300 V150 H20 V40" stroke="var(--text-dim)"/>
+          <rect x="6" y="70" width="28" height="44" rx="4" fill="var(--surface)" stroke="var(--border)"/><text x="20" y="98" text-anchor="middle" class="t-mono" stroke="none">+ −</text>
+          <circle cx="300" cy="95" r="16" fill="#ffd84a" stroke="var(--border)"/>
+        </g>
+        <text x="142" y="52" class="t-acc">A</text><text x="232" y="52" class="t-acc">B</text>
+        <text x="200" y="222" text-anchor="middle" class="t-dim">A와 B가 <tspan class="t-acc">둘 다</tspan> 닫혀야 전구가 켜진다</text>
+        <g transform="translate(430,40)" fill="none" stroke-width="2.5">
+          <path d="M20 40 H90" stroke="var(--text-dim)"/><path d="M90 10 V70" stroke="var(--text-dim)"/>
+          <path d="M90 10 H140" stroke="var(--text-dim)"/><path d="M140 10 L180 -8" stroke="var(--accent)"/><circle cx="140" cy="10" r="4" fill="var(--text-dim)"/><circle cx="184" cy="10" r="4" fill="var(--text-dim)"/><path d="M184 10 H230" stroke="var(--text-dim)"/>
+          <path d="M90 70 H140" stroke="var(--text-dim)"/><path d="M140 70 L180 52" stroke="var(--accent)"/><circle cx="140" cy="70" r="4" fill="var(--text-dim)"/><circle cx="184" cy="70" r="4" fill="var(--text-dim)"/><path d="M184 70 H230" stroke="var(--text-dim)"/>
+          <path d="M230 10 V70 M230 40 H300 V150 H20 V40" stroke="var(--text-dim)"/>
+          <rect x="6" y="70" width="28" height="44" rx="4" fill="var(--surface)" stroke="var(--border)"/><text x="20" y="98" text-anchor="middle" class="t-mono" stroke="none">+ −</text>
+          <circle cx="300" cy="95" r="16" fill="#ffd84a" stroke="var(--border)"/>
+        </g>
+        <text x="626" y="40" class="t-acc">A</text><text x="626" y="100" class="t-acc">B</text>
+        <text x="600" y="222" text-anchor="middle" class="t-dim">A나 B 중 <tspan class="t-acc">하나만</tspan> 닫혀도 전구가 켜진다</text>
+      </svg>
+      <figcaption><b>그림 3-1.</b> 스위치 연결 방식이 곧 논리다. 실제 칩에서는 손가락 대신 다른 트랜지스터의 출력이 스위치를 누른다.</figcaption>
+    </figure>
     <p>이런 기본 판단 회로를 <span class="term">논리 게이트</span><span class="en">(logic gate)</span>라 하고, 입력의 모든 경우에 대한 출력을 정리한 표를 <span class="term">진리표</span>라 한다. 아래에서 게이트를 바꿔 가며 입력 스위치를 눌러 보자.</p>
     <div class="sim" id="sim-gate">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>논리 게이트 놀이터</h3></div>
@@ -91,6 +118,32 @@
       </tbody>
     </table></div>
     <div class="callout deep"><strong>NAND 하나면 충분하다</strong><p>NAND 게이트만 충분히 있으면 NOT(입력 두 개를 묶어서), AND(NAND 뒤에 NOT), OR까지 모두 만들 수 있다. 실제로 반도체 회로는 NAND, NOR처럼 트랜지스터 몇 개로 만들기 쉬운 게이트를 기본 블록으로 쓴다. SSD에 쓰이는 “NAND 플래시”라는 이름도 여기서 왔다.</p></div>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 280" role="img" aria-label="트랜지스터 두 개로 만든 NOT 게이트(CMOS 인버터)">
+        <g transform="translate(60,20)">
+          <text x="110" y="10" text-anchor="middle" class="t-dim">+ 전원 (1)</text>
+          <path d="M110 18 V50" class="s-line"/>
+          <rect x="94" y="50" width="32" height="50" rx="5" class="f-acc2-soft"/><text x="140" y="80" class="t" style="font-weight:700">위 스위치</text><text x="140" y="96" class="t-dim">입력이 0일 때 닫힘</text>
+          <path d="M110 100 V130" class="s-line"/><circle cx="110" cy="130" r="4" fill="var(--text)"/>
+          <path d="M110 130 H230" class="s-acc"/><text x="236" y="135" class="t-acc">출력</text>
+          <path d="M110 130 V160" class="s-line"/>
+          <rect x="94" y="160" width="32" height="50" rx="5" class="f-acc-soft"/><text x="140" y="190" class="t" style="font-weight:700">아래 스위치</text><text x="140" y="206" class="t-dim">입력이 1일 때 닫힘</text>
+          <path d="M110 210 V240" class="s-line"/><text x="110" y="256" text-anchor="middle" class="t-dim">땅 (0)</text>
+          <path d="M20 130 H60 M60 75 V185 M60 75 H90 M60 185 H90" class="s-line"/><text x="0" y="135" class="t-acc">입력</text>
+        </g>
+        <g transform="translate(470,40)">
+          <rect width="300" height="90" rx="12" class="f-surface"/>
+          <text x="16" y="28" class="t" style="font-weight:700">입력 0 이면</text>
+          <text x="16" y="52" class="t-dim">위 스위치만 닫힌다 → 출력이 전원에 연결</text>
+          <text x="16" y="74" class="t-acc">출력 1</text>
+          <rect y="110" width="300" height="90" rx="12" class="f-surface"/>
+          <text x="16" y="138" class="t" style="font-weight:700">입력 1 이면</text>
+          <text x="16" y="162" class="t-dim">아래 스위치만 닫힌다 → 출력이 땅에 연결</text>
+          <text x="16" y="184" class="t-acc">출력 0</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 3-2.</b> 트랜지스터 두 개로 만든 NOT 게이트(CMOS 인버터). 두 스위치가 늘 반대로 움직여서 둘 중 하나만 닫힌다. 전기가 위에서 아래로 곧장 새는 순간이 거의 없어 전력을 아끼는 이 방식이 오늘날 칩의 표준이다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
@@ -101,6 +154,39 @@
       <li><b>이 자리의 값(합)</b>은 두 입력이 <b>서로 다를 때</b> 1이다. → <b>XOR</b></li>
       <li><b>올림수</b>는 두 입력이 <b>모두 1일 때</b> 1이다. → <b>AND</b></li>
     </ul>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="반가산기 회로와 전가산기를 이어 붙인 4비트 덧셈기">
+        <text x="20" y="22" class="t" style="font-weight:700">반가산기: 게이트 2개</text>
+        <g transform="translate(30,40)">
+          <text x="0" y="34" class="t-acc">A</text><text x="0" y="104" class="t-acc">B</text>
+          <path d="M16 30 H70 V40 H120 M70 30 V100 H120" class="s-line"/>
+          <path d="M16 100 H50 V60 H120 M50 100 V120 H120" class="s-line"/>
+          <path d="M120 28 q40 0 60 22 q-20 22 -60 22 q14 -22 0 -44" class="f-elev" stroke="var(--text)" stroke-width="1.8"/>
+          <path d="M112 28 q14 22 0 44" fill="none" stroke="var(--text)" stroke-width="1.8"/>
+          <text x="146" y="54" text-anchor="middle" class="t-mono">XOR</text>
+          <path d="M120 92 h30 a20 20 0 0 1 0 40 h-30 z" class="f-elev" stroke="var(--text)" stroke-width="1.8"/>
+          <text x="146" y="116" text-anchor="middle" class="t-mono">AND</text>
+          <path d="M180 50 H260" class="s-acc"/><text x="268" y="55" class="t-acc">합 S</text>
+          <path d="M170 112 H260" class="s-acc"/><text x="268" y="117" class="t-acc">올림 C</text>
+        </g>
+        <g transform="translate(440,30)">
+          <rect width="320" height="120" rx="12" class="f-surface"/>
+          <text x="16" y="26" class="t-dim">A B → C S</text>
+          <g class="t-mono" style="font-size:13px"><text x="16" y="50">0 + 0 → 0 0</text><text x="16" y="72">0 + 1 → 0 1</text><text x="170" y="50">1 + 0 → 0 1</text><text x="170" y="72">1 + 1 → 1 0</text></g>
+          <text x="16" y="104" class="t-dim">1 + 1 = 2진수 10: 이 자리 0, 올림 1</text>
+        </g>
+        <text x="20" y="196" class="t" style="font-weight:700">전가산기 4개를 이으면 4비트 덧셈기</text>
+        <g transform="translate(60,214)">
+          <rect x="0" width="120" height="50" rx="10" class="f-acc-soft"/><text x="60" y="30" text-anchor="middle" class="t">8의 자리</text>
+          <rect x="180" width="120" height="50" rx="10" class="f-acc-soft"/><text x="240" y="30" text-anchor="middle" class="t">4의 자리</text>
+          <rect x="360" width="120" height="50" rx="10" class="f-acc-soft"/><text x="420" y="30" text-anchor="middle" class="t">2의 자리</text>
+          <rect x="540" width="120" height="50" rx="10" class="f-acc-soft"/><text x="600" y="30" text-anchor="middle" class="t">1의 자리</text>
+          <defs><marker id="lg-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs><g stroke="var(--warn)" stroke-width="2.5" marker-end="url(#lg-c)"><path d="M540 25 H486"/><path d="M360 25 H306"/><path d="M180 25 H126"/><path d="M0 25 H-34"/></g>
+          <text x="510" y="16" text-anchor="middle" class="t-mono" style="fill:var(--warn)">올림</text><text x="330" y="16" text-anchor="middle" class="t-mono" style="fill:var(--warn)">올림</text><text x="150" y="16" text-anchor="middle" class="t-mono" style="fill:var(--warn)">올림</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 3-3.</b> 위: XOR와 AND로 만든 반가산기. 아래: 아랫자리 올림수까지 받는 전가산기를 이어 붙인 덧셈기. 올림수가 오른쪽에서 왼쪽으로 번져 간다.</figcaption>
+    </figure>
     <p>게이트 두 개로 한 자리 덧셈기(반가산기)가 완성된다. 아랫자리에서 올라온 올림수까지 받아서 셋을 더하는 <span class="term">전가산기</span><span class="en">(full adder)</span>는 게이트 다섯 개면 된다. 전가산기를 여러 개 이어 붙여 올림수를 옆으로 넘기면 몇 자리 덧셈이든 할 수 있다. 종이에 덧셈할 때 받아올림하는 것과 똑같다.</p>
     <div class="sim" id="sim-add">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>4비트 덧셈기: 올림수가 번져 가는 모습</h3></div>

@@ -59,6 +59,31 @@
     <h2>왜 하필 0과 1일까</h2>
     <p>컴퓨터 속 정보는 결국 <strong>전선에 흐르는 전압</strong>이다. 전압이 높으면 1, 낮으면 0으로 읽는다. 그런데 왜 0부터 9까지 열 단계로 나눠 우리에게 익숙한 10진수를 쓰지 않았을까?</p>
     <p>이유는 <strong>잡음</strong>이다. 실제 전압은 온도, 주변 전선의 간섭, 부품의 미세한 차이 때문에 늘 조금씩 흔들린다. 0~1 V 사이를 10칸으로 나누면 한 칸이 0.1 V뿐이라서, 조금만 흔들려도 3이 4로 잘못 읽힌다. 두 칸으로만 나누면 “대충 높은가, 낮은가”만 보면 되니 웬만큼 흔들려도 틀리지 않는다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 270" role="img" aria-label="두 단계와 열 단계로 전압을 읽을 때의 차이">
+        <text x="210" y="20" text-anchor="middle" class="t" style="font-weight:700">2단계로 나누면</text>
+        <text x="590" y="20" text-anchor="middle" class="t" style="font-weight:700">10단계로 나누면</text>
+        <g transform="translate(40,32)">
+          <rect width="340" height="90" fill="var(--accent-soft)"/><rect y="90" width="340" height="90" class="f-surface" stroke="none"/>
+          <text x="334" y="16" text-anchor="end" class="t-acc">1로 읽음</text><text x="334" y="172" text-anchor="end" class="t-dim">0으로 읽음</text>
+          <line x1="0" y1="90" x2="340" y2="90" stroke="var(--text-faint)" stroke-dasharray="5 4"/>
+          <text x="4" y="86" class="t-mono">경계 0.5 V</text>
+          <path d="M10 40 l12 -6 l12 9 l12 -7 l12 6 l12 -5 l10 4 L84 150 l12 6 l12 -9 l12 7 l12 -5 l12 8 l10 -4 L168 36 l12 8 l12 -9 l12 5 l12 -6 l12 9 L242 150 l12 -7 l12 9 l12 -6 l12 5 l12 -4 L330 40" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+          <text x="170" y="206" text-anchor="middle" class="t-dim">흔들려도 경계를 넘지 않는다 → 오류 없음</text>
+        </g>
+        <g transform="translate(420,32)">
+          <g class="t-mono">
+            <rect y="0" width="340" height="18" class="f-surface" stroke="none"/><rect y="36" width="340" height="18" class="f-surface" stroke="none"/><rect y="72" width="340" height="18" class="f-surface" stroke="none"/><rect y="108" width="340" height="18" class="f-surface" stroke="none"/><rect y="144" width="340" height="18" class="f-surface" stroke="none"/>
+            <rect y="54" width="340" height="18" fill="var(--accent-soft)"/>
+          </g>
+          <text x="-6" y="13" text-anchor="end" class="t-mono">9</text><text x="-6" y="67" text-anchor="end" class="t-mono">6</text><text x="-6" y="175" text-anchor="end" class="t-mono">0</text>
+          <path d="M10 63 l14 -12 l14 20 l14 -16 l14 22 l14 -14 l14 18 l14 -24 l14 16 l14 10 l14 -20 l14 14 l14 -18 l14 22 l14 -12 l14 6 l14 -16 l14 14 l14 -10 l14 18 l14 -14 l14 8" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+          <circle cx="66" cy="87" r="5" fill="var(--bad)"/><circle cx="108" cy="45" r="5" fill="var(--bad)"/><circle cx="206" cy="85" r="5" fill="var(--bad)"/><circle cx="276" cy="83" r="5" fill="var(--bad)"/>
+          <text x="170" y="206" text-anchor="middle" class="t-dim">같은 흔들림인데 옆 칸(5, 7)으로 읽힌다 → 오류</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 2-1.</b> 같은 잡음이 섞인 신호를 두 가지 방식으로 읽기. 칸이 넓을수록(2단계) 흔들림이 경계를 넘지 못한다. 빨간 점은 잘못 읽힌 순간이다.</figcaption>
+    </figure>
     <div class="sim" id="sim-noise">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>잡음 속에서 신호 읽기: 2단계 vs 10단계</h3></div>
       <div class="sim-view"><canvas id="cv-noise"></canvas></div>
@@ -81,6 +106,33 @@
   <section id="binary">
     <h2>2진수: 자리마다 두 배</h2>
     <p>우리가 쓰는 10진수에서 <code>352</code>는 3×100 + 5×10 + 2×1이다. 자리가 하나 왼쪽으로 갈 때마다 값이 10배가 된다. 2진수도 똑같은데, 자리마다 <strong>2배</strong>가 된다. 오른쪽부터 1, 2, 4, 8, 16, 32, 64, 128이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="10진수와 2진수의 자릿값 비교">
+        <text x="20" y="26" class="t" style="font-weight:700">10진수 352</text>
+        <g transform="translate(150,8)" class="t">
+          <rect width="60" height="40" rx="8" class="f-surface"/><text x="30" y="27" text-anchor="middle" class="t" style="font-size:20px;font-weight:700">3</text><text x="30" y="58" text-anchor="middle" class="t-mono">×100</text>
+          <rect x="70" width="60" height="40" rx="8" class="f-surface"/><text x="100" y="27" text-anchor="middle" class="t" style="font-size:20px;font-weight:700">5</text><text x="100" y="58" text-anchor="middle" class="t-mono">×10</text>
+          <rect x="140" width="60" height="40" rx="8" class="f-surface"/><text x="170" y="27" text-anchor="middle" class="t" style="font-size:20px;font-weight:700">2</text><text x="170" y="58" text-anchor="middle" class="t-mono">×1</text>
+        </g>
+        <text x="380" y="34" class="t-dim">= 300 + 50 + 2. 왼쪽으로 한 칸 갈 때마다 ×10</text>
+        <text x="20" y="128" class="t" style="font-weight:700">2진수 1101</text>
+        <g transform="translate(150,108)">
+          <rect width="60" height="40" rx="8" class="f-acc"/><text x="30" y="27" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#fff;font-family:var(--mono)">1</text><text x="30" y="58" text-anchor="middle" class="t-mono">×8</text>
+          <rect x="70" width="60" height="40" rx="8" class="f-acc"/><text x="100" y="27" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#fff;font-family:var(--mono)">1</text><text x="100" y="58" text-anchor="middle" class="t-mono">×4</text>
+          <rect x="140" width="60" height="40" rx="8" class="f-surface"/><text x="170" y="27" text-anchor="middle" class="t" style="font-size:20px;font-weight:700;font-family:var(--mono)">0</text><text x="170" y="58" text-anchor="middle" class="t-mono">×2</text>
+          <rect x="210" width="60" height="40" rx="8" class="f-acc"/><text x="240" y="27" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#fff;font-family:var(--mono)">1</text><text x="240" y="58" text-anchor="middle" class="t-mono">×1</text>
+        </g>
+        <text x="450" y="134" class="t-dim">= 8 + 4 + 0 + 1 = <tspan class="t-acc">13</tspan>. 한 칸 갈 때마다 ×2</text>
+        <g transform="translate(150,200)">
+          <text x="0" y="14" class="t-dim">자릿값:</text>
+          <g class="t-mono" style="font-size:12px">
+            <text x="70" y="14">128</text><text x="120" y="14">64</text><text x="164" y="14">32</text><text x="208" y="14">16</text><text x="252" y="14">8</text><text x="292" y="14">4</text><text x="332" y="14">2</text><text x="372" y="14">1</text>
+          </g>
+          <text x="410" y="14" class="t-dim">← 8비트(1바이트)의 자리. 모두 더하면 255</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 2-2.</b> 10진수와 2진수는 규칙이 같다. 자릿값이 10배씩 커지느냐, 2배씩 커지느냐만 다르다.</figcaption>
+    </figure>
     <p>아래 8개의 스위치(비트)를 눌러 켜고 꺼 보자. 켜진 자리의 값을 모두 더하면 10진수가 된다. 8비트를 묶은 단위를 <span class="term">바이트</span><span class="en">(byte)</span>라고 하며, 0부터 255까지 256가지 값을 나타낼 수 있다.</p>
     <div class="sim" id="sim-bin">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>8비트 스위치 보드</h3></div>
@@ -112,6 +164,33 @@
     <h2>글자를 숫자로: ASCII와 유니코드</h2>
     <p>컴퓨터에게 글자 ‘A’를 저장하라고 하면 무엇을 저장할까? 답은 <strong>약속된 번호</strong>다. 1960년대 미국에서 영어 알파벳, 숫자, 기호에 0~127번을 붙인 약속을 정했는데 이를 <span class="term">ASCII</span><span class="en">(아스키)</span>라 한다. ‘A’는 65번, ‘a’는 97번, 숫자 ‘0’은 48번이다.</p>
     <p>하지만 128칸으로는 한글, 한자, 아랍 문자, 이모지를 담을 수 없다. 그래서 전 세계 모든 문자에 고유 번호를 붙인 <span class="term">유니코드</span><span class="en">(Unicode)</span>가 만들어졌다. ‘가’는 44032번(16진수 AC00), ‘😀’는 128512번이다. 유니코드 번호를 실제 바이트로 저장하는 방법 중 가장 널리 쓰이는 것이 <span class="term">UTF-8</span>이다. 영어는 1바이트, 한글은 3바이트, 이모지는 4바이트를 쓴다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 280" role="img" aria-label="한글 '가'가 UTF-8 세 바이트로 바뀌는 과정">
+        <text x="20" y="28" class="t" style="font-weight:700">‘가’의 유니코드 번호 AC00 (16비트)</text>
+        <g transform="translate(20,42)" style="font-family:var(--mono);font-size:18px;font-weight:700">
+          <rect width="96" height="36" rx="6" fill="color-mix(in srgb, var(--warn) 22%, transparent)"/><text x="48" y="25" text-anchor="middle" style="fill:var(--text)">1010</text>
+          <rect x="104" width="140" height="36" rx="6" fill="var(--accent-soft)"/><text x="174" y="25" text-anchor="middle" style="fill:var(--text)">110000</text>
+          <rect x="252" width="140" height="36" rx="6" fill="var(--accent-2-soft)"/><text x="322" y="25" text-anchor="middle" style="fill:var(--text)">000000</text>
+          <text x="48" y="56" text-anchor="middle" class="t-mono">앞 4비트</text><text x="174" y="56" text-anchor="middle" class="t-mono">가운데 6비트</text><text x="322" y="56" text-anchor="middle" class="t-mono">뒤 6비트</text>
+        </g>
+        <text x="440" y="66" class="t-dim">번호를 4 · 6 · 6비트로 자른다</text>
+        <g stroke="var(--text-faint)" stroke-width="1.5" fill="none" stroke-dasharray="4 4">
+          <path d="M68 106 L119 170"/><path d="M194 106 L346 170"/><path d="M342 106 L586 170"/>
+        </g>
+        <text x="780" y="150" text-anchor="end" class="t" style="font-weight:700">UTF-8로 저장된 3바이트</text>
+        <g transform="translate(20,166)" style="font-family:var(--mono);font-size:18px;font-weight:700">
+          <rect width="220" height="40" rx="8" class="f-elev"/>
+          <text x="20" y="27" style="fill:var(--text-faint)">1110</text><rect x="70" y="6" width="58" height="28" rx="5" fill="color-mix(in srgb, var(--warn) 22%, transparent)"/><text x="99" y="27" text-anchor="middle" style="fill:var(--text)">1010</text>
+          <rect x="240" width="220" height="40" rx="8" class="f-elev"/>
+          <text x="256" y="27" style="fill:var(--text-faint)">10</text><rect x="284" y="6" width="84" height="28" rx="5" fill="var(--accent-soft)"/><text x="326" y="27" text-anchor="middle" style="fill:var(--text)">110000</text>
+          <rect x="480" width="220" height="40" rx="8" class="f-elev"/>
+          <text x="496" y="27" style="fill:var(--text-faint)">10</text><rect x="524" y="6" width="84" height="28" rx="5" fill="var(--accent-2-soft)"/><text x="566" y="27" text-anchor="middle" style="fill:var(--text)">000000</text>
+          <text x="110" y="64" text-anchor="middle" class="t-acc">EA</text><text x="350" y="64" text-anchor="middle" class="t-acc">B0</text><text x="590" y="64" text-anchor="middle" class="t-acc">80</text>
+        </g>
+        <text x="20" y="262" class="t-dim">흐린 글자는 약속된 표시: <tspan class="t-mono">1110</tspan> = “3바이트짜리 글자의 시작”, <tspan class="t-mono">10</tspan> = “이어지는 바이트”.</text>
+      </svg>
+      <figcaption><b>그림 2-3.</b> UTF-8 인코딩. 번호의 비트를 잘라 약속된 머리표가 붙은 바이트 틀에 채워 넣는다. 머리표 덕분에 중간부터 읽어도 글자의 시작을 찾을 수 있다.</figcaption>
+    </figure>
     <div class="sim" id="sim-text">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>글자 → 바이트 변환기 (UTF-8)</h3></div>
       <div class="sim-controls" style="border-top:0">

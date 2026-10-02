@@ -75,6 +75,32 @@
     <h2>하드디스크: 레코드판과 바늘</h2>
     <p><span class="term">하드디스크</span><span class="en">(HDD, Hard Disk Drive)</span>는 자성 물질을 입힌 금속 원판이 1분에 5,400~7,200번 돌고, 그 위를 머리카락보다 얇은 높이로 떠 있는 <b>헤드</b>가 오가며 자석의 방향(N/S)으로 0과 1을 읽고 쓴다. 레코드판과 바늘을 떠올리면 된다.</p>
     <p>데이터를 읽으려면 두 가지를 기다려야 한다. ① 헤드가 원하는 동심원(트랙)까지 팔을 움직이는 시간(<b>탐색 시간</b>), ② 원판이 돌아서 원하는 위치가 헤드 밑에 올 때까지 기다리는 시간(<b>회전 지연</b>). 둘 다 기계가 실제로 움직이는 시간이라 밀리초 단위다. CPU 기준으로는 몇 달이다(1장).</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="하드디스크의 구조">
+        <defs><marker id="hd-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs>
+        <circle cx="200" cy="150" r="130" class="f-surface"/>
+        <g fill="none" stroke="var(--border)"><circle cx="200" cy="150" r="110"/><circle cx="200" cy="150" r="90"/><circle cx="200" cy="150" r="70"/><circle cx="200" cy="150" r="50"/></g>
+        <circle cx="200" cy="150" r="90" fill="none" stroke="var(--accent)" stroke-width="5" stroke-dasharray="40 525" stroke-dashoffset="-120"/>
+        <circle cx="200" cy="150" r="22" fill="var(--text-faint)"/><text x="200" y="154" text-anchor="middle" class="t-mono" style="fill:#fff">축</text>
+        <path d="M340 30 L262 214" stroke="var(--text-dim)" stroke-width="7" stroke-linecap="round"/><circle cx="340" cy="30" r="12" fill="var(--text-dim)"/>
+        <rect x="254" y="208" width="16" height="12" fill="var(--warn)"/>
+        <path d="M330 60 q-40 30 -50 70" fill="none" stroke="var(--warn)" stroke-width="2" marker-end="url(#hd-a)"/>
+        <path d="M120 60 A110 110 0 0 1 220 41" fill="none" stroke="var(--warn)" stroke-width="2" marker-end="url(#hd-a)"/>
+        <g transform="translate(420,30)">
+          <text x="0" y="14" class="t" style="font-weight:700">이름표</text>
+          <text x="0" y="42" class="t"><tspan class="t-acc">트랙</tspan>: 원판의 동심원 하나</text>
+          <text x="0" y="66" class="t"><tspan class="t-acc">섹터</tspan>: 트랙의 한 조각 (파랑, 보통 4 KB)</text>
+          <text x="0" y="90" class="t"><tspan style="fill:var(--warn);font-weight:700">헤드</tspan>: 자석의 방향을 읽고 쓰는 바늘</text>
+          <text x="0" y="132" class="t" style="font-weight:700">읽기까지 기다리는 시간</text>
+          <text x="0" y="158" class="t-dim">① 탐색: 팔이 원하는 트랙까지 움직인다 (약 4~9 ms)</text>
+          <text x="0" y="182" class="t-dim">② 회전 지연: 섹터가 헤드 밑에 올 때까지</text>
+          <text x="0" y="200" class="t-dim">    7,200 RPM이면 평균 약 4 ms</text>
+          <text x="0" y="236" class="t-dim">헤드는 원판 위 수 나노미터 높이에 떠 있다.</text>
+          <text x="0" y="256" class="t-dim">먼지 한 톨도 사고가 될 만큼 가깝다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 7-1.</b> 하드디스크의 구조(위에서 본 모습). 주황 화살표는 기다리는 두 가지 움직임, 즉 팔의 이동과 원판의 회전이다.</figcaption>
+    </figure>
     <div class="sim" id="sim-hdd">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>HDD vs SSD 읽기 경주</h3></div>
       <div class="sim-view"><canvas id="cv-hdd"></canvas></div>
@@ -95,6 +121,30 @@
   <section id="ssd">
     <h2>SSD: 전자를 가두는 감옥</h2>
     <p><span class="term">SSD</span><span class="en">(Solid State Drive)</span>는 움직이는 부품 없이 반도체 칩으로만 데이터를 저장한다. 그 칩이 <span class="term">플래시 메모리</span>(정확히는 NAND 플래시)다. 플래시 셀은 트랜지스터 안에 사방이 절연체로 막힌 작은 방을 하나 더 두고, 높은 전압으로 전자를 억지로 밀어 넣어 <b>가둔다</b>. 갇힌 전자는 전원이 꺼져도 빠져나가지 못해 수년간 남는다. 전자가 갇혀 있는지 아닌지로 0과 1을 구분한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 270" role="img" aria-label="플래시 메모리 셀의 단면과 두 상태">
+        <g transform="translate(40,20)">
+          <text x="150" y="14" text-anchor="middle" class="t" style="font-weight:700">전자가 없다 → 1</text>
+          <rect x="70" y="30" width="160" height="34" rx="4" class="f-elev"/><text x="150" y="52" text-anchor="middle" class="t-mono">제어 게이트</text>
+          <rect x="70" y="64" width="160" height="12" class="f-surface"/>
+          <rect x="70" y="76" width="160" height="34" rx="4" fill="var(--accent-2-soft)" stroke="var(--accent-2)"/><text x="150" y="98" text-anchor="middle" class="t-mono">갇힌 방 (빈 상태)</text>
+          <rect x="70" y="110" width="160" height="14" class="f-surface"/>
+          <rect x="10" y="124" width="280" height="70" rx="6" fill="color-mix(in srgb, var(--text-faint) 18%, transparent)"/><text x="150" y="168" text-anchor="middle" class="t-dim">실리콘 (전류가 흐르는 길)</text>
+          <text x="300" y="72" class="t-mono">절연막</text><path d="M296 70 L232 70" stroke="var(--text-faint)"/>
+        </g>
+        <g transform="translate(420,20)">
+          <text x="150" y="14" text-anchor="middle" class="t" style="font-weight:700">전자가 갇혀 있다 → 0</text>
+          <rect x="70" y="30" width="160" height="34" rx="4" class="f-elev"/><text x="150" y="52" text-anchor="middle" class="t-mono">제어 게이트</text>
+          <rect x="70" y="64" width="160" height="12" class="f-surface"/>
+          <rect x="70" y="76" width="160" height="34" rx="4" fill="var(--accent)" opacity=".85"/>
+          <g fill="#fff"><circle cx="96" cy="93" r="5"/><circle cx="120" cy="93" r="5"/><circle cx="144" cy="93" r="5"/><circle cx="168" cy="93" r="5"/><circle cx="192" cy="93" r="5"/><circle cx="210" cy="93" r="5"/></g>
+          <rect x="70" y="110" width="160" height="14" class="f-surface"/>
+          <rect x="10" y="124" width="280" height="70" rx="6" fill="color-mix(in srgb, var(--text-faint) 18%, transparent)"/><text x="150" y="168" text-anchor="middle" class="t-dim">갇힌 전자 때문에 전류가 잘 안 흐른다</text>
+        </g>
+        <text x="400" y="244" text-anchor="middle" class="t-dim">쓰기: 높은 전압으로 전자를 절연막 너머로 밀어 넣는다 · 지우기: 반대 전압으로 블록 전체의 전자를 끌어낸다</text>
+      </svg>
+      <figcaption><b>그림 7-2.</b> 플래시 셀의 단면(단순화). 사방이 절연막으로 막힌 방에 전자를 가두면 전원 없이도 수년간 남는다. 절연막은 쓰고 지울 때마다 조금씩 상해서 셀의 수명이 정해진다.</figcaption>
+    </figure>
     <div class="callout analogy"><strong>잉크로 쓰는 공책</strong><p>플래시는 연필이 아니라 <b>잉크</b>로 쓰는 공책과 비슷하다. 빈 줄에는 언제든 쓸 수 있지만, 이미 쓴 줄을 고쳐 쓸 수는 없다. 지우려면 여러 쪽이 묶인 <b>한 장(블록)을 통째로 표백</b>해야 한다. 그래서 내용을 고칠 때는 새 빈 줄에 다시 쓰고, 옛 줄에는 “무효” 표시만 해 둔다. 무효 줄이 쌓이면 아직 유효한 줄만 다른 장으로 옮겨 적고 그 장을 통째로 지운다.</p></div>
     <div class="sim" id="sim-flash">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>플래시 메모리의 쓰기와 지우기</h3></div>
@@ -111,6 +161,31 @@
       <div class="sim-note">파랑 = 유효한 데이터, 빨간 취소선 = 무효(옛 버전), 회색 = 빈 페이지. 빈 페이지가 바닥나면 SSD가 알아서 <b>가비지 컬렉션</b>을 한다: 무효가 가장 많은 블록의 유효 데이터를 옮기고 블록을 통째로 지운다. 옮겨 쓰는 만큼 “실제 쓰기”가 요청보다 많아진다. 플래시 셀은 수천 번 지우면 닳기 때문에 SSD는 지우기를 여러 블록에 고르게 나눈다(웨어 레벨링).</div>
     </div>
     <p>이런 복잡한 관리는 SSD 안에 들어 있는 작은 컴퓨터(컨트롤러)가 혼자 처리한다. 운영체제는 “5번 블록에 써 줘”라고만 말하고, 컨트롤러가 실제로는 빈 페이지 어딘가에 쓰고 그 위치를 자기만의 표에 적어 둔다. 9장에서 배울 가상 메모리와 놀랄 만큼 닮은 아이디어다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="SSD 내부 구조">
+        <rect x="10" y="10" width="780" height="230" rx="16" class="f-surface"/><text x="26" y="34" class="t-dim">SSD 한 개 (손가락 두 개만 한 기판)</text>
+        <rect x="26" y="96" width="90" height="60" rx="8" class="f-elev"/><text x="71" y="122" text-anchor="middle" class="t" style="font-weight:700">연결 단자</text><text x="71" y="142" text-anchor="middle" class="t-mono">NVMe/PCIe</text>
+        <path d="M116 126 H170" class="s-acc"/>
+        <rect x="170" y="70" width="170" height="112" rx="12" class="f-acc"/><text x="255" y="104" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">컨트롤러</text>
+        <text x="255" y="126" text-anchor="middle" style="fill:#fff" class="t-mono">작은 CPU</text><text x="255" y="144" text-anchor="middle" style="fill:#fff" class="t-mono">주소 대응표 · GC</text><text x="255" y="162" text-anchor="middle" style="fill:#fff" class="t-mono">웨어 레벨링 · 오류 정정</text>
+        <rect x="190" y="196" width="130" height="34" rx="6" class="f-acc2-soft"/><text x="255" y="218" text-anchor="middle" class="t-mono">DRAM (표 보관)</text>
+        <path d="M255 182 V196" class="s-line"/>
+        <g class="s-line" stroke-width="2"><path d="M340 90 H400"/><path d="M340 112 H400"/><path d="M340 140 H400"/><path d="M340 162 H400"/></g>
+        <text x="370" y="66" text-anchor="middle" class="t-mono">채널 4개</text>
+        <g>
+          <rect x="400" y="56" width="86" height="56" rx="6" class="f-elev"/><text x="443" y="89" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="496" y="56" width="86" height="56" rx="6" class="f-elev"/><text x="539" y="89" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="592" y="56" width="86" height="56" rx="6" class="f-elev"/><text x="635" y="89" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="688" y="56" width="86" height="56" rx="6" class="f-elev"/><text x="731" y="89" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="400" y="130" width="86" height="56" rx="6" class="f-elev"/><text x="443" y="163" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="496" y="130" width="86" height="56" rx="6" class="f-elev"/><text x="539" y="163" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="592" y="130" width="86" height="56" rx="6" class="f-elev"/><text x="635" y="163" text-anchor="middle" class="t-mono">NAND</text>
+          <rect x="688" y="130" width="86" height="56" rx="6" class="f-elev"/><text x="731" y="163" text-anchor="middle" class="t-mono">NAND</text>
+        </g>
+        <text x="587" y="214" text-anchor="middle" class="t-dim">플래시 칩 여러 개에 동시에 읽고 써서 속도를 낸다 (병렬)</text>
+      </svg>
+      <figcaption><b>그림 7-3.</b> SSD 내부(단순화). 겉보기엔 저장장치지만 안에는 작은 컴퓨터가 들어 있다. 컨트롤러가 여러 플래시 칩에 일을 나눠 맡기는 덕분에 HDD보다 수백 배 빠르다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->

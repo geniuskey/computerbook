@@ -93,6 +93,25 @@
       <div class="sim-note">해볼 것: “1부터 5까지 합”에서 <code>while</code>이 <code>JZ</code>(0이면 탈출)와 <code>JUMP</code>(처음으로)로 바뀌는 것을 찾아보자. 식 <code>a + b - c</code>는 LOAD 한 번과 ADD/SUB 여러 번으로 바뀐다. 숫자 상수도 메모리 칸을 하나씩 차지한다(이 CPU에는 숫자를 명령 안에 직접 넣는 기능이 없다).</div>
     </div>
     <p>실제 컴파일러도 큰 흐름은 같다. ① 글자를 낱말로 자르는 <b>어휘 분석</b>, ② 문법에 맞춰 나무 구조를 만드는 <b>구문 분석</b>, ③ 뜻이 맞는지(변수가 선언되었는지, 숫자에 글자를 더하지 않는지) 검사하는 <b>의미 분석</b>, ④ 더 빠르게 다듬는 <b>최적화</b>, ⑤ 기계어를 만드는 <b>코드 생성</b>. 문법이 틀리면 ②에서, 타입이 안 맞으면 ③에서 오류가 난다. 프로그래머가 매일 보는 “컴파일 오류”가 바로 이것이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 230" role="img" aria-label="컴파일러의 다섯 단계">
+        <defs><marker id="cc-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g class="t-mono" style="font-size:12px">
+          <rect x="10" y="20" width="140" height="60" rx="10" class="f-surface"/><text x="80" y="44" text-anchor="middle">소스 코드</text><text x="80" y="64" text-anchor="middle" style="fill:var(--text)">a = b + 2</text>
+          <rect x="170" y="20" width="140" height="60" rx="10" class="f-acc-soft"/><text x="240" y="44" text-anchor="middle" style="fill:var(--text);font-weight:700">① 어휘 분석</text><text x="240" y="64" text-anchor="middle">[a][=][b][+][2]</text>
+          <rect x="330" y="20" width="140" height="60" rx="10" class="f-acc-soft"/><text x="400" y="44" text-anchor="middle" style="fill:var(--text);font-weight:700">② 구문 분석</text><text x="400" y="64" text-anchor="middle">대입(a, b+2)</text>
+          <rect x="490" y="20" width="140" height="60" rx="10" class="f-acc-soft"/><text x="560" y="44" text-anchor="middle" style="fill:var(--text);font-weight:700">③ 의미 분석</text><text x="560" y="64" text-anchor="middle">b는 숫자? OK</text>
+          <rect x="250" y="120" width="160" height="60" rx="10" class="f-acc2-soft"/><text x="330" y="144" text-anchor="middle" style="fill:var(--text);font-weight:700">④ 최적화</text><text x="330" y="164" text-anchor="middle">쓸데없는 일 덜기</text>
+          <rect x="430" y="120" width="170" height="60" rx="10" class="f-acc2-soft"/><text x="515" y="144" text-anchor="middle" style="fill:var(--text);font-weight:700">⑤ 코드 생성</text><text x="515" y="164" text-anchor="middle">LOAD b · ADD #2 · STORE a</text>
+          <rect x="620" y="120" width="170" height="60" rx="10" class="f-acc"/><text x="705" y="144" text-anchor="middle" style="fill:#fff;font-weight:700">기계어</text><text x="705" y="164" text-anchor="middle" style="fill:#fff">0001… 0010… 0100…</text>
+        </g>
+        <path d="M150 50 H166" class="s-acc" marker-end="url(#cc-a)"/><path d="M310 50 H326" class="s-acc" marker-end="url(#cc-a)"/><path d="M470 50 H486" class="s-acc" marker-end="url(#cc-a)"/>
+        <path d="M630 50 H660 V100 H230 V150 H246" class="s-acc" fill="none" marker-end="url(#cc-a)"/>
+        <path d="M410 150 H426" class="s-acc" marker-end="url(#cc-a)"/><path d="M600 150 H616" class="s-acc" marker-end="url(#cc-a)"/>
+        <text x="10" y="214" class="t-dim">①~③에서 오류를 찾으면 “컴파일 오류”로 멈춘다. ①~③은 언어마다, ⑤는 CPU(ISA)마다 다르다. 그래서 같은 코드를 x86용, ARM용으로 따로 컴파일한다.</text>
+      </svg>
+      <figcaption><b>그림 13-1.</b> 컴파일러의 다섯 단계. 미니 컴파일러는 ④ 최적화를 빼고 나머지를 그대로 따라 한다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
@@ -124,6 +143,33 @@
       <li>스택 영역을 만들고, 프로그램의 시작 주소를 PC에 넣는다(4장).</li>
       <li>스케줄러에 등록하면, 차례가 왔을 때 CPU가 첫 명령을 가져오기 시작한다.</li>
     </ol>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 312" role="img" aria-label="실행 파일이 프로세스의 주소 공간에 배치되는 모습">
+        <defs><marker id="ld-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="130" y="22" text-anchor="middle" class="t" style="font-weight:700">SSD의 실행 파일</text>
+        <g transform="translate(40,34)">
+          <rect width="180" height="40" rx="6" class="f-surface"/><text x="90" y="25" text-anchor="middle" class="t-mono">머리말 (안내문)</text>
+          <rect y="46" width="180" height="60" rx="6" class="f-acc-soft"/><text x="90" y="81" text-anchor="middle" class="t-mono">기계어 코드</text>
+          <rect y="112" width="180" height="40" rx="6" class="f-acc2-soft"/><text x="90" y="137" text-anchor="middle" class="t-mono">초기 데이터</text>
+          <rect y="158" width="180" height="40" rx="6" class="f-surface"/><text x="90" y="183" text-anchor="middle" class="t-mono">필요한 라이브러리 목록</text>
+        </g>
+        <text x="610" y="22" text-anchor="middle" class="t" style="font-weight:700">새 프로세스의 가상 주소 공간</text>
+        <g transform="translate(520,34)">
+          <rect width="180" height="40" rx="6" class="f-acc-soft" style="fill:var(--accent-soft)"/><text x="90" y="25" text-anchor="middle" class="t-mono">스택 (새로 만듦)</text>
+          <rect y="46" width="180" height="30" rx="6" fill="none" stroke="var(--border)" stroke-dasharray="4 4"/>
+          <rect y="82" width="180" height="40" rx="6" class="f-surface"/><text x="90" y="107" text-anchor="middle" class="t-mono">공유 라이브러리</text>
+          <rect y="128" width="180" height="30" rx="6" fill="none" stroke="var(--border)" stroke-dasharray="4 4"/><text x="90" y="148" text-anchor="middle" class="t-mono">힙 (비어 있음)</text>
+          <rect y="164" width="180" height="34" rx="6" class="f-acc2-soft"/><text x="90" y="186" text-anchor="middle" class="t-mono">데이터</text>
+          <rect y="204" width="180" height="34" rx="6" class="f-acc-soft"/><text x="90" y="226" text-anchor="middle" class="t-mono">코드 ← PC 시작</text>
+        </g>
+        <path d="M220 110 C380 110 380 255 516 255" class="s-acc" fill="none" marker-end="url(#ld-a)"/>
+        <path d="M220 170 C380 170 380 215 516 215" class="s-acc" fill="none" marker-end="url(#ld-a)"/>
+        <path d="M220 212 C380 212 380 136 516 136" class="s-line" fill="none" stroke-dasharray="5 4" marker-end="url(#ld-a)"/>
+        <text x="370" y="96" text-anchor="middle" class="t-dim">로더가 배치</text>
+        <text x="20" y="302" class="t-dim">실제로 복사하기보다 “여기는 파일의 이 부분”이라고 페이지 테이블에 적어 두고, 처음 쓸 때 페이지 폴트로 읽어 온다(9장).</text>
+      </svg>
+      <figcaption><b>그림 13-2.</b> 로더의 일. 실행 파일의 각 부분을 새 프로세스의 주소 공간에 배치하고, 스택과 힙 자리를 마련하고, PC를 코드의 시작점에 맞춘다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
@@ -139,8 +185,8 @@
           <rect y="240" width="240" height="36" rx="8" class="f-elev"/><text x="120" y="263" text-anchor="middle" class="t">데이터: 전역 변수·상수</text>
           <rect y="282" width="240" height="36" rx="8" class="f-elev"/><text x="120" y="305" text-anchor="middle" class="t">코드: 기계어 명령 (읽기 전용)</text>
         </g>
-        <text x="30" y="20" class="t-mono">높은 주소</text>
-        <text x="30" y="324" class="t-mono">낮은 주소</text>
+        <text x="2" y="20" class="t-mono">높은 주소</text>
+        <text x="2" y="324" class="t-mono">낮은 주소</text>
         <g transform="translate(340,0)" class="t-dim">
           <text x="0" y="36" class="t">← 함수를 부를 때마다 위에서 아래로 쌓였다가, 끝나면 사라진다.</text>
           <text x="0" y="56" class="t-dim">   크기가 정해진 지역 변수, 돌아갈 주소를 담는다. 빠르고 자동이다.</text>
@@ -150,7 +196,7 @@
           <text x="0" y="305" class="t">← 실수로 덮어쓰지 못하게 읽기 전용으로 보호한다(9장).</text>
         </g>
       </svg>
-      <figcaption><b>그림 13-1.</b> 프로세스의 가상 주소 공간. 스택과 힙이 빈 공간을 사이에 두고 서로를 향해 자란다.</figcaption>
+      <figcaption><b>그림 13-3.</b> 프로세스의 가상 주소 공간. 스택과 힙이 빈 공간을 사이에 두고 서로를 향해 자란다.</figcaption>
     </figure>
   </section>
 
@@ -158,6 +204,31 @@
   <section id="stack">
     <h2>함수 호출과 스택: 접시 쌓기</h2>
     <p>프로그램은 일을 <span class="term">함수</span>로 나눈다. 함수가 다른 함수를 부르면 CPU는 ① 지금 하던 곳(돌아올 주소), ② 새 함수의 지역 변수를 담을 공간을 <b>스택 꼭대기에 한 층(프레임) 쌓고</b> 새 함수로 점프한다. 함수가 끝나면 맨 위층을 걷어 내고 적혀 있던 주소로 돌아간다. 마지막에 쌓은 것을 먼저 꺼내는 <b>접시 쌓기</b> 방식이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 282" role="img" aria-label="스택 프레임의 구조">
+        <defs><marker id="sf-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs>
+        <text x="170" y="22" text-anchor="middle" class="t" style="font-weight:700">main이 draw(3)를 부른 순간의 스택</text>
+        <g transform="translate(60,34)">
+          <rect width="220" height="96" rx="8" class="f-surface"/><text x="12" y="20" class="t-dim">main의 프레임</text>
+          <text x="20" y="46" class="t-mono">지역 변수 count = 7</text><text x="20" y="68" class="t-mono">지역 변수 name = …</text><text x="20" y="88" class="t-mono">…</text>
+          <rect y="104" width="220" height="110" rx="8" class="f-acc-soft"/><text x="12" y="124" class="t-acc">draw의 프레임 (새로 쌓임)</text>
+          <text x="20" y="148" class="t-mono">인자 n = 3</text><text x="20" y="170" class="t-mono">돌아갈 주소 = main의 다음 줄</text><text x="20" y="192" class="t-mono">지역 변수 x, y</text>
+        </g>
+        <path d="M330 240 H290" stroke="var(--warn)" stroke-width="2.5" marker-end="url(#sf-a)"/><text x="336" y="244" class="t-mono" style="fill:var(--warn)">스택 포인터 (꼭대기)</text>
+        <text x="60" y="270" class="t-dim">↓ 새 프레임은 아래쪽(낮은 주소)으로 쌓인다</text>
+        <g transform="translate(450,40)">
+          <rect width="320" height="190" rx="12" class="f-surface"/>
+          <text x="16" y="30" class="t" style="font-weight:700">함수 호출이 빠른 이유</text>
+          <text x="16" y="58" class="t-dim">프레임 하나를 쌓는 일은 스택 포인터를</text>
+          <text x="16" y="78" class="t-dim">한 번 움직이는 것뿐이다. 반환하면 다시</text>
+          <text x="16" y="98" class="t-dim">되돌리면 끝. 지역 변수가 자동으로 사라지는</text>
+          <text x="16" y="118" class="t-dim">것도 이 때문이다.</text>
+          <text x="16" y="152" class="t" style="font-weight:700">돌아갈 주소</text>
+          <text x="16" y="176" class="t-dim">4장의 CALL이 적어 두고 RET이 꺼내는 그 값이다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 13-4.</b> 스택 프레임. 함수 하나가 실행되는 데 필요한 정보(인자, 돌아갈 주소, 지역 변수)를 한 덩어리로 쌓는다.</figcaption>
+    </figure>
     <p>함수가 자기 자신을 부르는 <b>재귀</b>에서 스택이 가장 잘 보인다. 아래는 팩토리얼(4! = 4 × 3 × 2 × 1)을 재귀로 계산하는 코드다.</p>
     <div class="sim" id="sim-stack">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>호출 스택 따라가기: fact(4)</h3></div>
