@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>보안의 기초 · ComputerBook</title>
+<meta name="description" content="기밀성·무결성·가용성, 해시와 눈사태 효과, 비밀번호를 안전하게 저장하는 법과 무차별 대입 계산기, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증까지 시뮬레이터로 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/security.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="보안의 기초 · ComputerBook">
+<meta property="og:description" content="기밀성·무결성·가용성, 해시와 눈사태 효과, 비밀번호를 안전하게 저장하는 법과 무차별 대입 계산기, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증까지 시뮬레이터로 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/security.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"보안의 기초","name":"보안의 기초 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/security.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/security.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":16,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"기밀성·무결성·가용성, 해시와 눈사태 효과, 비밀번호를 안전하게 저장하는 법과 무차별 대입 계산기, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증까지 시뮬레이터로 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"16 보안의 기초","item":"https://computerbook.euiyun.com/chapters/security.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .hashbox { font-family: var(--mono); font-size: 13px; word-break: break-all; padding: 8px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+  .bitgrid { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 2px; padding: 12px 18px; }
+  .bitgrid i { aspect-ratio: 1; border-radius: 2px; background: var(--surface-2); }
+  .bitgrid i.d { background: var(--bad); }
+  .stackmem { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; padding: 14px 18px 4px; }
+  @media (max-width: 560px) { .stackmem { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+  .stackmem .cell { padding: 6px 0; font-size: 13px; font-weight: 700; }
+  .stackmem .cell.buf { border-color: var(--accent); }
+  .stackmem .cell.ret { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .stackmem .cell.over { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 22%, transparent); }
+  .memlabels { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; padding: 0 18px 12px; font-size: 11.5px; color: var(--text-dim); text-align: center; }
+  @media (max-width: 560px) { .memlabels { display: none; } }
+  .cipher { font-family: var(--mono); font-size: 14px; padding: 10px 18px; border-top: 1px solid var(--border); word-break: break-all; line-height: 1.7; }
+</style>
+</head>
+<body data-chapter="security">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 16</div>
+    <h1>보안의 기초</h1>
+    <p class="lead">지금까지 컴퓨터가 <strong>어떻게 동작하는지</strong>를 배웠다. 이 장에서는 그 동작을 <strong>나쁜 의도로 이용하려는 사람</strong>으로부터 어떻게 지키는지 알아본다. 해커 영화처럼 화려한 이야기는 아니다. 대부분의 보안은 앞에서 배운 원리, 즉 숫자로 된 데이터, 메모리와 스택, 네트워크의 봉투, 운영체제의 권한을 정확히 이해하는 데서 출발한다.</p>
+    <ul class="objectives">
+      <li>보안의 세 목표(기밀성, 무결성, 가용성)로 위협을 분류한다.</li>
+      <li>해시가 데이터의 지문 역할을 하는 원리와 눈사태 효과를 체험한다.</li>
+      <li>비밀번호를 해시와 솔트로 저장하는 이유, 길이가 강도를 좌우하는 이유를 계산으로 확인한다.</li>
+      <li>고전 암호가 글자 빈도 분석으로 깨지는 모습을 보고, 현대 암호와의 차이를 안다.</li>
+      <li>버퍼 오버플로가 스택의 돌아갈 주소를 덮어쓰는 원리를 따라간다.</li>
+      <li>피싱과 2단계 인증 등 사람을 노리는 공격과 대응을 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="cia">
+    <h2>무엇을 지키는가: 보안의 세 기둥</h2>
+    <p>보안 문제는 대부분 다음 세 가지 중 하나를 깨뜨리려는 시도다. 보안 분야에서는 앞 글자를 따서 <b>CIA</b>라고 부른다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>목표</th><th>뜻</th><th>깨지는 예</th><th>지키는 도구</th></tr></thead>
+      <tbody>
+        <tr><td><b>기밀성</b><br><span class="en">Confidentiality</span></td><td>허락된 사람만 볼 수 있다</td><td>카페 Wi-Fi 도청, 해킹으로 고객 정보 유출</td><td>암호화(HTTPS, 11장), 접근 권한</td></tr>
+        <tr><td><b>무결성</b><br><span class="en">Integrity</span></td><td>몰래 바뀌지 않는다</td><td>송금 금액 위조, 다운로드한 앱에 악성 코드 삽입</td><td>해시, 전자 서명, 인증서</td></tr>
+        <tr><td><b>가용성</b><br><span class="en">Availability</span></td><td>필요할 때 쓸 수 있다</td><td>서버에 가짜 요청을 퍼부어 마비시키기, 랜섬웨어로 파일 잠그기</td><td>여분 서버, 백업, 트래픽 걸러내기</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout analogy"><strong>식당의 세 가지 걱정</strong><p>비밀 레시피가 새어 나가면 기밀성, 누군가 몰래 소금 통에 설탕을 바꿔 넣으면 무결성, 가짜 예약 전화가 빗발쳐 진짜 손님을 못 받으면 가용성의 문제다. 각각 지키는 방법이 다르다. 금고, 봉인 스티커, 예약 확인 절차.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="hash">
+    <h2>해시: 데이터의 지문</h2>
+    <p><span class="term">해시 함수</span><span class="en">(hash function)</span>는 아무리 긴 데이터를 넣어도 항상 같은 길이의 숫자(지문)를 내놓는 계산이다. 좋은 보안용 해시(예: SHA-256)는 세 가지 성질을 가진다.</p>
+    <ul>
+      <li><b>같은 입력 → 항상 같은 지문.</b> 그래서 파일이 바뀌지 않았는지 확인할 수 있다.</li>
+      <li><b>지문에서 원래 데이터를 거꾸로 알아낼 수 없다.</b> 고기를 다져 만든 동그랑땡에서 원래 고기 모양을 되살릴 수 없는 것과 같다.</li>
+      <li><b>입력이 조금만 달라도 지문이 완전히 달라진다.</b> 이것을 <span class="term">눈사태 효과</span>라 한다.</li>
+    </ul>
+    <div class="sim" id="sim-hash">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>SHA-256 지문과 눈사태 효과</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <label class="ctrl"><span>입력 A</span><input type="text" id="h-a" value="송금: 10000원"></label>
+        <label class="ctrl"><span>입력 B (한 글자만 바꿔 보세요)</span><input type="text" id="h-b" value="송금: 90000원"></label>
+      </div>
+      <div class="pad" style="padding-top:0;display:grid;gap:8px">
+        <div><span class="scale-note">A의 지문 (256비트를 16진수 64글자로)</span><div class="hashbox" id="h-ha"></div></div>
+        <div><span class="scale-note">B의 지문</span><div class="hashbox" id="h-hb"></div></div>
+      </div>
+      <div class="bitgrid" id="h-bits"></div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">서로 다른 비트</span><span class="v" id="o-h-diff">—</span></div>
+        <div class="stat"><span class="k">비율 (이상적이면 약 50%)</span><span class="v" id="o-h-pct">—</span></div>
+      </div>
+      <div class="sim-note">아래 격자의 칸 하나가 지문의 비트 하나다. 빨강은 A와 B의 지문에서 값이 다른 비트다. 한 글자만 바꿔도 절반 가까이가 바뀐다. 그래서 파일 하나에 악성 코드를 몰래 끼워 넣으면 지문이 완전히 달라져 바로 들통난다. 소프트웨어 배포처가 다운로드 파일의 SHA-256 값을 함께 공개하는 이유다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="password">
+    <h2>비밀번호는 어떻게 저장해야 할까</h2>
+    <p>웹사이트는 내 비밀번호를 기억해야 로그인을 확인할 수 있다. 하지만 비밀번호를 그대로 저장하면, 서버가 한 번 털리는 순간 모든 사용자의 비밀번호가 새어 나간다. 그래서 제대로 된 서비스는 비밀번호 대신 <b>비밀번호의 해시</b>를 저장한다. 로그인할 때 입력한 비밀번호를 같은 방식으로 해시해서 저장된 값과 비교한다. 서버도 내 비밀번호를 모른다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="비밀번호를 저장하는 세 가지 방법 비교">
+        <g transform="translate(16,16)">
+          <rect width="244" height="210" rx="12" fill="color-mix(in srgb, var(--bad) 8%, var(--bg-elev))" stroke="var(--bad)"/>
+          <text x="122" y="28" text-anchor="middle" class="t" style="font-weight:700;fill:var(--bad)">✗ 그대로 저장</text>
+          <g class="t-mono" style="font-size:12px"><text x="16" y="62">minji : sunflower1</text><text x="16" y="86">jun   : 123456</text><text x="16" y="110">hana  : 123456</text></g>
+          <text x="16" y="150" class="t-dim">털리면 그대로 노출.</text><text x="16" y="170" class="t-dim">다른 사이트에서도</text><text x="16" y="190" class="t-dim">같은 비밀번호를 쓰면 위험.</text>
+        </g>
+        <g transform="translate(278,16)">
+          <rect width="244" height="210" rx="12" fill="color-mix(in srgb, var(--warn) 8%, var(--bg-elev))" stroke="var(--warn)"/>
+          <text x="122" y="28" text-anchor="middle" class="t" style="font-weight:700;fill:var(--warn)">△ 해시만 저장</text>
+          <g class="t-mono" style="font-size:12px"><text x="16" y="62">minji : 7c2a…e91f</text><text x="16" y="86">jun   : 8d96…c923</text><text x="16" y="110">hana  : 8d96…c923</text></g>
+          <text x="16" y="150" class="t-dim">같은 비밀번호는 같은 지문.</text><text x="16" y="170" class="t-dim">흔한 비밀번호의 지문 목록</text><text x="16" y="190" class="t-dim">(레인보우 테이블)으로 들통.</text>
+        </g>
+        <g transform="translate(540,16)">
+          <rect width="244" height="210" rx="12" fill="color-mix(in srgb, var(--ok) 8%, var(--bg-elev))" stroke="var(--ok)"/>
+          <text x="122" y="28" text-anchor="middle" class="t" style="font-weight:700;fill:var(--ok)">✓ 솔트 + 느린 해시</text>
+          <g class="t-mono" style="font-size:12px"><text x="16" y="62">jun  : q8Zx | 41b0…7a2d</text><text x="16" y="86">hana : Lp3w | e7c4…19bb</text></g>
+          <text x="16" y="120" class="t-dim">사람마다 다른 소금(솔트)을</text><text x="16" y="140" class="t-dim">섞어 해시 → 같은 비밀번호도</text><text x="16" y="160" class="t-dim">지문이 다르다. 일부러 느린</text><text x="16" y="180" class="t-dim">해시(bcrypt 등)로 대입을</text><text x="16" y="200" class="t-dim">수만 배 느리게 만든다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 16-1.</b> 비밀번호 저장의 세 단계. 서버가 털려도 공격자가 비밀번호를 알아내기 어렵게 만드는 것이 목표다.</figcaption>
+    </figure>
+    <p>해시는 거꾸로 풀 수 없으므로, 공격자에게 남은 방법은 가능한 비밀번호를 하나씩 해시해서 맞춰 보는 <span class="term">무차별 대입</span><span class="en">(brute force)</span>뿐이다. 이때 시간을 좌우하는 것은 비밀번호의 <b>경우의 수</b>, 즉 (쓸 수 있는 글자 수)<sup>길이</sup>다. 2장의 비트처럼, 한 자리가 늘 때마다 곱절로 커진다.</p>
+    <div class="sim" id="sim-brute">
+      <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>내 비밀번호를 맞히는 데 얼마나 걸릴까</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <label class="ctrl"><span>비밀번호 길이 <output id="bf-len-out"></output></span><input type="range" id="bf-len" min="4" max="20" value="8"></label>
+        <div class="ctrl"><span>쓰는 글자</span><div class="seg" id="bf-set"><button data-value="10">숫자만 (10)</button><button data-value="26">소문자 (26)</button><button data-value="62" class="on">대소문자+숫자 (62)</button><button data-value="94">+특수문자 (94)</button></div></div>
+        <div class="ctrl"><span>공격자</span><div class="seg" id="bf-rate"><button data-value="10">로그인 창 (초당 10번, 잠금)</button><button data-value="1e4">느린 해시 + GPU</button><button data-value="1e10" class="on">빠른 해시 + GPU 여러 대</button></div></div>
+      </div>
+      <div class="sim-view"><canvas id="cv-brute"></canvas></div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">가능한 경우의 수</span><span class="v" id="o-bf-n">—</span></div>
+        <div class="stat"><span class="k">평균 맞히는 시간</span><span class="v" id="o-bf-t">—</span></div>
+      </div>
+      <div class="sim-note">평균 시간은 경우의 수의 절반을 시도한다고 보고 계산했다. 그래프는 길이에 따른 시간이다(세로축은 로그 눈금). 해볼 것: 8자리 대소문자+숫자와 16자리 소문자를 비교해 보자. 기호를 섞는 것보다 <b>길이를 늘리는 것</b>이 훨씬 강력하다. “파란 하늘 아래 고양이 세 마리”처럼 외우기 쉬운 긴 문장이 좋은 비밀번호인 이유다. 단, 사전에 있는 단어 하나나 유출된 적 있는 비밀번호는 몇 초 만에 뚫린다. 공격자는 무작위가 아니라 흔한 것부터 시도하기 때문이다.</div>
+    </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">대소문자+숫자 8자리 비밀번호를 12자리로 늘리면, 빠른 해시를 쓰는 GPU 공격자가 맞히는 시간은 대략 어떻게 될까?</p><p class="wi-hint">위 계산기에서 길이만 8 → 12로 바꿔 보자.</p><div class="opts">
+      <button class="opt">1.5배 늘어난다</button><button class="opt">10배 늘어난다</button><button class="opt" data-correct>약 1,500만 배 늘어나 몇 시간 → 수천 년</button><button class="opt">변화 없다</button>
+    </div><div class="quiz-exp">한 자리마다 62배씩, 네 자리면 62⁴ ≈ 1,480만 배다. 길이는 지수로 효과가 커진다. 그래서 보안 권고는 “특수문자 섞기”보다 “충분히 길게”를 먼저 말한다.</div></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="cipher">
+    <h2>고전 암호는 왜 깨질까</h2>
+    <p>로마의 율리우스 카이사르는 글자를 알파벳 순서로 몇 칸씩 밀어서 편지를 썼다고 한다. A → D, B → E처럼. 열쇠는 “몇 칸 밀었나” 하나뿐이다. 이 <span class="term">카이사르 암호</span>는 열쇠가 26가지뿐이라 하나씩 다 해 봐도 되지만, 더 영리한 방법이 있다. 영어에서는 E가 가장 자주 나온다. 암호문에서 가장 많이 나온 글자가 E일 가능성이 높다.</p>
+    <div class="sim" id="sim-caesar">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>카이사르 암호와 빈도 분석</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <label class="ctrl"><span>원문 (영어)</span><input type="text" id="cz-text" value="Meet me at the old bridge near the river at seven tonight. Bring the secret letter."></label>
+        <label class="ctrl"><span>밀 칸 수 (열쇠) <output id="cz-k-out"></output></span><input type="range" id="cz-k" min="1" max="25" value="7"></label>
+      </div>
+      <div class="cipher" id="cz-out"></div>
+      <div class="sim-view"><canvas id="cv-caesar"></canvas></div>
+      <div class="sim-controls">
+        <div class="btn-row"><button class="btn primary" id="cz-crack">빈도로 해독하기</button><span class="scale-note" id="cz-msg"></span></div>
+      </div>
+      <div class="sim-note">막대는 암호문 속 글자의 빈도, 점선은 보통 영어 글의 빈도다. 막대 모양이 점선 모양을 옆으로 민 것과 똑같다. 밀린 칸 수가 곧 열쇠다. 현대 암호(AES 등)는 글자 하나가 암호문 전체에 고르게 섞이도록 설계되어 이런 빈도 흔적이 남지 않는다. 열쇠의 경우의 수도 2¹²⁸ 이상이라, 지구의 모든 컴퓨터로 시도해도 우주의 나이보다 오래 걸린다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="overflow">
+    <h2>버퍼 오버플로: 칸을 넘친 글자</h2>
+    <p>13장에서 함수를 부르면 스택에 <b>지역 변수</b>와 <b>돌아갈 주소</b>가 나란히 쌓인다고 했다. 그런데 프로그램이 8글자짜리 칸(버퍼)을 만들어 놓고, 사용자가 입력한 글자를 길이 확인 없이 그대로 복사하면 어떻게 될까? 8글자를 넘는 부분이 옆 칸, 즉 <b>돌아갈 주소</b>를 덮어쓴다. 함수가 끝나면 CPU는 덮어쓴 엉뚱한 주소로 점프한다. 공격자가 그 주소를 자기가 심어 둔 코드 위치로 정교하게 맞추면 프로그램을 마음대로 조종할 수 있다. 이것이 수십 년간 가장 유명했던 공격, <span class="term">버퍼 오버플로</span><span class="en">(buffer overflow)</span>다.</p>
+    <div class="sim" id="sim-bof">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>스택 속 버퍼 넘치기</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <label class="ctrl"><span>이름 입력 (영문·숫자)</span><input type="text" id="bof-in" value="KIM" maxlength="16"></label>
+        <label class="check"><input type="checkbox" id="bof-safe"> 길이 검사하기 (안전한 복사)</label>
+        <div class="btn-row"><button class="btn" data-v="KIM">짧은 이름</button><button class="btn" data-v="CHRISTOPHER">긴 이름</button><button class="btn" data-v="AAAAAAAA@EVL">공격 문자열</button></div>
+      </div>
+      <div class="stackmem" id="bof-mem"></div>
+      <div class="memlabels"><span style="grid-column:span 8">이름 버퍼 (8칸)</span><span style="grid-column:span 4">다른 변수</span><span style="grid-column:span 4">돌아갈 주소</span></div>
+      <div class="stepdesc" id="bof-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:56px"></div>
+      <div class="sim-note">실제 메모리 배치는 더 복잡하지만 원리는 같다. 요즘은 컴파일러가 돌아갈 주소 앞에 감시용 값(카나리)을 두어 덮어쓰기를 감지하고, 운영체제가 메모리 위치를 매번 무작위로 바꾸고(ASLR), 데이터 영역은 실행하지 못하게(9장의 권한 비트) 막는다. 가장 근본적인 해결은 경계를 자동으로 검사하는 언어(Rust, 자바, 파이썬 등)를 쓰는 것이다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="human">
+    <h2>가장 약한 고리는 사람</h2>
+    <p>암호가 아무리 튼튼해도 사람이 비밀번호를 직접 건네 버리면 소용없다. 은행이나 택배사를 사칭한 문자로 가짜 로그인 페이지에 유도하는 <span class="term">피싱</span><span class="en">(phishing)</span>이 대표적이다. 가짜 페이지도 자물쇠(HTTPS)를 달 수 있다는 점을 기억하자(11장). 자물쇠는 “암호화되어 있다”는 뜻이지 “믿을 만한 곳”이라는 뜻이 아니다.</p>
+    <p>그래서 요즘은 비밀번호 하나에만 기대지 않는 <span class="term">2단계 인증</span><span class="en">(2FA)</span>을 쓴다. “아는 것”(비밀번호)에 더해 “가진 것”(휴대폰, 보안 키)이나 “나 자신”(지문, 얼굴)을 함께 확인한다. 비밀번호가 새어도 휴대폰까지 훔치지 않는 한 로그인할 수 없다. 최근에는 아예 비밀번호 없이 기기 안의 개인 키로 서명해 로그인하는 패스키도 쓰인다. 사이트 주소까지 확인하므로 피싱에 속지 않는다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 210" role="img" aria-label="2단계 인증의 구조">
+        <defs><marker id="tf-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="20" y="30" width="180" height="70" rx="12" class="f-acc-soft"/><text x="110" y="60" text-anchor="middle" class="t" style="font-weight:700">① 아는 것</text><text x="110" y="82" text-anchor="middle" class="t-mono">비밀번호</text>
+        <rect x="20" y="120" width="180" height="70" rx="12" class="f-acc2-soft"/><text x="110" y="150" text-anchor="middle" class="t" style="font-weight:700">② 가진 것</text><text x="110" y="172" text-anchor="middle" class="t-mono">휴대폰의 6자리 코드</text>
+        <path d="M200 65 H330 V100 M200 155 H330 V120" class="s-acc" fill="none"/><path d="M330 110 H376" class="s-acc" marker-end="url(#tf-a)"/>
+        <rect x="380" y="70" width="150" height="80" rx="12" class="f-acc"/><text x="455" y="104" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">둘 다 맞아야</text><text x="455" y="126" text-anchor="middle" style="fill:#fff" class="t">로그인</text>
+        <g transform="translate(560,30)">
+          <rect width="220" height="150" rx="12" class="f-surface"/>
+          <text x="16" y="28" class="t" style="font-weight:700">비밀번호가 새도</text>
+          <text x="16" y="54" class="t-dim">공격자에게는 내 휴대폰이 없다.</text>
+          <text x="16" y="86" class="t" style="font-weight:700">코드는 30초마다 바뀐다</text>
+          <text x="16" y="112" class="t-dim">휴대폰과 서버가 같은 비밀값과</text>
+          <text x="16" y="132" class="t-dim">현재 시각으로 같은 숫자를 계산.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 16-2.</b> 2단계 인증. 서로 다른 종류의 증거를 두 개 요구해서, 하나가 새어도 막을 수 있게 한다.</figcaption>
+    </figure>
+    <div class="table-wrap"><table>
+      <thead><tr><th>지금 바로 할 수 있는 것</th><th>왜 효과가 있나 (관련 장)</th></tr></thead>
+      <tbody>
+        <tr><td>운영체제와 앱을 최신으로 업데이트</td><td>알려진 취약점(버퍼 오버플로 등)이 패치된다 (8·13장)</td></tr>
+        <tr><td>사이트마다 다른 긴 비밀번호 + 비밀번호 관리자</td><td>한 곳이 털려도 다른 곳은 안전하다 (이 장)</td></tr>
+        <tr><td>2단계 인증 또는 패스키 켜기</td><td>비밀번호가 새도 로그인할 수 없다 (이 장)</td></tr>
+        <tr><td>문자·메일 속 링크 대신 주소를 직접 입력</td><td>피싱 페이지를 피한다 (11장)</td></tr>
+        <tr><td>중요한 파일은 다른 곳에 백업</td><td>랜섬웨어·고장에도 가용성을 지킨다 (7장)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>보안은 <b>기밀성</b>(아무나 못 봄), <b>무결성</b>(몰래 안 바뀜), <b>가용성</b>(필요할 때 쓸 수 있음)을 지키는 일이다.</li>
+      <li><b>해시</b>는 데이터의 지문이다. 거꾸로 풀 수 없고, 입력이 조금만 달라도 지문이 크게 달라진다(눈사태 효과).</li>
+      <li>비밀번호는 <b>솔트를 섞은 느린 해시</b>로 저장한다. 강도는 글자 종류보다 <b>길이</b>가 지수적으로 좌우한다.</li>
+      <li>고전 암호는 <b>빈도 분석</b>으로 깨진다. 현대 암호는 흔적을 남기지 않고 열쇠의 경우의 수가 천문학적이다.</li>
+      <li><b>버퍼 오버플로</b>는 길이 검사 없는 복사가 스택의 돌아갈 주소를 덮어쓰는 공격이다. 카나리, ASLR, 실행 금지, 안전한 언어로 막는다.</li>
+      <li>사람을 노리는 <b>피싱</b>에는 <b>2단계 인증</b>과 패스키가 효과적이다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>랜섬웨어가 회사의 파일을 모두 잠가 업무를 못 하게 만들었다. 가장 직접적으로 깨진 보안 목표는?</p><div class="opts">
+        <button class="opt">기밀성</button><button class="opt">무결성</button><button class="opt" data-correct>가용성</button>
+      </div><div class="quiz-exp">필요할 때 데이터를 쓸 수 없게 된 것이 핵심 피해다. 그래서 다른 곳에 둔 백업이 가장 확실한 대비책이다.</div></div>
+      <div class="quiz-q"><p>보안용 해시 함수의 성질이 <b>아닌</b> 것은?</p><div class="opts">
+        <button class="opt">같은 입력이면 항상 같은 결과</button><button class="opt">입력이 조금만 바뀌어도 결과가 크게 바뀜</button><button class="opt" data-correct>결과에서 원래 입력을 쉽게 되살릴 수 있음</button><button class="opt">입력 길이와 상관없이 결과 길이가 같음</button>
+      </div><div class="quiz-exp">해시는 일방향이다. 되살릴 수 있다면 비밀번호 저장에 쓸 수 없다.</div></div>
+      <div class="quiz-q"><p>비밀번호를 해시할 때 사용자마다 다른 ‘솔트’를 섞는 이유는?</p><div class="opts">
+        <button class="opt">해시를 빠르게 하려고</button><button class="opt" data-correct>같은 비밀번호라도 저장값이 달라져 미리 계산한 지문 목록이 쓸모없어지게</button><button class="opt">비밀번호를 짧게 만들려고</button><button class="opt">서버가 비밀번호를 되살리려고</button>
+      </div><div class="quiz-exp">솔트가 없으면 흔한 비밀번호의 지문을 미리 계산한 표로 한 번에 많은 계정을 알아낼 수 있다.</div></div>
+      <div class="quiz-q"><p>버퍼 오버플로 공격이 덮어쓰려는 가장 중요한 값은?</p><div class="opts">
+        <button class="opt">화면 해상도</button><button class="opt" data-correct>스택에 저장된 함수의 돌아갈 주소</button><button class="opt">CPU 클럭</button><button class="opt">파일 이름</button>
+      </div><div class="quiz-exp">돌아갈 주소를 바꾸면 함수가 끝날 때 CPU가 공격자가 원하는 곳으로 점프한다(4장의 RET, 13장의 스택).</div></div>
+      <div class="quiz-q"><p>피싱 사이트의 주소창에도 자물쇠 아이콘이 보였다. 올바른 해석은?</p><div class="opts">
+        <button class="opt">안전한 사이트다</button><button class="opt" data-correct>그 사이트와의 통신이 암호화되었을 뿐, 사이트가 믿을 만하다는 뜻은 아니다</button><button class="opt">은행이 인증한 사이트다</button><button class="opt">바이러스가 없다</button>
+      </div><div class="quiz-exp">자물쇠는 통신 구간의 기밀성을 뜻한다. 상대가 누구인지는 주소(도메인)를 직접 확인해야 한다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- SHA-256 (교육용 구현) ---------------- */
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function sha256(str) {
+    const msg = [...new TextEncoder().encode(str)];
+    const bitLen = msg.length * 8;
+    msg.push(0x80); while (msg.length % 64 !== 56) msg.push(0);
+    for (let i = 7; i >= 0; i--) msg.push(i >= 4 ? 0 : (bitLen >>> (i * 8)) & 255);
+    let H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const r = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < msg.length; o += 64) {
+      const w = new Array(64);
+      for (let i = 0; i < 16; i++) w[i] = (msg[o + i * 4] << 24) | (msg[o + i * 4 + 1] << 16) | (msg[o + i * 4 + 2] << 8) | msg[o + i * 4 + 3];
+      for (let i = 16; i < 64; i++) { const s0 = r(w[i - 15], 7) ^ r(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = r(w[i - 2], 17) ^ r(w[i - 2], 19) ^ (w[i - 2] >>> 10); w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0; }
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let i = 0; i < 64; i++) {
+        const S1 = r(e, 6) ^ r(e, 11) ^ r(e, 25), ch = (e & f) ^ (~e & g), t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+        const S0 = r(a, 2) ^ r(a, 13) ^ r(a, 22), mj = (a & b) ^ (a & c) ^ (b & c), t2 = (S0 + mj) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H = H.map((v, i) => (v + [a, b, c, d, e, f, g, h][i]) | 0);
+    }
+    return H.map((v) => (v >>> 0).toString(16).padStart(8, "0")).join("");
+  }
+  CB.sha256 = sha256;
+  const bitsOf = (hex) => hex.split("").map((c) => parseInt(c, 16).toString(2).padStart(4, "0")).join("");
+  function hashRender() {
+    const ha = sha256($("h-a").value), hb = sha256($("h-b").value);
+    $("h-ha").textContent = ha; $("h-hb").textContent = hb;
+    const A = bitsOf(ha), B = bitsOf(hb); let d = 0;
+    $("h-bits").innerHTML = A.split("").map((x, i) => { const df = x !== B[i]; if (df) d++; return `<i class="${df ? "d" : ""}"></i>`; }).join("");
+    CB.stat("o-h-diff", d + " / 256");
+    CB.stat("o-h-pct", ((d / 256) * 100).toFixed(0) + "%");
+  }
+  ["h-a", "h-b"].forEach((id) => $(id).addEventListener("input", hashRender)); hashRender();
+
+  /* ---------------- brute force ---------------- */
+  const bl = CB.range("bf-len", (v) => v + "자리", () => bcv.redraw());
+  const bs = CB.seg("bf-set", () => bcv.redraw()), br = CB.seg("bf-rate", () => bcv.redraw());
+  const fmtN = (n) => n < 1e4 ? String(Math.round(n)) : n < 1e16 ? CB.kn(n) : "10^" + Math.floor(Math.log10(n));
+  const ttime = (s) => s > 3.15e7 * 1e6 ? "우주의 나이보다 깁니다" : CB.time(s);
+  const bcv = CB.canvas("#cv-brute", (ctx, w, h) => {
+    const P = CB.palette(); const C = Number(bs()), R = Number(br()), L = bl();
+    const tOf = (len) => Math.pow(C, len) / 2 / R;
+    const data = []; for (let len = 4; len <= 20; len += 0.25) data.push([len, Math.max(1e-3, tOf(len))]);
+    const marks = [[1, "1초"], [3600, "1시간"], [86400 * 365, "1년"], [3.15e7 * 1e3, "천 년"], [4.35e17, "우주 나이"]];
+    CB.chart(ctx, null, { x: [4, 20], y: [1e-3, 1e30], logY: true, xLabel: "비밀번호 길이", yLabel: "평균 맞히는 시간 (초)", yTicks: [1e-3, 1, 1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30], yFmt: (v) => (v >= 1e4 || v < 1 ? "10^" + Math.round(Math.log10(v)) : String(v)), series: [{ data, color: P.accent, width: 2.5 }], hlines: marks.map(([y, l]) => ({ y, label: l, color: P.faint })), points: [{ x: L, y: Math.min(1e30, Math.max(1e-3, tOf(L))), color: P.warn, r: 6 }] });
+    CB.stat("o-bf-n", fmtN(Math.pow(C, L)) + "가지");
+    const t = tOf(L);
+    CB.stat("o-bf-t", `<span style="color:${t < 86400 * 30 ? "var(--bad)" : t > 3.15e7 * 100 ? "var(--ok)" : "inherit"}">${ttime(t)}</span>`);
+  }, { aspect: 0.48, minHeight: 260, maxHeight: 360 });
+
+  /* ---------------- Caesar ---------------- */
+  const EN = [8.2, 1.5, 2.8, 4.3, 12.7, 2.2, 2.0, 6.1, 7.0, 0.15, 0.77, 4.0, 2.4, 6.7, 7.5, 1.9, 0.095, 6.0, 6.3, 9.1, 2.8, 0.98, 2.4, 0.15, 2.0, 0.074];
+  const ck = CB.range("cz-k", (v) => v + "칸", () => { $("cz-msg").textContent = ""; czRender(); });
+  const shift = (s, k) => s.replace(/[a-z]/gi, (c) => { const b = c <= "Z" ? 65 : 97; return String.fromCharCode(((c.charCodeAt(0) - b + k + 26) % 26) + b); });
+  let cipher = "";
+  function freq(s) { const f = new Array(26).fill(0); let n = 0; for (const c of s.toUpperCase()) { const i = c.charCodeAt(0) - 65; if (i >= 0 && i < 26) { f[i]++; n++; } } return f.map((x) => (n ? (x / n) * 100 : 0)); }
+  function czRender() { cipher = shift($("cz-text").value, ck()); $("cz-out").innerHTML = `<b>암호문:</b> ${cipher.replace(/</g, "&lt;")}`; ccv.redraw(); }
+  $("cz-text").addEventListener("input", czRender);
+  const ccv = CB.canvas("#cv-caesar", (ctx, w, h) => {
+    const P = CB.palette(); const f = freq(cipher); const k = ck();
+    const left = 30, bw = (w - left - 10) / 26, top = 14, ph = h - top - 26, mx = Math.max(14, ...f);
+    f.forEach((v, i) => { const bh = (v / mx) * ph; CB.rrect(ctx, left + i * bw + 2, top + ph - bh, bw - 4, bh, 3); ctx.fillStyle = P.accent; ctx.globalAlpha = 0.8; ctx.fill(); ctx.globalAlpha = 1; CB.text(ctx, String.fromCharCode(65 + i), left + i * bw + bw / 2, h - 10, { align: "center", size: 10.5, mono: true, color: P.dim }); });
+    ctx.strokeStyle = P.warn; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath();
+    EN.forEach((v, j) => { const i = (j + k) % 26; const x = left + i * bw + bw / 2, y = top + ph - (v / mx) * ph; ctx.moveTo(x - bw * 0.35, y); ctx.lineTo(x + bw * 0.35, y); });
+    ctx.stroke(); ctx.setLineDash([]);
+    CB.text(ctx, "점선: 보통 영어의 글자 빈도 (같은 칸만큼 밀어서 표시)", w - 10, top, { align: "right", size: 11, color: P.warn, base: "top" });
+  }, { aspect: 0.32, minHeight: 170, maxHeight: 240 });
+  $("cz-crack").onclick = () => {
+    const f = freq(cipher); let best = 0, bk = 0;
+    for (let k = 0; k < 26; k++) { let sc = 0; EN.forEach((v, j) => (sc += v * f[(j + k) % 26])); if (sc > best) { best = sc; bk = k; } }
+    $("cz-msg").innerHTML = `추정 열쇠 = <b>${bk}칸</b> → 해독: “${shift(cipher, -bk).slice(0, 60).replace(/</g, "&lt;")}…”`;
+  };
+  czRender();
+
+  /* ---------------- buffer overflow ---------------- */
+  const RET = ["m", "a", "i", "n"];
+  function bofRender() {
+    const inp = $("bof-in").value.toUpperCase().replace(/[^A-Z0-9@]/g, ""), safe = $("bof-safe").checked;
+    const mem = new Array(16).fill(null);
+    for (let i = 12; i < 16; i++) mem[i] = RET[i - 12];
+    mem[8] = "7"; mem[9] = "0"; mem[10] = "1"; mem[11] = "2";
+    const n = safe ? Math.min(inp.length, 7) : inp.length;
+    for (let i = 0; i < n && i < 16; i++) mem[i] = inp[i];
+    if (safe || n < 8) mem[n] = "\\0";
+    $("bof-mem").innerHTML = mem.map((v, i) => { const cls = i < 8 ? "buf" : i >= 12 ? "ret" : ""; const over = i >= 8 && i < n; return `<div class="cell ${over ? "over" : cls}"><span class="addr">${i}</span>${v == null ? "·" : v}</div>`; }).join("");
+    let msg;
+    if (safe) msg = n < inp.length ? `<b style="color:var(--ok)">안전:</b> 버퍼에 7글자까지만 복사하고 나머지는 버렸다(마지막 칸은 끝 표시). 돌아갈 주소 <code>main</code>은 그대로다.` : `<b style="color:var(--ok)">정상:</b> 이름이 버퍼에 들어갔다. 돌아갈 주소는 <code>main</code> 그대로.`;
+    else if (n <= 8) msg = `<b>정상:</b> 이름(${n}글자)이 8칸 버퍼 안에 들어갔다. 함수가 끝나면 돌아갈 주소 <code>main</code>으로 무사히 돌아간다.`;
+    else if (n <= 12) msg = `<b style="color:var(--warn)">넘침:</b> ${n}글자라서 버퍼를 넘어 옆의 다른 변수를 덮어썼다. 프로그램이 엉뚱한 값으로 계산하기 시작한다. 아직 돌아갈 주소는 무사하다.`;
+    else { const ra = mem.slice(12, 16).map((v) => v || "·").join(""); msg = `<b style="color:var(--bad)">위험:</b> 돌아갈 주소가 <code>${ra}</code>로 덮어써졌다. 함수가 끝나면 CPU는 <code>main</code>이 아니라 <code>${ra}</code>라는 주소로 점프한다. 대개는 프로그램이 죽지만, 공격자가 이 값을 자기 코드의 위치로 맞추면 프로그램을 가로챌 수 있다.`; }
+    $("bof-desc").innerHTML = msg;
+  }
+  $("bof-in").addEventListener("input", bofRender); $("bof-safe").onchange = bofRender;
+  document.querySelectorAll("#sim-bof [data-v]").forEach((b) => (b.onclick = () => { $("bof-in").value = b.dataset.v; bofRender(); }));
+  bofRender();
+})();
+</script>
+</body>
+</html>
