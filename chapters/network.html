@@ -210,6 +210,7 @@
         <label class="ctrl"><span>패킷 손실률 <output id="loss-out"></output></span><input type="range" id="loss" min="0" max="40" step="5" value="15"></label>
         <label class="ctrl"><span>윈도우 크기 (확인 전에 보낼 수 있는 수) <output id="win-out"></output></span><input type="range" id="win" min="1" max="6" value="3"></label>
         <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="tcp-go">10개 보내기</button></div></div>
+        <label class="check"><input type="checkbox" id="udp"> 만약에? TCP 대신 UDP로 보내기 (확인·재전송 없음)</label>
       </div>
       <div class="sim-readout">
         <div class="stat"><span class="k">보낸 패킷 (재전송 포함)</span><span class="v" id="o-sent">—</span></div>
@@ -414,6 +415,13 @@
   let tcpEv = null, tcpT = 0, tcpEnd = 0;
   function tcpSim() {
     const N = 10, W = win(), p = loss() / 100, D = 2, TO = 5.5;
+    if ($("udp").checked) {
+      const ev = []; let lost = 0;
+      for (let i = 0; i < N; i++) { const t = i * 0.6, l = Math.random() < p; if (l) lost++; ev.push({ kind: "data", seq: i, t0: t, t1: t + D, lost: l, retx: false }); }
+      tcpEnd = Math.max(...ev.map((e) => e.t1));
+      CB.stat("o-sent", N + "개"); CB.stat("o-lostp", `<span style="color:${lost ? "var(--bad)" : "inherit"}">${lost}개 (영영 안 옴)</span>`); CB.stat("o-done", tcpEnd.toFixed(1) + " 단위 · 받은 것 " + (N - lost) + "/" + N);
+      return ev;
+    }
     const r = Math.random;
     const ev = []; // {kind:'data'|'ack', seq, t0, t1, lost, retx}
     const acked = new Array(N).fill(false), lastSend = new Array(N).fill(-1), sendCount = new Array(N).fill(0);

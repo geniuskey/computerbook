@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <title>클릭 한 번의 여행 · ComputerBook</title>
-<meta name="description" content="메신저로 ‘안녕’을 보내는 순간부터 친구 화면에 글자가 뜨기까지. 키보드 인터럽트, 운영체제, CPU, 메모리, 네트워크, 서버, GPU가 함께 일하는 전 과정을 한 단계씩 따라가는 종합 장.">
+<meta name="description" content="메시지 보내기, 웹 검색, 온라인 게임, 사진 백업 네 장면을 따라가며 CPU·메모리·OS·네트워크·GPU가 함께 일하는 모습을 보고, 병목 실험실에서 어느 구간이 느려지면 무엇이 달라지는지 확인하는 종합 장.">
 <link rel="canonical" href="https://computerbook.euiyun.com/chapters/journey.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="ComputerBook">
@@ -44,17 +44,40 @@
 
   <!-- ============================================================ -->
   <section id="tour">
-    <h2>“안녕”의 여행: 한 단계씩</h2>
-    <p>아래 무대는 위에서부터 <b>내 휴대폰의 앱</b>, <b>운영체제</b>, <b>하드웨어</b>, 그리고 오른쪽의 <b>인터넷과 서버</b>, <b>친구의 휴대폰</b>으로 이루어져 있다. “다음”을 누를 때마다 데이터가 움직이고, 아래 타임라인에 시간이 쌓인다.</p>
+    <h2>네 가지 여행: 한 단계씩</h2>
+    <p>아래 무대는 왼쪽부터 <b>내 기기</b>(앱, 운영체제, 하드웨어), 가운데 <b>인터넷과 서버</b>, 오른쪽의 <b>상대편</b>으로 이루어져 있다. 메시지 보내기, 웹 검색, 게임 한 장면, 사진 찍기 중 하나를 고르고 “다음”을 누를 때마다 데이터가 움직이고 아래 타임라인에 시간이 쌓인다.</p>
     <div class="sim" id="sim-j">
-      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>메시지 한 통의 0.1초</h3></div>
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>클릭 한 번이 지나가는 길</h3></div>
+      <div class="sim-controls" style="border-top:0;border-bottom:1px solid var(--border)">
+        <div class="ctrl"><span>시나리오</span><div class="seg" id="jsc"><button data-value="msg" class="on">메시지 “안녕” 보내기</button><button data-value="web">웹 검색</button><button data-value="game">온라인 게임 한 장면</button><button data-value="photo">사진 찍고 백업</button></div></div>
+      </div>
       <div class="sim-view" style="overflow-x:auto"><div style="min-width:640px"><canvas id="cv-j"></canvas></div></div>
       <div class="jdesc" id="jdesc"></div>
       <div class="sim-controls">
-        <div class="ctrl"><span>진행 <output id="jstep">0</output></span><div class="btn-row"><button class="btn" id="jprev">← 이전</button><button class="btn primary" id="jnext">다음 →</button><button class="btn" id="jauto">자동 재생</button><button class="btn" id="jreset">처음으로</button></div></div>
+        <div class="ctrl"><span>진행 <output id="jstep">0</output></span><div class="btn-row"><button class="btn" id="jprev">← 이전</button><button class="btn primary" id="jnext">다음 →</button><button class="btn" id="jauto">자동 재생</button><button class="btn" id="jall">끝까지</button><button class="btn" id="jreset">처음으로</button></div></div>
       </div>
       <div class="sim-view" style="border-top:1px solid var(--border)"><canvas id="cv-jt"></canvas></div>
-      <div class="sim-note">아래 막대는 각 단계가 걸린 시간이다(로그 눈금: 한 칸에 10배). CPU와 운영체제 안의 일은 마이크로초 단위지만, 화면 갱신을 기다리거나 네트워크를 건너는 일은 밀리초 단위다. 사용자가 느끼는 속도는 대개 가장 느린 구간, 즉 거리와 빛의 속도가 정한다.</div>
+      <div class="sim-note">아래 막대는 각 단계가 걸린 시간이다(로그 눈금: 한 칸에 10배). CPU와 운영체제 안의 일은 마이크로초 단위지만, 화면 갱신을 기다리거나 네트워크를 건너는 일은 밀리초 단위다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="bottleneck">
+    <h2>만약 이 구간이 느리다면? 병목 찾기</h2>
+    <p>컴퓨터가 “느리다”고 느껴질 때, 범인은 대개 한 곳이다. 아래에서 상황을 하나 골라 위 시뮬레이터의 시나리오에 적용해 보자. 어느 단계가 길어지는지, 전체 시간이 얼마나 늘어나는지, 그리고 그 상황이 어떤 시나리오에는 치명적이고 어떤 시나리오에는 상관없는지 비교해 보자.</p>
+    <div class="sim" id="sim-bn">
+      <div class="sim-head"><span class="sim-tag">EXPERIMENT</span><h3>병목 실험실</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>상황</span><div class="seg" id="jcond"><button data-value="none" class="on">정상</button><button data-value="far">서버가 지구 반대편</button><button data-value="wifi">약한 Wi-Fi</button><button data-value="ram">RAM 부족 (스왑)</button><button data-value="hdd">SSD 대신 HDD</button><button data-value="gpu">약한 GPU</button></div></div>
+      </div>
+      <div class="sim-view"><canvas id="cv-bn"></canvas></div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">정상일 때 전체</span><span class="v" id="o-bn-base">—</span></div>
+        <div class="stat"><span class="k">이 상황의 전체</span><span class="v" id="o-bn-now">—</span></div>
+        <div class="stat"><span class="k">가장 오래 걸린 단계</span><span class="v" id="o-bn-max" style="font-size:14px">—</span></div>
+      </div>
+      <div class="pad" id="bn-why" style="border-top:1px solid var(--border);font-size:15px"></div>
+      <div class="sim-note">수치는 대표적인 크기를 단순화한 모델이다. 위 시뮬레이터의 시나리오를 바꾸면 이 실험도 같은 시나리오로 바뀐다. 해볼 것: “SSD 대신 HDD”는 사진 찍기에는 치명적이지만 메시지 보내기에는 거의 영향이 없다. “서버가 지구 반대편”은 그 반대다. 병목이 어디인지 알아야 돈을 어디에 써야 빨라지는지 알 수 있다.</div>
     </div>
   </section>
 
@@ -158,77 +181,151 @@
     fos:  [780, 230, 200, 46, "친구 폰: OS·앱", "F"],
     fgpu: [780, 130, 200, 46, "친구 폰: GPU·화면", "F"],
   };
-  const S = [
-    { on: ["kbd"], from: "kbd", to: "cpu", t: 0.002, title: "① 화면을 터치하다", ch: [8, 2], text: "‘안’을 터치하면 터치 컨트롤러가 좌표를 숫자로 만들어 CPU에 <b>인터럽트</b>를 건다. CPU는 하던 일을 잠시 멈추고 운영체제의 인터럽트 처리기를 실행한다." },
-    { on: ["os", "cpu"], from: "cpu", to: "os", t: 0.00005, title: "② 운영체제가 사건을 배달한다", ch: [8], text: "커널이 “화면의 이 좌표가 눌렸다”는 사건을 지금 화면 앞에 있는 메신저 앱에게 전달한다. 스케줄러가 메신저 프로세스를 깨워 CPU를 준다." },
-    { on: ["app", "ram", "cpu"], from: "os", to: "app", t: 0.0002, title: "③ 앱이 글자를 만든다", ch: [2, 4, 6], text: "키보드 앱이 좌표를 ‘안’으로 해석한다. 글자는 UTF-8 3바이트 <code>EC 95 88</code>이 되어 앱의 메모리(힙)에 저장된다. 이 모든 처리는 CPU가 명령어를 수백만 개 실행한 결과다." },
-    { on: ["app", "gpu", "scr"], from: "app", to: "scr", t: 0.008, title: "④ 입력창에 글자를 그린다", ch: [12, 11], text: "입력창에 ‘안녕’을 표시하기 위해 앱이 화면을 다시 그려 달라고 요청한다. GPU가 글꼴 모양을 픽셀로 래스터화하고, 다음 화면 갱신(약 8~16 ms 뒤)에 맞춰 화면에 나타난다." },
-    { on: ["app", "os"], from: "app", to: "os", t: 0.00002, title: "⑤ 전송 버튼: 시스템 콜", ch: [8, 13], text: "전송 버튼을 누르면 앱이 메시지를 서버 형식으로 포장해 <b>시스템 콜</b>로 “이 데이터를 서버로 보내 줘”라고 커널에 부탁한다. 사용자 모드 → 커널 모드." },
-    { on: ["drv", "dns"], from: "drv", to: "dns", t: 0.0, title: "⑥ 서버 주소는 이미 안다", ch: [11], text: "서버의 이름을 IP 주소로 바꾸는 DNS 조회는 앱을 처음 켤 때 이미 해 두었고, 서버와의 TCP·TLS 연결도 열어 둔 상태다(<b>캐시</b>와 연결 재사용). 그래서 이번에는 바로 보낼 수 있다." },
-    { on: ["drv", "cpu"], from: "os", to: "drv", t: 0.00003, title: "⑦ 봉투에 넣기", ch: [10, 11], text: "커널의 네트워크 스택이 메시지를 TLS로 <b>암호화</b>하고, TCP 봉투(포트, 순서 번호), IP 봉투(서버 주소), Wi-Fi 봉투(공유기 MAC 주소)를 차례로 씌운다(<b>캡슐화</b>)." },
-    { on: ["nic", "ap"], from: "nic", to: "ap", t: 0.002, title: "⑧ 전파를 타고 공유기로", ch: [10], text: "Wi-Fi 칩이 패킷을 전파로 바꿔 쏜다. 공유기가 받아 링크 봉투를 벗기고, 보내는 주소를 공인 IP로 바꿔(NAT) 통신사 쪽으로 넘긴다." },
-    { on: ["ap", "isp", "srv"], from: "isp", to: "srv", t: 0.015, title: "⑨ 라우터들을 건너 서버로", ch: [10], text: "통신사와 인터넷의 <b>라우터</b>들이 목적지 IP를 보고 한 걸음씩 패킷을 넘긴다. 서버가 같은 나라 데이터센터에 있다면 대략 10~20 ms." },
-    { on: ["srv", "sdb"], from: "srv", to: "sdb", t: 0.005, title: "⑩ 서버가 저장하고 확인한다", ch: [6, 7, 8], text: "서버는 수천 명의 요청을 <b>멀티코어</b>와 스레드로 동시에 처리한다. 메시지를 저장소(SSD와 메모리 캐시)에 기록하고, 받는 사람이 누구인지 확인한다. 동시에 같은 대화방을 고치는 요청이 겹치지 않게 <b>잠금</b>도 쓴다." },
-    { on: ["srv", "isp", "nic", "app"], from: "srv", to: "app", t: 0.015, title: "⑪ “보냄” 확인이 돌아온다", ch: [10], text: "서버가 “저장 완료”를 보내면 같은 길을 거꾸로 돌아와 내 앱에 도착한다. 패킷을 받은 Wi-Fi 칩이 인터럽트를 걸고, 커널이 봉투를 벗겨 앱에 전달한다. 말풍선 옆에 ‘1’이 표시된다." },
-    { on: ["srv", "push", "fnic"], from: "push", to: "fnic", t: 0.03, title: "⑫ 친구에게 알림", ch: [10, 11], text: "서버가 친구의 휴대폰에 열려 있는 알림 연결로 새 메시지를 밀어 보낸다. 친구가 다른 나라에 있다면 바닷속 광케이블을 건너느라 수십 ms가 더 걸린다." },
-    { on: ["fnic", "fos"], from: "fnic", to: "fos", t: 0.003, title: "⑬ 친구 폰이 깨어난다", ch: [8, 9], text: "친구 폰의 통신 칩이 인터럽트를 걸고, 잠자던 CPU가 깨어난다. 운영체제가 메신저 앱을 메모리에 올리거나(필요하면 SSD에서 페이지를 읽어 오는 <b>페이지 폴트</b>) 깨워 메시지를 건넨다." },
-    { on: ["fos", "fgpu"], from: "fos", to: "fgpu", t: 0.012, title: "⑭ 친구 화면에 “안녕”", ch: [12, 2], text: "앱이 UTF-8 바이트를 다시 글자로 해석하고, GPU가 말풍선과 글자를 픽셀로 그린다. 친구 화면에 “안녕”이 나타났다. 여기까지 보통 0.1초 안팎이다." },
-  ];
+  const SC = {
+    msg: { name: "메시지", pay: "안녕", lab: { app: "메신저 앱", srv: "메신저 서버\n(데이터센터)", push: "알림 서버", fnic: "친구 폰: 통신망", fos: "친구 폰: OS·앱", fgpu: "친구 폰: GPU·화면" }, right: "친구 휴대폰",
+      intro: "메신저 앱을 켜고 친구와의 대화방에 들어왔다. 입력창을 눌러 “안녕”을 쓰려 한다. <b>다음 →</b>을 눌러 여행을 시작하자.",
+      S: [
+        { on: ["kbd"], from: "kbd", to: "cpu", t: 0.002, tg: [], title: "① 화면을 터치하다", ch: [8, 2], text: "‘안’을 터치하면 터치 컨트롤러가 좌표를 숫자로 만들어 CPU에 <b>인터럽트</b>를 건다. CPU는 하던 일을 잠시 멈추고 운영체제의 인터럽트 처리기를 실행한다." },
+        { on: ["os", "cpu"], from: "cpu", to: "os", t: 0.00005, tg: [], title: "② 운영체제가 사건을 배달한다", ch: [8], text: "커널이 “화면의 이 좌표가 눌렸다”는 사건을 지금 화면 앞에 있는 메신저 앱에게 전달한다. 스케줄러가 메신저 프로세스를 깨워 CPU를 준다." },
+        { on: ["app", "ram", "cpu"], from: "os", to: "app", t: 0.0002, tg: ["mem"], title: "③ 앱이 글자를 만든다", ch: [2, 4, 6], text: "키보드 앱이 좌표를 ‘안’으로 해석한다. 글자는 UTF-8 3바이트 <code>EC 95 88</code>이 되어 앱의 메모리(힙)에 저장된다. 이 모든 처리는 CPU가 명령어를 수백만 개 실행한 결과다." },
+        { on: ["app", "gpu", "scr"], from: "app", to: "scr", t: 0.008, tg: ["gpu"], title: "④ 입력창에 글자를 그린다", ch: [12, 11], text: "입력창에 ‘안녕’을 표시하기 위해 앱이 화면을 다시 그려 달라고 요청한다. GPU가 글꼴 모양을 픽셀로 래스터화하고, 다음 화면 갱신(약 8~16 ms 뒤)에 맞춰 화면에 나타난다." },
+        { on: ["app", "os"], from: "app", to: "os", t: 0.00002, tg: [], title: "⑤ 전송 버튼: 시스템 콜", ch: [8, 13], text: "전송 버튼을 누르면 앱이 메시지를 서버 형식으로 포장해 <b>시스템 콜</b>로 “이 데이터를 서버로 보내 줘”라고 커널에 부탁한다. 사용자 모드 → 커널 모드." },
+        { on: ["drv", "dns"], from: "drv", to: "dns", t: 0.0, tg: [], title: "⑥ 서버 주소는 이미 안다", ch: [11], text: "서버의 이름을 IP 주소로 바꾸는 DNS 조회는 앱을 처음 켤 때 이미 해 두었고, 서버와의 TCP·TLS 연결도 열어 둔 상태다(<b>캐시</b>와 연결 재사용). 그래서 이번에는 바로 보낼 수 있다." },
+        { on: ["drv", "cpu"], from: "os", to: "drv", t: 0.00003, tg: [], title: "⑦ 봉투에 넣기", ch: [10, 11], text: "커널의 네트워크 스택이 메시지를 TLS로 <b>암호화</b>하고, TCP 봉투(포트, 순서 번호), IP 봉투(서버 주소), Wi-Fi 봉투(공유기 MAC 주소)를 차례로 씌운다(<b>캡슐화</b>)." },
+        { on: ["nic", "ap"], from: "nic", to: "ap", t: 0.002, tg: ["wifi"], title: "⑧ 전파를 타고 공유기로", ch: [10], text: "Wi-Fi 칩이 패킷을 전파로 바꿔 쏜다. 공유기가 받아 링크 봉투를 벗기고, 보내는 주소를 공인 IP로 바꿔(NAT) 통신사 쪽으로 넘긴다." },
+        { on: ["ap", "isp", "srv"], from: "isp", to: "srv", t: 0.015, tg: ["wan"], title: "⑨ 라우터들을 건너 서버로", ch: [10], text: "통신사와 인터넷의 <b>라우터</b>들이 목적지 IP를 보고 한 걸음씩 패킷을 넘긴다. 서버가 같은 나라 데이터센터에 있다면 대략 10~20 ms." },
+        { on: ["srv", "sdb"], from: "srv", to: "sdb", t: 0.005, tg: [], title: "⑩ 서버가 저장하고 확인한다", ch: [6, 7, 8], text: "서버는 수천 명의 요청을 <b>멀티코어</b>와 스레드로 동시에 처리한다. 메시지를 저장소(SSD와 메모리 캐시)에 기록하고, 받는 사람이 누구인지 확인한다. 같은 대화방을 고치는 요청이 겹치지 않게 <b>잠금</b>도 쓴다." },
+        { on: ["srv", "isp", "nic", "app"], from: "srv", to: "app", t: 0.017, tg: ["wan", "wifi"], title: "⑪ “보냄” 확인이 돌아온다", ch: [10], text: "서버가 “저장 완료”를 보내면 같은 길을 거꾸로 돌아와 내 앱에 도착한다. 패킷을 받은 Wi-Fi 칩이 인터럽트를 걸고, 커널이 봉투를 벗겨 앱에 전달한다. 말풍선 옆에 ‘1’이 표시된다." },
+        { on: ["srv", "push", "fnic"], from: "push", to: "fnic", t: 0.03, tg: ["wan"], title: "⑫ 친구에게 알림", ch: [10, 11], text: "서버가 친구의 휴대폰에 열려 있는 알림 연결로 새 메시지를 밀어 보낸다. 친구가 다른 나라에 있다면 바닷속 광케이블을 건너느라 수십 ms가 더 걸린다." },
+        { on: ["fnic", "fos"], from: "fnic", to: "fos", t: 0.003, tg: [], title: "⑬ 친구 폰이 깨어난다", ch: [8, 9], text: "친구 폰의 통신 칩이 인터럽트를 걸고, 잠자던 CPU가 깨어난다. 운영체제가 메신저 앱을 메모리에 올리거나(필요하면 SSD에서 페이지를 읽어 오는 <b>페이지 폴트</b>) 깨워 메시지를 건넨다." },
+        { on: ["fos", "fgpu"], from: "fos", to: "fgpu", t: 0.012, tg: [], title: "⑭ 친구 화면에 “안녕”", ch: [12, 2], text: "앱이 UTF-8 바이트를 다시 글자로 해석하고, GPU가 말풍선과 글자를 픽셀로 그린다. 친구 화면에 “안녕”이 나타났다. 여기까지 보통 0.1초 안팎이다." },
+      ] },
+    web: { name: "웹 검색", pay: "검색", lab: { app: "웹 브라우저", srv: "검색 서버\n(데이터센터)", push: "CDN (이미지)", sdb: "검색 색인", fnic: "", fos: "", fgpu: "" }, right: "",
+      intro: "브라우저 주소창에 “컴퓨터 구조”를 입력하고 Enter를 누르려 한다. 11장에서 본 과정이 실제 기기 위에서 어떻게 펼쳐지는지 따라가 보자.",
+      S: [
+        { on: ["kbd", "cpu"], from: "kbd", to: "cpu", t: 0.002, tg: [], title: "① Enter 키", ch: [8], text: "키 입력이 <b>인터럽트</b>로 CPU에 전달되고, 운영체제가 지금 앞에 있는 브라우저에게 건넨다." },
+        { on: ["app", "ram", "cpu"], from: "os", to: "app", t: 0.0005, tg: ["mem"], title: "② 브라우저가 요청을 만든다", ch: [11, 6], text: "브라우저가 검색어를 URL로 만들고(<code>/search?q=…</code>) 메모리의 캐시에 같은 결과가 없는지 먼저 확인한다." },
+        { on: ["drv", "nic", "dns"], from: "nic", to: "dns", t: 0.02, tg: ["wifi", "wan"], title: "③ DNS로 서버 주소 찾기", ch: [11], text: "검색 서버 이름을 IP 주소로 바꾼다. 캐시에 있으면 0에 가깝지만, 없으면 리졸버까지 왕복이 필요하다." },
+        { on: ["nic", "ap", "isp", "srv"], from: "nic", to: "srv", t: 0.04, tg: ["wifi", "wan"], title: "④ TCP 연결 + TLS 암호화", ch: [10, 11], text: "서버와 악수(3방향 핸드셰이크)를 하고, 비밀 열쇠를 나눈다. 왕복이 두 번쯤 필요해서 서버가 멀수록 오래 걸린다." },
+        { on: ["srv", "sdb"], from: "srv", to: "sdb", t: 0.03, tg: [], title: "⑤ 서버가 색인을 뒤진다", ch: [5, 6], text: "검색 서버 수천 대가 미리 만들어 둔 색인을 나눠서 동시에 찾는다(병렬 처리). 결과를 순위대로 정리해 HTML로 만든다." },
+        { on: ["srv", "isp", "nic", "app"], from: "srv", to: "app", t: 0.02, tg: ["wifi", "wan"], title: "⑥ HTML이 도착한다", ch: [10], text: "결과 페이지가 패킷으로 쪼개져 돌아온다. TCP가 순서를 맞추고, 빠진 패킷이 있으면 다시 받는다." },
+        { on: ["app", "cpu", "ram"], from: "app", to: "cpu", t: 0.03, tg: ["mem"], title: "⑦ 파싱과 레이아웃", ch: [11, 4], text: "브라우저가 HTML을 DOM 트리로 만들고, 화면 폭에 맞춰 상자 위치를 계산한다. CPU가 가장 바쁜 구간이다." },
+        { on: ["ssd", "app"], from: "ssd", to: "app", t: 0.003, tg: ["disk"], title: "⑧ 캐시에서 이미지·글꼴 읽기", ch: [7], text: "전에 받아 둔 로고, 글꼴, 스크립트는 SSD의 브라우저 캐시에서 읽는다. 네트워크보다 훨씬 빠르다." },
+        { on: ["gpu", "scr"], from: "gpu", to: "scr", t: 0.008, tg: ["gpu"], title: "⑨ 페인트와 합성", ch: [12, 11], text: "GPU가 글자와 상자를 픽셀로 그리고 여러 층을 합쳐 화면에 띄운다. 검색 결과가 나타났다." },
+      ] },
+    game: { name: "게임", pay: "프레임", lab: { app: "게임", srv: "게임 서버", push: "중계 서버", fnic: "상대 플레이어: 통신망", fos: "상대: 게임 로직", fgpu: "상대: 화면" }, right: "다른 플레이어",
+      intro: "온라인 게임에서 W 키를 눌러 캐릭터를 앞으로 움직인다. 화면은 1초에 60번 바뀌어야 하므로 한 장면에 쓸 수 있는 시간은 약 16.7 ms다.",
+      S: [
+        { on: ["kbd", "cpu"], from: "kbd", to: "cpu", t: 0.0005, tg: [], title: "① W 키 입력", ch: [8], text: "게이밍 키보드는 1초에 1,000번 상태를 보고한다. 입력이 <b>인터럽트</b>로 CPU에 전달된다." },
+        { on: ["os", "app"], from: "os", to: "app", t: 0.00005, tg: [], title: "② 게임에 입력 전달", ch: [8], text: "운영체제가 입력을 게임 프로세스에 건넨다. 게임은 우선순위가 높아 바로 CPU를 받는다." },
+        { on: ["app", "cpu", "ram"], from: "app", to: "ram", t: 0.003, tg: ["mem"], title: "③ 게임 로직과 물리 계산", ch: [4, 5, 6], text: "캐릭터의 새 위치, 충돌, 적의 움직임을 계산한다. 여러 코어에 나눠 맡기고, 자주 쓰는 데이터는 캐시에 머물게 짠다." },
+        { on: ["drv", "nic", "ap", "isp", "srv"], from: "nic", to: "srv", t: 0.015, tg: ["wifi", "wan"], title: "④ 내 위치를 서버로", ch: [10], text: "내 움직임을 작은 <b>UDP</b> 패킷으로 서버에 보낸다. 늦게 온 위치는 쓸모없으므로 재전송하지 않는다. 화면 그리기와 동시에 진행된다." },
+        { on: ["cpu", "gpu"], from: "cpu", to: "gpu", t: 0.002, tg: [], title: "⑤ 그리기 명령 보내기", ch: [12], text: "CPU가 “이 물체를 이 위치에 그려라”는 명령 수천 개를 GPU에 보낸다. 3D 모델과 텍스처는 이미 GPU 메모리에 올라가 있다." },
+        { on: ["gpu", "ram"], from: "ram", to: "gpu", t: 0.008, tg: ["gpu"], title: "⑥ GPU가 장면을 그린다", ch: [12], text: "수백만 개의 삼각형을 래스터화하고 픽셀마다 셰이더로 조명과 그림자를 계산한다. 수천 개의 유닛이 동시에 일한다." },
+        { on: ["gpu", "scr"], from: "gpu", to: "scr", t: 0.004, tg: ["gpu"], title: "⑦ 화면에 표시", ch: [12], text: "완성된 장면을 모니터의 다음 갱신 순간에 맞춰 내보낸다. 여기까지 16.7 ms 안에 끝나야 끊김 없이 보인다." },
+        { on: ["srv", "push", "fnic"], from: "srv", to: "fnic", t: 0.02, tg: ["wan"], title: "⑧ 다른 플레이어에게 전달", ch: [10], text: "서버가 내 위치를 같은 판의 다른 플레이어들에게 전한다. 이 왕복 시간이 흔히 말하는 ‘핑’이다." },
+        { on: ["fos", "fgpu"], from: "fos", to: "fgpu", t: 0.012, tg: [], title: "⑨ 상대 화면에 내가 움직인다", ch: [12], text: "상대의 게임이 내 새 위치를 반영해 다음 장면에 그린다. 핑이 크면 상대 화면 속 나는 조금 과거의 모습이다." },
+      ] },
+    photo: { name: "사진", pay: "사진", lab: { app: "카메라 앱", kbd: "셔터·\n카메라", gpu: "이미지\n처리기", srv: "사진 클라우드", sdb: "클라우드 저장소", push: "", fnic: "", fos: "", fgpu: "" }, right: "",
+      intro: "카메라 앱에서 셔터를 누르고, 찍은 사진이 클라우드에 자동으로 백업되기까지를 따라가 보자. 사진 한 장은 압축 전 약 36 MB, 압축 후 약 3 MB다(2장).",
+      S: [
+        { on: ["kbd", "cpu"], from: "kbd", to: "cpu", t: 0.002, tg: [], title: "① 셔터를 누른다", ch: [8], text: "셔터 버튼 터치가 인터럽트로 전달되고, 운영체제가 카메라 앱에 알린다." },
+        { on: ["app", "os", "drv"], from: "app", to: "drv", t: 0.0002, tg: [], title: "② 카메라에 촬영 요청", ch: [8], text: "앱이 시스템 콜로 카메라 드라이버에 “지금 찍어”라고 요청한다. 카메라 센서가 노출을 시작한다." },
+        { on: ["kbd", "gpu"], from: "kbd", to: "gpu", t: 0.03, tg: ["gpu"], title: "③ 이미지 처리", ch: [2, 12], text: "센서가 빛을 숫자로 바꾼 RAW 데이터를 이미지 처리기(ISP)와 GPU가 받아 노이즈 제거, 색 보정, 여러 장 합성(야간 모드 등)을 한다." },
+        { on: ["gpu", "ram"], from: "gpu", to: "ram", t: 0.005, tg: ["mem"], title: "④ 메모리에 1200만 화소", ch: [6], text: "완성된 픽셀 약 36 MB가 RAM에 놓인다. 메모리가 부족하면 이 큰 덩어리를 담느라 다른 앱의 페이지를 밀어내야 한다." },
+        { on: ["ram", "cpu"], from: "ram", to: "cpu", t: 0.04, tg: [], title: "⑤ JPEG 압축", ch: [2, 5], text: "CPU(또는 전용 회로)가 사진을 약 3 MB로 압축한다. 비슷한 색이 이어지는 부분을 요약하고, 눈에 덜 띄는 차이를 버린다." },
+        { on: ["cpu", "ssd"], from: "cpu", to: "ssd", t: 0.01, tg: ["disk"], title: "⑥ 파일로 저장", ch: [7], text: "파일 시스템이 빈 블록을 찾아 사진을 쓰고 목록을 갱신한다. SSD 컨트롤러가 여러 플래시 칩에 나눠 기록한다." },
+        { on: ["app", "scr"], from: "app", to: "scr", t: 0.008, tg: ["gpu"], title: "⑦ 미리보기 표시", ch: [12], text: "화면 구석에 방금 찍은 사진의 작은 미리보기가 뜬다. 사용자는 여기서 ‘찍혔다’고 느낀다." },
+        { on: ["nic", "ap", "isp", "srv"], from: "nic", to: "srv", t: 0.5, tg: ["wifi", "bulk"], title: "⑧ 클라우드로 업로드", ch: [10], text: "백그라운드에서 3 MB를 업로드한다. 이번에는 지연보다 <b>대역폭</b>이 중요하다. 50 Mbps 업로드라면 약 0.5초." },
+        { on: ["srv", "sdb"], from: "srv", to: "sdb", t: 0.01, tg: [], title: "⑨ 클라우드에 보관", ch: [7], text: "서버가 사진을 여러 데이터센터에 복제해 저장한다. 내 휴대폰을 잃어버려도 사진은 남는다." },
+      ] },
+  };
+  const COND = {
+    none: { why: "모든 부품이 정상이다. 시나리오마다 가장 긴 막대가 무엇인지 보자. 대개 네트워크나 화면 갱신 대기가 가장 길다." },
+    far: { f: { wan: 7, bulk: 1.5 }, why: "서버가 지구 반대편에 있으면 바다를 건너는 구간(wan)이 몇 배로 길어진다. 왕복이 여러 번 필요한 <b>웹 검색</b>(DNS, 연결, 암호화, 요청)이 가장 크게 느려진다. 그래서 큰 서비스들은 전 세계에 서버(CDN)를 둔다." },
+    wifi: { f: { wifi: 8 }, why: "Wi-Fi 신호가 약하면 패킷이 자주 깨져 재전송이 반복되고 속도도 떨어진다. 집 안 구간 하나가 전체를 붙잡는다. 대용량 업로드(사진 백업)는 특히 오래 걸린다." },
+    ram: { add: { mem: 0.03 }, why: "RAM이 부족하면 메모리를 쓰는 단계마다 SSD와 페이지를 주고받는 <b>페이지 폴트</b>가 끼어든다(9장). 평소 마이크로초면 끝날 일이 수십 ms로 늘어난다. 앱이 버벅이는 대표적인 원인이다." },
+    hdd: { f: { disk: 60 }, why: "저장장치가 HDD라면 파일을 읽고 쓰는 단계가 수십 배 느려진다(7장). <b>사진 저장</b>과 <b>웹 캐시 읽기</b>에는 치명적이지만, 메시지처럼 저장장치를 거의 안 쓰는 일에는 영향이 없다." },
+    gpu: { f: { gpu: 4 }, why: "GPU가 약하면 화면을 그리는 단계가 길어진다. <b>게임</b>은 16.7 ms 안에 한 장면을 그려야 하므로 바로 끊김(프레임 저하)이 생긴다. 메시지나 검색에서는 체감 차이가 작다." },
+  };
+  const N0 = JSON.parse(JSON.stringify(N));
+  const jsc = CB.seg("jsc", () => { si = -1; stopAuto(); applyLabels(); render(); bcv.redraw(); });
+  const jcond = CB.seg("jcond", () => bcv.redraw());
+  function applyLabels() { const L = SC[jsc()].lab; Object.keys(N).forEach((k) => { N[k][4] = L[k] != null ? L[k] : N0[k][4]; }); }
+  const cur = () => SC[jsc()];
+  const tOf = (s, cond) => { const C = COND[cond]; let t = s.t; (s.tg || []).forEach((g) => { if (C.f && C.f[g]) t *= C.f[g]; if (C.add && C.add[g]) t += C.add[g]; }); return t; };
   let si = -1, anim = 1, auto = null;
   const P = () => CB.palette();
   const jcv = CB.canvas("#cv-j", (ctx, w, h) => {
-    const C = P();
+    const C = P(); const sc = cur(), S = sc.S;
     const sx = w / 1000, sy = h / 440;
     const R = (k) => { const [x, y, ww, hh] = N[k]; return [x * sx, y * sy, ww * sx, hh * sy]; };
-    // group backgrounds
     const grp = (x, y, ww, hh, label) => { CB.rrect(ctx, x * sx, y * sy, ww * sx, hh * sy, 12); ctx.fillStyle = C.surface; ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = C.border; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]); CB.text(ctx, label, (x + 8) * sx, (y + 4) * sy, { base: "top", size: Math.max(10, 11.5 * Math.min(sx, 1.1)), bold: true, color: C.dim }); };
-    grp(10, 10, 230, 420, "내 휴대폰");
+    grp(10, 10, 230, 420, "내 기기");
     grp(290, 110, 440, 270, "인터넷 · 서버");
-    grp(770, 100, 220, 280, "친구 휴대폰");
-    const cur = si >= 0 ? S[si] : null;
+    if (sc.right) grp(770, 100, 220, 280, sc.right);
+    const used = new Set(); S.forEach((s) => s.on.concat([s.from, s.to]).forEach((k) => used.add(k)));
+    const st = si >= 0 ? S[si] : null;
     Object.keys(N).forEach((k) => {
-      const [x, y, ww, hh] = R(k); const on = cur && cur.on.includes(k);
+      if (!N[k][4]) return;
+      const [x, y, ww, hh] = R(k); const on = st && st.on.includes(k);
+      ctx.globalAlpha = used.has(k) ? 1 : 0.35;
       CB.box(ctx, x, y, ww, hh, { fill: on ? C.accent : C.bg, stroke: on ? C.accent : C.border, text: N[k][4], color: on ? "#fff" : C.text, size: Math.max(9.5, Math.min(12.5, 12 * sx * 1.05)), bold: on, r: 8 });
+      ctx.globalAlpha = 1;
     });
-    if (cur && cur.from !== cur.to) {
-      const [x1, y1, w1, h1] = R(cur.from), [x2, y2, w2, h2] = R(cur.to);
+    if (st && st.from !== st.to) {
+      const [x1, y1, w1, h1] = R(st.from), [x2, y2, w2, h2] = R(st.to);
       const ax = x1 + w1 / 2, ay = y1 + h1 / 2, bx = x2 + w2 / 2, by = y2 + h2 / 2;
       const t = Math.min(1, anim);
       ctx.strokeStyle = C.accent2; ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(CB.lerp(ax, bx, t), CB.lerp(ay, by, t)); ctx.stroke(); ctx.setLineDash([]);
-      CB.box(ctx, CB.lerp(ax, bx, t) - 26, CB.lerp(ay, by, t) - 11, 52, 22, { fill: C.warn, stroke: C.warn, text: "안녕", color: "#3a2a00", size: 11.5, bold: true, r: 6 });
+      CB.box(ctx, CB.lerp(ax, bx, t) - 26, CB.lerp(ay, by, t) - 11, 52, 22, { fill: C.warn, stroke: C.warn, text: sc.pay, color: "#3a2a00", size: 11.5, bold: true, r: 6 });
     }
   }, { aspect: 0.44, minHeight: 300, maxHeight: 460 });
-  const tcv = CB.canvas("#cv-jt", (ctx, w, h) => {
+  function bars(ctx, w, h, S, upto, cond, hl) {
     const C = P();
-    const left = Math.min(190, w * 0.4), right = 70, top = 8;
-    const rows = S.length, rh = (h - top - 8) / rows;
-    const lmin = -5, lmax = -1.3;
+    const left = Math.min(190, w * 0.4), right = 76, top = 8;
+    const rh = (h - top - 8) / S.length;
+    const ts = S.map((s) => tOf(s, cond)), base = S.map((s) => s.t);
+    const lmin = -5, lmax = Math.max(-1.3, Math.log10(Math.max(...ts)) + 0.15);
     S.forEach((s, i) => {
-      const y = top + i * rh;
-      const shown = i <= si;
+      const y = top + i * rh, shown = i <= upto;
       CB.text(ctx, s.title.replace(/^[^ ]+ /, ""), left - 8, y + rh / 2, { align: "right", size: w < 520 ? 9.5 : 11, color: shown ? C.text : C.faint });
       if (!shown) return;
-      const v = Math.max(s.t, 1e-5);
-      const frac = (Math.log10(v) - lmin) / (lmax - lmin);
-      const bw = Math.max(3, frac * (w - left - right));
-      CB.rrect(ctx, left, y + rh * 0.18, bw, rh * 0.64, 3); ctx.fillStyle = s.t >= 0.005 ? C.warn : i === si ? C.accent : C.accent2; ctx.globalAlpha = i === si ? 1 : 0.7; ctx.fill(); ctx.globalAlpha = 1;
-      CB.text(ctx, s.t === 0 ? "0 (캐시)" : CB.time(s.t), left + bw + 6, y + rh / 2, { size: 10.5, mono: true, color: C.dim });
+      const v = Math.max(ts[i], 1e-5), frac = (Math.log10(v) - lmin) / (lmax - lmin), bw = Math.max(3, frac * (w - left - right));
+      const slowed = ts[i] > base[i] * 1.01;
+      CB.rrect(ctx, left, y + rh * 0.18, bw, rh * 0.64, 3);
+      ctx.fillStyle = slowed ? C.bad : ts[i] >= 0.005 ? C.warn : i === hl ? C.accent : C.accent2; ctx.globalAlpha = i === hl || slowed ? 1 : 0.7; ctx.fill(); ctx.globalAlpha = 1;
+      CB.text(ctx, ts[i] === 0 ? "0 (캐시)" : CB.time(ts[i]), left + bw + 6, y + rh / 2, { size: 10.5, mono: true, color: slowed ? C.bad : C.dim, bold: slowed });
     });
+  }
+  const tcv = CB.canvas("#cv-jt", (ctx, w, h) => { bars(ctx, w, h, cur().S, si, "none", si); }, { height: 290 });
+  const bcv = CB.canvas("#cv-bn", (ctx, w, h) => {
+    const S = cur().S, c = jcond();
+    bars(ctx, w, h, S, S.length - 1, c, -1);
+    const base = S.reduce((a, s) => a + s.t, 0), now = S.reduce((a, s) => a + tOf(s, c), 0);
+    let mi = 0; S.forEach((s, i) => { if (tOf(s, c) > tOf(S[mi], c)) mi = i; });
+    CB.stat("o-bn-base", CB.time(base));
+    CB.stat("o-bn-now", c === "none" ? CB.time(now) : `${CB.time(now)} <small>(×${(now / base).toFixed(1)})</small>`);
+    CB.stat("o-bn-max", S[mi].title);
+    $("bn-why").innerHTML = `<b>${cur().name} 시나리오 · ${{ none: "정상", far: "서버가 지구 반대편", wifi: "약한 Wi-Fi", ram: "RAM 부족", hdd: "SSD 대신 HDD", gpu: "약한 GPU" }[c]}</b> — ` + COND[c].why;
   }, { height: 290 });
   function render() {
+    const S = cur().S;
     $("jstep").textContent = si + 1 + " / " + S.length;
     const total = S.slice(0, si + 1).reduce((a, s) => a + s.t, 0);
-    if (si < 0) $("jdesc").innerHTML = `<h4>준비</h4><p>메신저 앱을 켜고 친구와의 대화방에 들어왔다. 입력창을 눌러 “안녕”을 쓰려 한다. <b>다음 →</b>을 눌러 여행을 시작하자.</p>`;
+    if (si < 0) $("jdesc").innerHTML = `<h4>준비</h4><p>${cur().intro}</p>`;
     else { const s = S[si]; $("jdesc").innerHTML = `<h4>${s.title}</h4><p>${s.text}</p><div class="meta">${s.ch.map((c) => { const ch = CB.CHAPTERS.find((x) => Number(x.num) === c); return `<a class="pill acc" href="${ch.slug}.html">${ch.num} ${ch.title}</a>`; }).join("")}<span class="pill">이 단계 ${s.t === 0 ? "≈ 0" : CB.time(s.t)}</span><span class="pill">누적 ${CB.time(total || 1e-6)}</span></div>`; }
-    $("jprev").disabled = si < 0; $("jnext").disabled = si >= S.length - 1;
+    $("jprev").disabled = si < 0; $("jnext").disabled = $("jall").disabled = si >= S.length - 1;
     jcv.redraw(); tcv.redraw();
   }
   function stopAuto() { if (auto) { clearInterval(auto); auto = null; $("jauto").textContent = "자동 재생"; } }
-  $("jnext").onclick = () => { stopAuto(); if (si < S.length - 1) { si++; anim = 0; render(); } };
+  $("jnext").onclick = () => { stopAuto(); if (si < cur().S.length - 1) { si++; anim = 0; render(); } };
   $("jprev").onclick = () => { stopAuto(); if (si >= 0) { si--; anim = 1; render(); } };
+  $("jall").onclick = () => { stopAuto(); si = cur().S.length - 1; anim = 1; render(); };
   $("jreset").onclick = () => { stopAuto(); si = -1; render(); };
-  $("jauto").onclick = () => { if (auto) return stopAuto(); if (si >= S.length - 1) si = -1; $("jauto").textContent = "멈춤"; const go = () => { if (si >= S.length - 1) return stopAuto(); si++; anim = 0; render(); }; go(); auto = setInterval(go, 3600); };
+  $("jauto").onclick = () => { if (auto) return stopAuto(); if (si >= cur().S.length - 1) si = -1; $("jauto").textContent = "멈춤"; const go = () => { if (si >= cur().S.length - 1) return stopAuto(); si++; anim = 0; render(); }; go(); auto = setInterval(go, 3600); };
   CB.loop($("cv-j"), (dt) => { if (anim < 1) { anim += dt * 0.9; jcv.redraw(); } });
+  applyLabels();
   render();
 })();
 </script>

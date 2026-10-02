@@ -39,6 +39,7 @@
     <ul class="objectives">
       <li>CPU 성능이 클럭, 박자당 명령 수, 코어 수의 곱으로 결정됨을 이해한다.</li>
       <li>파이프라인이 명령을 겹쳐 실행해 처리량을 높이는 원리와 그 한계(의존성, 지연)를 안다.</li>
+      <li>슈퍼스칼라와 비순차 실행이 한 박자에 여러 명령을 처리하는 원리를 체험한다.</li>
       <li>분기 예측이 왜 필요한지, 예측이 틀리면 어떤 손해가 생기는지 체험한다.</li>
       <li>클럭 경쟁이 2005년 무렵 멈추고 멀티코어 시대가 온 이유(전력·발열)를 설명한다.</li>
       <li>암달의 법칙으로 코어를 늘려도 속도가 무한히 늘지 않는 이유를 이해한다.</li>
@@ -89,6 +90,27 @@
       <div class="sim-note">가로는 시간(박자), 세로는 명령이다. 해볼 것: 명령을 10개로 늘리면 파이프라인의 이득이 5배에 가까워진다. 의존성을 켜면 3번 명령이 2번의 결과를 기다리느라 <b>빈칸(거품, stall)</b>이 생긴다.</div>
     </div>
     <p>실제 CPU는 파이프라인을 15~20단계로 더 잘게 나누고, 한 박자에 여러 명령을 동시에 가져오는 <span class="term">슈퍼스칼라</span><span class="en">(superscalar)</span> 구조를 쓴다. 세탁기를 여러 대 두는 셈이다. 게다가 앞 명령을 기다리는 동안 상관없는 뒤쪽 명령을 먼저 실행하는 <span class="term">비순차 실행</span><span class="en">(out-of-order execution)</span>으로 빈칸을 메운다. 그 덕분에 요즘 CPU의 IPC는 4~8에 이른다.</p>
+  </section>
+  <!-- ============================================================ -->
+  <section id="ooo">
+    <h2>한 박자에 여러 명령: 슈퍼스칼라와 비순차 실행</h2>
+    <p>파이프라인은 명령 하나하나를 겹쳐 처리하지만, 여전히 한 박자에 <b>한 명령씩</b> 시작한다. 요즘 CPU는 실행 장치(ALU)를 여러 개 두고 한 박자에 명령을 4~8개씩 시작한다. 이것이 <span class="term">슈퍼스칼라</span>다. 요리사에게 손이 여러 개 생긴 셈이다.</p>
+    <p>그런데 손이 많아도 쓸 일이 없으면 소용없다. 프로그램의 명령은 앞 명령의 결과를 기다리는 경우가 많다. 특히 메모리에서 값을 읽는 명령(LOAD)은 캐시에 있어도 몇 박자가 걸린다. 그 결과를 기다리는 동안 <b>상관없는 뒤쪽 명령을 먼저 처리</b>하는 기술이 <span class="term">비순차 실행</span>이다. 레시피를 위에서부터 그대로 따르는 대신, 물이 끓기를 기다리는 동안 다음 단계의 채소를 미리 써는 요리사와 같다. 결과는 원래 순서대로 정리해서 내놓기 때문에 프로그램 입장에서는 차이가 없다.</p>
+    <div class="sim" id="sim-ooo">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>순서대로 vs 비순차, 손이 몇 개?</h3></div>
+      <div class="sim-view" style="overflow-x:auto"><div style="min-width:560px"><canvas id="cv-ooo"></canvas></div></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>실행 방식</span><div class="seg" id="ooo-mode"><button data-value="in" class="on">순서대로 (in-order)</button><button data-value="ooo">비순차 (out-of-order)</button></div></div>
+        <label class="ctrl"><span>한 박자에 시작할 수 있는 명령 수 <output id="ooo-w-out"></output></span><input type="range" id="ooo-w" min="1" max="4" value="1"></label>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">총 걸린 박자</span><span class="v" id="o-ooo-c">—</span></div>
+        <div class="stat"><span class="k">IPC (박자당 명령)</span><span class="v" id="o-ooo-ipc">—</span></div>
+        <div class="stat"><span class="k">놀고 있던 칸 비율</span><span class="v" id="o-ooo-idle">—</span></div>
+      </div>
+      <div class="sim-note">왼쪽은 명령 10개(→ 표시는 앞 명령의 결과가 필요하다는 뜻), 오른쪽 막대는 각 명령이 실행되는 박자다. LOAD는 4박자, MUL은 3박자, 나머지는 1박자가 걸린다고 했다. 해볼 것: “순서대로”에서 손을 4개로 늘려도 별로 빨라지지 않는다. 앞 명령을 기다리느라 막히기 때문이다. “비순차”로 바꾸면 같은 손으로 훨씬 빨리 끝난다.</div>
+    </div>
+    <p>비순차 실행을 하려면 CPU가 수백 개의 명령을 미리 들여다보고, 누가 누구를 기다리는지 추적하고, 결과를 원래 순서로 되돌리는 복잡한 회로가 필요하다. 요즘 고성능 코어 면적의 상당 부분이 바로 이 일에 쓰인다. 12장에서 볼 GPU가 이런 회로를 빼고 그 자리에 계산 유닛을 채운 것과 정반대의 선택이다.</p>
   </section>
 
   <!-- ============================================================ -->
@@ -168,6 +190,54 @@
       <figcaption><b>그림 5-3.</b> 4코어 CPU 칩의 구조(단순화). 코어는 각각 완전한 CPU 두뇌다. 코어가 많을수록 동시에 여러 프로그램(또는 한 프로그램의 여러 조각)을 실행할 수 있다.</figcaption>
     </figure>
   </section>
+  <!-- ============================================================ -->
+  <section id="power">
+    <h2>전기와 열: 직접 계산해 보기</h2>
+    <p>칩이 쓰는 전력은 대략 <b>전압² × 클럭 × (켜고 끄는 트랜지스터의 양)</b>에 비례한다. 문제는 클럭을 올리려면 트랜지스터가 더 빨리 반응해야 해서 <b>전압도 같이 올려야</b> 한다는 것이다. 그래서 클럭을 올리면 전력은 클럭보다 훨씬 가파르게, 대략 세제곱에 가깝게 늘어난다. 아래 계산기로 확인해 보자.</p>
+    <div class="sim" id="sim-power">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>클럭·전압·코어로 보는 전력 계산기</h3></div>
+      <div class="sim-body side">
+        <div class="sim-view"><canvas id="cv-power"></canvas></div>
+        <div class="sim-controls">
+          <label class="ctrl"><span>클럭 <output id="pw-f-out"></output></span><input type="range" id="pw-f" min="1" max="6" step="0.1" value="4"></label>
+          <label class="ctrl"><span>코어 수 <output id="pw-n-out"></output></span><input type="range" id="pw-n" min="1" max="16" value="8"></label>
+          <label class="check"><input type="checkbox" id="pw-auto" checked> 클럭에 맞춰 필요한 전압을 자동으로</label>
+          <label class="ctrl"><span>전압 <output id="pw-v-out"></output></span><input type="range" id="pw-v" min="0.6" max="1.5" step="0.01" value="1.1"></label>
+        </div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">칩 전체 전력</span><span class="v" id="o-pw-w">—</span></div>
+        <div class="stat"><span class="k">성능 (코어 × 클럭)</span><span class="v" id="o-pw-perf">—</span></div>
+        <div class="stat"><span class="k">전력 1 W당 성능</span><span class="v" id="o-pw-eff">—</span></div>
+        <div class="stat"><span class="k">비슷한 열을 내는 것</span><span class="v" id="o-pw-cmp" style="font-size:15px">—</span></div>
+      </div>
+      <div class="sim-note">교육용 단순 모델이다(4 GHz·1.1 V에서 코어 하나 약 12 W로 맞춤). 곡선은 코어 하나의 전력이 클럭에 따라 어떻게 늘어나는지 보여 준다. 해볼 것: 8코어 3 GHz와 4코어 6 GHz를 비교해 보자. 성능 수치는 같은데 전력은 어느 쪽이 적을까? 이것이 멀티코어로 방향을 튼 이유다. 전압이 클럭에 비해 너무 낮으면 회로가 제때 반응하지 못해 계산이 틀린다.</div>
+    </div>
+    <h3>스마트폰의 해법: 큰 코어와 작은 코어</h3>
+    <p>배터리로 움직이는 스마트폰은 한 걸음 더 나아갔다. 빠르지만 전기를 많이 먹는 <b>큰 코어</b> 몇 개와, 느리지만 아주 알뜰한 <b>작은 코어</b> 여러 개를 한 칩에 함께 넣는다. 메시지 알림 확인처럼 가벼운 일은 작은 코어가, 게임이나 사진 보정처럼 무거운 일은 큰 코어가 맡는다. 운영체제의 스케줄러(8장)가 일의 성격을 보고 어느 코어에 줄지 정한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 230" role="img" aria-label="큰 코어와 작은 코어를 섞은 스마트폰 칩">
+        <rect x="20" y="20" width="360" height="190" rx="16" class="f-surface"/><text x="36" y="44" class="t-dim">스마트폰 칩</text>
+        <rect x="40" y="58" width="96" height="70" rx="10" class="f-acc"/><text x="88" y="90" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">큰 코어</text><text x="88" y="110" text-anchor="middle" style="fill:#fff" class="t-mono">빠름·전기 많이</text>
+        <rect x="148" y="58" width="96" height="70" rx="10" class="f-acc"/><text x="196" y="90" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">큰 코어</text><text x="196" y="110" text-anchor="middle" style="fill:#fff" class="t-mono">빠름·전기 많이</text>
+        <g><rect x="256" y="58" width="52" height="34" rx="8" class="f-acc2-soft"/><rect x="314" y="58" width="52" height="34" rx="8" class="f-acc2-soft"/><rect x="256" y="96" width="52" height="34" rx="8" class="f-acc2-soft"/><rect x="314" y="96" width="52" height="34" rx="8" class="f-acc2-soft"/></g>
+        <text x="311" y="148" text-anchor="middle" class="t-mono">작은 코어 4개</text>
+        <rect x="40" y="160" width="326" height="36" rx="8" class="f-elev"/><text x="203" y="183" text-anchor="middle" class="t-mono">GPU · NPU(AI) · 모뎀 · 이미지 처리기</text>
+        <g transform="translate(410,20)">
+          <rect width="370" height="190" rx="14" class="f-surface"/>
+          <text x="18" y="30" class="t" style="font-weight:700">누가 무엇을 맡나 (예)</text>
+          <text x="18" y="60" class="t-dim">알림 확인 · 음악 재생 · 백그라운드 동기화</text><text x="352" y="60" text-anchor="end" class="t-mono" style="fill:var(--accent-2)">작은 코어</text>
+          <text x="18" y="90" class="t-dim">웹 페이지 스크롤 · 메신저 입력</text><text x="352" y="90" text-anchor="end" class="t-mono" style="fill:var(--accent-2)">작은 코어</text>
+          <text x="18" y="120" class="t-dim">앱 실행 순간 · 게임 · 사진 보정</text><text x="352" y="120" text-anchor="end" class="t-mono" style="fill:var(--accent)">큰 코어</text>
+          <text x="18" y="160" class="t-dim">대부분의 시간은 작은 코어만 깨어 있어</text><text x="18" y="180" class="t-dim">배터리가 하루를 버틴다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 5-4.</b> 큰 코어와 작은 코어를 섞은 구성(Arm의 big.LITTLE 등). 최신 PC용 CPU도 같은 방식을 쓰기 시작했다.</figcaption>
+    </figure>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">클럭을 2배로 올리면서 필요한 만큼 전압도 올렸다. 전력은 대략 몇 배가 될까?</p><p class="wi-hint">먼저 골라 보고, 위 계산기에서 확인해 보자.</p><div class="opts">
+      <button class="opt">2배</button><button class="opt" data-correct>약 4~5배</button><button class="opt">약 16배</button><button class="opt">그대로</button>
+    </div><div class="quiz-exp">클럭이 2배면 전력도 2배, 여기에 전압까지 올리면 전압의 제곱만큼 또 늘어난다. 계산기에서 3 GHz → 6 GHz로 바꿔 보면(전압 자동) 코어 하나의 전력이 몇 배로 뛰는지 볼 수 있다. 같은 전력으로 코어 수를 늘리는 편이 훨씬 이득인 이유다.</div></div>
+  </section>
 
   <!-- ============================================================ -->
   <section id="amdahl">
@@ -201,6 +271,8 @@
       <li>앞 명령의 결과가 필요한 <b>의존성</b>이 있으면 파이프라인에 빈칸(stall)이 생긴다. 비순차 실행이 이를 줄인다.</li>
       <li>조건 점프의 방향을 미리 짐작하는 <b>분기 예측</b>이 틀리면 파이프라인을 비워야 해서 많은 박자를 잃는다. 규칙적인 패턴일수록 잘 맞는다.</li>
       <li>전력과 발열 때문에 2005년 무렵 클럭 상승이 멈추고 <b>멀티코어</b> 시대가 왔다.</li>
+      <li><b>슈퍼스칼라</b>는 한 박자에 여러 명령을 시작하고, <b>비순차 실행</b>은 기다리는 명령 대신 준비된 명령을 먼저 처리해 IPC를 높인다.</li>
+      <li>전력은 대략 전압² × 클럭에 비례한다. 스마트폰은 큰 코어와 작은 코어를 섞어 배터리를 아낀다.</li>
       <li><b>암달의 법칙</b>: 순차 부분이 남아 있는 한 코어를 아무리 늘려도 속도 향상에는 한계가 있다.</li>
     </ol>
   </section>
@@ -229,6 +301,12 @@
       <div class="quiz-q"><p>프로그램의 80%만 병렬로 나눌 수 있다. 코어를 무한히 늘리면 최대 몇 배까지 빨라질까?</p><div class="opts">
         <button class="opt">80배</button><button class="opt">무한대</button><button class="opt" data-correct>5배</button><button class="opt">1.25배</button>
       </div><div class="quiz-exp">순차 부분 20%는 줄일 수 없으므로 최소 시간은 원래의 0.2배. 1 ÷ 0.2 = 5배가 한계다.</div></div>
+      <div class="quiz-q"><p>비순차 실행이 IPC를 높이는 방법은?</p><div class="opts">
+        <button class="opt">클럭을 올려서</button><button class="opt" data-correct>앞 명령의 결과를 기다리는 동안 상관없는 뒤쪽 명령을 먼저 실행해서</button><button class="opt">명령을 건너뛰어서</button><button class="opt">결과를 순서 없이 내놓아서</button>
+      </div><div class="quiz-exp">실행은 순서를 바꾸지만 결과는 원래 순서대로 정리한다. 그래서 프로그램은 차이를 느끼지 못한다.</div></div>
+      <div class="quiz-q"><p>스마트폰 칩이 큰 코어와 작은 코어를 함께 두는 이유는?</p><div class="opts">
+        <button class="opt">제조가 쉬워서</button><button class="opt" data-correct>가벼운 일은 전기를 적게 쓰는 작은 코어에 맡겨 배터리를 아끼려고</button><button class="opt">큰 코어가 자주 고장 나서</button><button class="opt">작은 코어가 더 빨라서</button>
+      </div><div class="quiz-exp">대부분의 시간은 가벼운 일이다. 그때는 작은 코어만 깨워 두고, 무거운 일이 생길 때만 큰 코어를 쓴다.</div></div>
     </div>
   </section>
 </main>
@@ -358,6 +436,74 @@
     CB.stat("o-max", p >= 1 ? "무한대" : maxS.toFixed(1) + "배");
     CB.stat("o-eff", ((sp(p, n) / n) * 100).toFixed(0) + "%");
   }, { aspect: 0.62, minHeight: 300, maxHeight: 420 });
+})();
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- superscalar / out-of-order ---------------- */
+  const PROG = [
+    ["LOAD a ← 메모리", 4, []], ["ADD  b ← a + 1", 1, [0]], ["MUL  c ← b × 2", 3, [1]], ["LOAD d ← 메모리", 4, []],
+    ["ADD  e ← x + y", 1, []], ["ADD  f ← e + 1", 1, [4]], ["SUB  g ← x − y", 1, []], ["ADD  h ← g + f", 1, [5, 6]],
+    ["MUL  i ← d × 3", 3, [3]], ["ADD  j ← c + i", 1, [2, 8]],
+  ];
+  const omode = CB.seg("ooo-mode", () => ocv.redraw());
+  const ow = CB.range("ooo-w", (v) => v + "개", () => ocv.redraw());
+  function sched(ooo, W) {
+    const n = PROG.length, issue = new Array(n).fill(-1), done = new Array(n).fill(Infinity);
+    let c = 0, left = n;
+    while (left > 0 && c < 200) {
+      let used = 0;
+      for (let i = 0; i < n && used < W; i++) {
+        if (issue[i] >= 0) continue;
+        const ready = PROG[i][2].every((d) => issue[d] >= 0 && done[d] <= c);
+        if (!ooo) { if (i > 0 && issue[i - 1] < 0) break; if (!ready) break; }
+        if (ready) { issue[i] = c; done[i] = c + PROG[i][1]; used++; left--; }
+      }
+      c++;
+    }
+    return { issue, done, total: Math.max(...done) };
+  }
+  const ocv = CB.canvas("#cv-ooo", (ctx, w, h) => {
+    const P = CB.palette(); const ooo = omode() === "ooo", W = ow();
+    const { issue, done, total } = sched(ooo, W);
+    const left = 210, top = 22, rh = (h - top - 10) / PROG.length, cols = 22, cw = (w - left - 10) / cols;
+    for (let k = 0; k < cols; k++) { CB.text(ctx, String(k + 1), left + k * cw + cw / 2, 10, { align: "center", size: 10, mono: true, color: P.faint }); ctx.strokeStyle = P.grid; ctx.beginPath(); ctx.moveTo(left + k * cw, top); ctx.lineTo(left + k * cw, h - 6); ctx.stroke(); }
+    PROG.forEach(([name, lat, deps], i) => {
+      const y = top + i * rh;
+      CB.text(ctx, String(i), 8, y + rh / 2, { size: 11, mono: true, color: P.faint });
+      CB.text(ctx, name, 26, y + rh / 2, { size: 12, mono: true, color: P.text });
+      if (deps.length) CB.text(ctx, "→ " + deps.join(","), left - 8, y + rh / 2, { align: "right", size: 10.5, mono: true, color: P.warn });
+      const col = name.startsWith("LOAD") ? P.accent2 : name.startsWith("MUL") ? P.warn : P.accent;
+      CB.rrect(ctx, left + issue[i] * cw + 1.5, y + 3, lat * cw - 3, rh - 6, 4); ctx.fillStyle = col; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+    });
+    ctx.strokeStyle = P.bad; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(left + total * cw, top - 4); ctx.lineTo(left + total * cw, h - 6); ctx.stroke(); ctx.setLineDash([]);
+    CB.stat("o-ooo-c", total + " 박자");
+    CB.stat("o-ooo-ipc", (PROG.length / total).toFixed(2));
+    CB.stat("o-ooo-idle", Math.round((1 - PROG.length / (W * total)) * 100) + "%");
+  }, { aspect: 0.42, minHeight: 260, maxHeight: 340 });
+
+  /* ---------------- power ---------------- */
+  const K = 12 / (1.21 * 4);
+  const vOf = (f) => 0.4 + 0.175 * f;
+  const auto = $("pw-auto");
+  const pf = CB.range("pw-f", (v) => v.toFixed(1) + " GHz", () => { if (auto.checked) pv.set(+vOf(pf()).toFixed(2)); pcv.redraw(); });
+  const pn = CB.range("pw-n", (v) => v + "개", () => pcv.redraw());
+  const pv = CB.range("pw-v", (v) => v.toFixed(2) + " V", () => pcv.redraw());
+  auto.onchange = () => { pv.el.disabled = auto.checked; if (auto.checked) pv.set(+vOf(pf()).toFixed(2)); pcv.redraw(); };
+  pv.el.disabled = true;
+  const CMP = [[6, "LED 전구 한 개"], [25, "노트북 충전기"], [70, "60 W 백열전구"], [160, "전기장판 한 장"], [350, "소형 전기 히터 약불"], [1e9, "헤어드라이어 약풍"]];
+  const pcv = CB.canvas("#cv-power", (ctx, w, h) => {
+    const P = CB.palette(); const f = pf(), n = pn(), V = auto.checked ? vOf(f) : pv();
+    const core = K * V * V * f, total = core * n;
+    const data = []; for (let x = 1; x <= 6.001; x += 0.05) data.push([x, K * vOf(x) * vOf(x) * x]);
+    const unstable = V < vOf(f) - 0.05;
+    CB.chart(ctx, null, { x: [1, 6], y: [0, 35], xLabel: "클럭 (GHz)", yLabel: "코어 하나의 전력 (W)", series: [{ data, color: P.accent, width: 2.5 }], points: [{ x: f, y: Math.min(35, core), color: unstable ? P.bad : P.warn, r: 6, label: unstable ? "전압 부족!" : "" }] });
+    CB.stat("o-pw-w", total.toFixed(0) + " W");
+    CB.stat("o-pw-perf", (n * f).toFixed(1));
+    CB.stat("o-pw-eff", unstable ? '<span style="color:var(--bad)">계산 오류 위험</span>' : ((n * f) / total).toFixed(2));
+    CB.stat("o-pw-cmp", CMP.find(([wv]) => total <= wv)[1]);
+  }, { aspect: 0.62, minHeight: 240, maxHeight: 340 });
 })();
 </script>
 </body>

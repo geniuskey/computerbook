@@ -199,6 +199,10 @@
         <div class="stat"><span class="k">A (10진수)</span><span class="v" id="o-a">—</span></div>
         <div class="stat"><span class="k">B (10진수)</span><span class="v" id="o-b">—</span></div>
         <div class="stat"><span class="k">합 (10진수)</span><span class="v" id="o-s">—</span></div>
+        <div class="stat"><span class="k">클럭이 레지스터에 저장한 값</span><span class="v" id="o-cap">—</span></div>
+      </div>
+      <div class="sim-controls" style="border-top:1px solid var(--border)">
+        <label class="ctrl"><span>만약에? 클럭 한 박자의 길이 (올림수가 몇 칸 번질 시간인가) <output id="add-clk-out"></output></span><input type="range" id="add-clk" min="1" max="4" value="4"></label>
       </div>
       <div class="sim-note">해볼 것: A = 0111(7), B = 0001(1)로 두면 올림수가 오른쪽에서 왼쪽으로 차례차례 번져 가는 것이 보인다. 각 칸은 앞 칸의 올림수가 도착해야 답이 확정된다. 그래서 자리 수가 많은 덧셈기일수록 느려지고, 실제 CPU는 올림수를 미리 내다보는 더 영리한 회로를 쓴다.</div>
     </div>
@@ -399,6 +403,7 @@
     acv.redraw();
   }
   const STAGE = 0.55;
+  let addClk = null;
   const acv = CB.canvas("#cv-add", (ctx, w, h) => {
     const P = CB.palette();
     // compute ripple from LSB (index 3) to MSB
@@ -429,8 +434,14 @@
     const total = val(aBits) + val(bBits);
     CB.text(ctx, allDone ? (carry[4] ? "넘침(5번째 자리) 1" : "넘침 없음") : "계산 중…", 8, y + bh + 39, { size: 11.5, color: allDone && carry[4] ? P.warn : P.faint });
     CB.stat("o-s", allDone ? (carry[4] ? `${total - 16} <small>(넘침! 실제 ${total})</small>` : total) : "…");
+    // 클럭이 너무 빠르면: 올림수가 도착하지 않은 칸은 올림 0으로 계산된 값이 저장된다
+    const clk = addClk ? addClk() : 4; let cap = 0;
+    for (let k = 0; k < 4; k++) { const i = 3 - k; const bit = k < clk ? sum[i] : aBits[i] ^ bBits[i]; cap += bit << k; }
+    const right = (total & 15);
+    CB.stat("o-cap", cap === right ? `<span style="color:var(--ok)">${cap} ✓</span>` : `<span style="color:var(--bad)">${cap} ✗</span> <small>(정답 ${right})</small>`);
   }, { height: 170 });
   CB.loop(document.getElementById("cv-add"), (dt) => { if (addT < STAGE * 4 + 0.1) { addT += dt; acv.redraw(); } });
+  addClk = CB.range("add-clk", (v) => v + "칸" + (v < 4 ? " (너무 빠름!)" : " (충분)"), () => acv.redraw());
   addT = 0; refresh();
 
   /* ---------------- SR latch ---------------- */
