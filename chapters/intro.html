@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>컴퓨터는 무엇인가 · ComputerBook</title>
+<meta name="description" content="입력·처리·저장·출력으로 보는 컴퓨터. 부품을 하나씩 눌러 보며 CPU·메모리·저장장치·GPU의 역할을 익히고, 나노초의 세계를 사람의 시간으로 느껴 본다.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .anatomy svg .part { cursor: pointer; }
+  .anatomy svg .part rect, .anatomy svg .part path.body { transition: fill .15s, stroke .15s; }
+  .anatomy svg .part:hover rect.main, .anatomy svg .part.sel rect.main { stroke: var(--accent); stroke-width: 2.5; }
+  .anatomy svg .part.sel rect.main { fill: var(--accent-soft); }
+  .info-card { padding: 16px 18px; border-top: 1px solid var(--border); min-height: 150px; }
+  .info-card h4 { margin: 0 0 6px; font-size: 18px; }
+  .info-card .kitchen { margin-top: 10px; font-size: 14.5px; color: var(--text-dim); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 8px; padding: 8px 12px; }
+  .info-card .spec { font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+  .narr { padding: 12px 18px; border-top: 1px solid var(--border); font-size: 15px; min-height: 76px; }
+  .narr b { color: var(--accent); }
+  .roadmap { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .roadmap a { display: block; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-elev); color: var(--text); }
+  .roadmap a:hover { border-color: var(--accent); text-decoration: none; }
+  .roadmap small { display: block; font-family: var(--mono); color: var(--accent); font-size: 12px; }
+  .roadmap span { display: block; color: var(--text-dim); font-size: 13.5px; line-height: 1.5; margin-top: 4px; }
+</style>
+</head>
+<body data-chapter="intro">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 01</div>
+    <h1>컴퓨터는 무엇인가</h1>
+    <p class="lead">스마트폰, 노트북, 자동차, 세탁기, 교통카드 단말기까지 우리 주변에는 컴퓨터가 수십 대 있다. 겉모습은 제각각이지만 속을 열어 보면 모두 같은 원리로 움직인다. 이 장에서는 그 공통 원리를 큰 그림으로 잡고, 이 책 전체에서 쓸 <strong>“주방” 비유</strong>를 익힌다.</p>
+    <ul class="objectives">
+      <li>컴퓨터를 “프로그램에 따라 데이터를 처리하는 기계”로 정의하고, 계산기와 무엇이 다른지 설명한다.</li>
+      <li>입력 → 처리 → 저장 → 출력의 흐름으로 어떤 기기든 분해해 본다.</li>
+      <li>CPU, 메모리(RAM), 저장장치, GPU, 메인보드, 네트워크 장치의 역할을 구분한다.</li>
+      <li>사진 한 장을 열 때 데이터가 어떤 부품을 거쳐 움직이는지 따라간다.</li>
+      <li>컴퓨터의 시간 단위(나노초)를 사람의 시간으로 바꿔 보며 “속도 차이”의 감각을 익힌다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="what">
+    <h2>계산기와 컴퓨터는 무엇이 다를까</h2>
+    <p>계산기는 숫자를 더하고 곱한다. 컴퓨터도 결국 숫자를 더하고 곱한다. 그런데 왜 계산기로는 영상 통화를 할 수 없을까? 차이는 계산 능력이 아니라 <strong>무엇을 할지 바꿀 수 있느냐</strong>에 있다.</p>
+    <p>계산기는 버튼마다 할 일이 정해져 있다. 반면 컴퓨터는 <span class="term">프로그램</span><span class="en">(program)</span>이라는 <strong>명령의 목록</strong>을 받아 그대로 수행한다. 목록을 바꾸면 같은 기계가 계산기가 되기도, 게임기가 되기도, 전화기가 되기도 한다. 그래서 컴퓨터를 이렇게 정의할 수 있다.</p>
+    <div class="callout">
+      <strong>컴퓨터란?</strong>
+      <p><b>프로그램(명령의 목록)에 따라 데이터(숫자)를 처리하는 기계.</b> 글자, 사진, 음악, 영상도 컴퓨터 안에서는 모두 숫자로 바뀌어 처리된다(2장).</p>
+    </div>
+    <p>아무리 복잡한 기기라도 데이터가 움직이는 방향은 네 가지 동작으로 정리된다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 230" role="img" aria-label="입력, 처리, 출력, 저장의 흐름">
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g transform="translate(30,40)">
+          <rect width="170" height="90" rx="14" class="f-elev"/>
+          <text x="85" y="38" text-anchor="middle" class="t-acc">입력 Input</text>
+          <text x="85" y="62" text-anchor="middle" class="t-dim">키보드 · 마우스 · 카메라</text>
+          <text x="85" y="80" text-anchor="middle" class="t-dim">마이크 · 터치 · 센서</text>
+        </g>
+        <g transform="translate(315,25)">
+          <rect width="170" height="120" rx="14" class="f-acc-soft"/>
+          <text x="85" y="44" text-anchor="middle" class="t-acc">처리 Process</text>
+          <text x="85" y="70" text-anchor="middle" class="t-dim">CPU · GPU</text>
+          <text x="85" y="90" text-anchor="middle" class="t-dim">(계산하고 판단한다)</text>
+        </g>
+        <g transform="translate(600,40)">
+          <rect width="170" height="90" rx="14" class="f-elev"/>
+          <text x="85" y="38" text-anchor="middle" class="t-acc">출력 Output</text>
+          <text x="85" y="62" text-anchor="middle" class="t-dim">화면 · 스피커 · 프린터</text>
+          <text x="85" y="80" text-anchor="middle" class="t-dim">진동 · 모터</text>
+        </g>
+        <g transform="translate(315,165)">
+          <rect width="170" height="56" rx="14" class="f-acc2-soft"/>
+          <text x="85" y="26" text-anchor="middle" class="t">저장 Storage</text>
+          <text x="85" y="45" text-anchor="middle" class="t-dim">메모리 · SSD</text>
+        </g>
+        <path d="M205 85 H308" class="s-acc" marker-end="url(#a1)"/>
+        <path d="M490 85 H593" class="s-acc" marker-end="url(#a1)"/>
+        <path d="M385 150 V160" class="s-acc" marker-end="url(#a1)" marker-start="url(#a1)"/>
+        <path d="M415 150 V160" class="s-acc" marker-end="url(#a1)" marker-start="url(#a1)"/>
+      </svg>
+      <figcaption><b>그림 1-1.</b> 모든 컴퓨터의 공통 흐름. 처리 장치는 저장 장치와 끊임없이 데이터를 주고받는다.</figcaption>
+    </figure>
+    <p>예를 들어 스마트폰으로 사진을 찍으면 카메라 센서가 빛을 숫자로 바꾸고(입력), 프로세서가 색을 보정하고 압축하고(처리), 저장공간에 파일로 기록하고(저장), 화면에 미리보기를 띄운다(출력). 세탁기도 마찬가지다. 버튼과 수위 센서(입력), 작은 컴퓨터 칩(처리), 모터와 표시창(출력)이 있다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="kitchen">
+    <h2>컴퓨터는 하나의 주방이다</h2>
+    <p>컴퓨터 부품의 역할은 처음 들으면 헷갈린다. 이 책에서는 줄곧 <strong>식당 주방</strong>에 빗대어 설명한다. 손님의 주문(입력)을 받아, 요리사가 레시피(프로그램)대로 재료(데이터)를 손질해(처리), 완성된 요리를 내보내는(출력) 곳이다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>컴퓨터</th><th>주방에서는</th><th>왜 그렇게 볼 수 있나</th></tr></thead>
+      <tbody>
+        <tr><td><b>CPU</b></td><td>요리사</td><td>레시피를 한 줄씩 읽고 실제로 칼질·볶기를 한다. 아주 빠르고 똑똑하지만 손은 몇 개뿐이다.</td></tr>
+        <tr><td><b>레지스터</b></td><td>요리사의 손</td><td>지금 당장 다루는 재료 몇 개만 쥘 수 있다. 가장 빠르지만 아주 작다.</td></tr>
+        <tr><td><b>캐시</b></td><td>손 닿는 선반</td><td>자주 쓰는 양념을 옆에 둔다. 팔만 뻗으면 된다.</td></tr>
+        <tr><td><b>메모리(RAM)</b></td><td>조리대</td><td>지금 만드는 요리의 재료를 펼쳐 둔다. 넓을수록 여러 요리를 동시에 할 수 있다. 영업이 끝나면(전원이 꺼지면) 치운다.</td></tr>
+        <tr><td><b>저장장치(SSD)</b></td><td>창고·냉장고</td><td>아주 많이 보관하고 문을 닫아도 남아 있지만, 꺼내 오려면 걸어가야 한다.</td></tr>
+        <tr><td><b>GPU</b></td><td>수천 명의 보조 요리사</td><td>한 명 한 명은 단순한 일만 하지만, 감자 만 개 깎기 같은 일은 한꺼번에 끝낸다.</td></tr>
+        <tr><td><b>운영체제(OS)</b></td><td>주방장·매니저</td><td>누가 언제 화구를 쓸지, 조리대 어디를 쓸지 정하고 주방 규칙을 지키게 한다.</td></tr>
+        <tr><td><b>프로그램</b></td><td>레시피</td><td>무엇을 어떤 순서로 할지 적어 둔 문서. 레시피를 바꾸면 다른 요리가 나온다.</td></tr>
+        <tr><td><b>네트워크</b></td><td>배달·주문 전화</td><td>다른 식당(컴퓨터)과 재료와 요리를 주고받는다.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout tip"><strong>비유는 출발점일 뿐</strong><p>비유는 처음 감을 잡는 데 유용하지만 완벽하지 않다. 각 장에서는 비유로 시작해 실제 동작을 시뮬레이터로 확인한다. 둘이 어긋나는 지점이 나오면 그때마다 짚고 넘어간다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="anatomy">
+    <h2>컴퓨터 속 들여다보기</h2>
+    <p>데스크톱 컴퓨터의 옆판을 열면 아래와 같은 부품이 보인다. 노트북과 스마트폰은 같은 부품을 훨씬 작게, 일부는 한 칩 안에 합쳐 넣었을 뿐이다. 각 부품을 눌러 무슨 일을 하는지 살펴보자.</p>
+    <div class="sim anatomy" id="sim-anatomy">
+      <div class="sim-head"><span class="sim-tag">EXPLORE</span><h3>메인보드 탐험: 부품을 눌러 보세요</h3></div>
+      <div class="sim-view" style="padding:12px">
+        <svg viewBox="0 0 760 440" id="board" role="img" aria-label="메인보드 부품 배치도">
+          <rect x="6" y="6" width="748" height="428" rx="16" fill="color-mix(in srgb, var(--ok) 9%, var(--bg-elev))" stroke="var(--border)"/>
+          <!-- traces -->
+          <g stroke="var(--border)" stroke-width="2" fill="none" opacity=".9">
+            <path d="M300 170 H430"/><path d="M300 190 H430"/><path d="M300 210 H430"/>
+            <path d="M230 255 V300"/><path d="M250 255 V300"/>
+            <path d="M190 210 H120"/><path d="M230 255 C230 330 330 330 330 360"/>
+            <path d="M300 230 C520 230 520 330 560 330"/>
+          </g>
+          <g class="part" data-k="cpu"><rect class="main" x="160" y="120" width="140" height="135" rx="12" fill="var(--surface)" stroke="var(--border)"/><rect x="195" y="152" width="70" height="70" rx="6" fill="var(--accent)" opacity=".85"/><text x="230" y="192" text-anchor="middle" class="t" fill="#fff" style="fill:#fff;font-weight:700">CPU</text></g>
+          <g class="part" data-k="ram"><rect class="main" x="430" y="60" width="150" height="190" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+            <rect x="448" y="76" width="18" height="160" rx="3" fill="var(--accent-2)" opacity=".7"/><rect x="478" y="76" width="18" height="160" rx="3" fill="var(--accent-2)" opacity=".7"/><rect x="508" y="76" width="18" height="160" rx="3" fill="var(--accent-2)" opacity=".45"/><rect x="538" y="76" width="18" height="160" rx="3" fill="var(--accent-2)" opacity=".45"/>
+            <text x="505" y="270" text-anchor="middle" class="t">메모리 (RAM)</text></g>
+          <g class="part" data-k="gpu"><rect class="main" x="130" y="300" width="330" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/><circle cx="210" cy="340" r="26" fill="none" stroke="var(--text-faint)" stroke-width="3"/><circle cx="300" cy="340" r="26" fill="none" stroke="var(--text-faint)" stroke-width="3"/><text x="400" y="345" text-anchor="middle" class="t">GPU</text></g>
+          <g class="part" data-k="ssd"><rect class="main" x="500" y="300" width="130" height="50" rx="8" fill="var(--surface)" stroke="var(--border)"/><rect x="512" y="314" width="30" height="22" rx="3" fill="var(--text-faint)" opacity=".5"/><rect x="548" y="314" width="30" height="22" rx="3" fill="var(--text-faint)" opacity=".5"/><text x="605" y="330" text-anchor="middle" class="t-dim">SSD</text></g>
+          <g class="part" data-k="power"><rect class="main" x="610" y="60" width="120" height="110" rx="10" fill="var(--surface)" stroke="var(--border)"/><path d="M670 90 l-12 22 h14 l-10 22" stroke="var(--warn)" stroke-width="3" fill="none"/><text x="670" y="158" text-anchor="middle" class="t-dim">전원부</text></g>
+          <g class="part" data-k="io"><rect class="main" x="22" y="60" width="90" height="250" rx="10" fill="var(--surface)" stroke="var(--border)"/><rect x="40" y="80" width="54" height="22" rx="3" fill="var(--text-faint)" opacity=".5"/><rect x="40" y="110" width="54" height="22" rx="3" fill="var(--text-faint)" opacity=".5"/><rect x="40" y="140" width="54" height="16" rx="3" fill="var(--text-faint)" opacity=".5"/><rect x="40" y="166" width="54" height="40" rx="3" fill="var(--text-faint)" opacity=".35"/><text x="67" y="240" text-anchor="middle" class="t-dim">입출력</text><text x="67" y="258" text-anchor="middle" class="t-dim">포트</text></g>
+          <g class="part" data-k="nic"><rect class="main" x="650" y="210" width="80" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/><path d="M670 260 q20 -30 40 0 M676 250 q14 -18 28 0" stroke="var(--accent)" stroke-width="2.5" fill="none"/><circle cx="690" cy="268" r="3" fill="var(--accent)"/><text x="690" y="282" text-anchor="middle" class="t-mono">Wi-Fi</text></g>
+          <g class="part" data-k="board"><rect class="main" x="22" y="390" width="250" height="34" rx="8" fill="var(--surface)" stroke="var(--border)"/><text x="147" y="412" text-anchor="middle" class="t-dim">메인보드 (전체를 잇는 판)</text></g>
+          <g class="part" data-k="bios"><rect class="main" x="500" y="370" width="80" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/><text x="540" y="397" text-anchor="middle" class="t-mono">BIOS</text></g>
+        </svg>
+      </div>
+      <div class="info-card" id="info"><h4>부품을 눌러 보세요</h4><p style="margin:0;color:var(--text-dim)">각 부품의 역할, 주방 비유, 요즘 제품의 대략적인 사양이 여기에 나타납니다.</p></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="flow">
+    <h2>사진 한 장을 열 때 일어나는 일</h2>
+    <p>부품은 혼자 일하지 않는다. 사진 파일을 더블클릭하는 아주 평범한 동작에도 거의 모든 부품이 차례로 등장한다. 아래 시뮬레이터에서 <b>다음 단계</b>를 눌러 데이터(빛나는 점)가 어디서 어디로 가는지 따라가 보자.</p>
+    <div class="sim" id="sim-flow">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>데이터의 여행</h3></div>
+      <div class="sim-view"><canvas id="cv-flow"></canvas></div>
+      <div class="narr" id="flow-narr">시나리오를 고르고 <b>다음 단계</b>를 눌러 보세요.</div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>시나리오</span><div class="seg" id="flow-sc"><button data-value="photo" class="on">사진 열기</button><button data-value="game">게임 한 장면</button><button data-value="web">웹 검색</button></div></div>
+        <div class="ctrl"><span>진행 <output id="flow-step">0 / 0</output></span><div class="btn-row"><button class="btn" id="flow-reset">처음으로</button><button class="btn primary" id="flow-next">다음 단계 →</button><button class="btn" id="flow-auto">자동 재생</button></div></div>
+      </div>
+      <div class="sim-note">해볼 것: 세 시나리오에서 CPU가 하는 일과 GPU가 하는 일을 비교해 보자. 게임에서는 왜 GPU의 비중이 커질까?</div>
+    </div>
+    <p>시나리오마다 다른 부품이 주인공이 되지만, 공통점이 하나 있다. <strong>CPU는 저장장치(SSD)에서 직접 일하지 않는다.</strong> 반드시 데이터를 먼저 메모리(RAM)로 가져온 뒤에 처리한다. 창고에 들어가서 요리하는 요리사는 없다. 재료를 조리대로 가져와야 한다. 이 원칙은 6장에서 “메모리 계층”이라는 이름으로 다시 만난다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="time">
+    <h2>나노초의 세계를 사람의 시간으로</h2>
+    <p>컴퓨터를 이해할 때 가장 놓치기 쉬운 것이 <strong>속도의 차이</strong>다. 요즘 CPU는 1초에 약 30~50억 번 박자를 맞춰 일한다. 한 박자가 0.3 <span class="term">나노초</span><span class="en">(ns, 10억분의 1초)</span>다. 이 시간 동안 빛도 겨우 10 cm 남짓 간다.</p>
+    <p>이런 숫자는 너무 작아서 감이 오지 않는다. 그래서 <strong>CPU의 한 박자를 1초로 늘려서</strong> 다른 작업들이 얼마나 걸리는지 바꿔 보자. 슬라이더로 “한 박자”를 얼마로 늘릴지 정할 수 있다.</p>
+    <div class="sim" id="sim-time">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>컴퓨터 시간 → 사람 시간 변환기</h3></div>
+      <div class="sim-view"><canvas id="cv-time"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>CPU 한 박자(0.3 ns)를 사람 시간으로 <output id="tscale-out"></output></span><input type="range" id="tscale" min="0" max="3" step="1" value="0"></label>
+      </div>
+      <div class="sim-note">값은 대표적인 크기 수준(order of magnitude)이다. 핵심은 정확한 숫자가 아니라 단계마다 <b>수십~수천 배씩</b> 느려진다는 사실이다.</div>
+    </div>
+    <p>CPU 입장에서 메모리(RAM)에서 데이터를 가져오는 일은 “몇 분 기다리기”이고, SSD는 “며칠”, 하드디스크는 “몇 달”, 지구 반대편 서버와 대화하는 일은 “십수 년”이다. 그래서 컴퓨터 설계의 상당 부분은 <strong>느린 곳을 덜 가게 만드는 기술</strong>이다. 캐시(6장), 가상 메모리(9장), 파이프라인(5장)이 모두 그 해법이다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="vonneumann">
+    <h2>프로그램도 데이터처럼 메모리에</h2>
+    <p>1940년대의 초기 전자 컴퓨터 ENIAC은 계산 내용을 바꾸려면 사람들이 며칠에 걸쳐 케이블을 다시 꽂아야 했다. 하드웨어 배선 자체가 프로그램이었던 셈이다.</p>
+    <p>이를 바꾼 아이디어가 <span class="term">프로그램 내장 방식</span><span class="en">(stored-program)</span>이다. 명령어도 숫자로 바꿔 데이터와 똑같이 <strong>메모리에 넣어 두고</strong>, CPU가 메모리에서 명령어를 하나씩 꺼내 실행한다. 프로그램을 바꾸려면 메모리 내용만 바꾸면 된다. 이 구조를 처음 체계적으로 정리한 수학자의 이름을 따 <span class="term">폰 노이만 구조</span><span class="en">(von Neumann architecture)</span>라 부르고, 오늘날 거의 모든 컴퓨터가 이 구조를 따른다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 220" role="img" aria-label="폰 노이만 구조">
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g transform="translate(60,30)">
+          <rect width="250" height="160" rx="14" class="f-acc-soft"/>
+          <text x="125" y="28" text-anchor="middle" class="t-acc">CPU</text>
+          <rect x="20" y="45" width="100" height="50" rx="8" class="f-elev"/><text x="70" y="75" text-anchor="middle" class="t">제어 장치</text>
+          <rect x="130" y="45" width="100" height="50" rx="8" class="f-elev"/><text x="180" y="75" text-anchor="middle" class="t">ALU (계산)</text>
+          <rect x="20" y="105" width="210" height="40" rx="8" class="f-elev"/><text x="125" y="130" text-anchor="middle" class="t">레지스터</text>
+        </g>
+        <g transform="translate(470,30)">
+          <rect width="270" height="160" rx="14" class="f-acc2-soft"/>
+          <text x="135" y="28" text-anchor="middle" class="t">메모리</text>
+          <rect x="20" y="45" width="230" height="45" rx="8" class="f-elev"/><text x="135" y="73" text-anchor="middle" class="t">명령어 (프로그램)</text>
+          <rect x="20" y="100" width="230" height="45" rx="8" class="f-elev"/><text x="135" y="128" text-anchor="middle" class="t">데이터</text>
+        </g>
+        <path d="M318 95 H462" class="s-acc" marker-end="url(#a2)" marker-start="url(#a2)"/>
+        <text x="390" y="85" text-anchor="middle" class="t-dim">버스(bus)</text>
+        <text x="390" y="120" text-anchor="middle" class="t-mono">주소 · 데이터</text>
+      </svg>
+      <figcaption><b>그림 1-2.</b> 폰 노이만 구조. 명령어와 데이터가 같은 메모리에 있고, CPU는 하나의 통로(버스)로 둘 다 가져온다.</figcaption>
+    </figure>
+    <div class="callout deep"><strong>폰 노이만 병목</strong><p>명령어와 데이터가 같은 통로를 쓰다 보니, CPU가 아무리 빨라져도 메모리에서 가져오는 속도가 따라오지 못하면 CPU는 기다려야 한다. 이를 <b>폰 노이만 병목</b>이라 부른다. 앞에서 본 “RAM까지 몇 분”이 바로 그 병목이다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="map">
+    <h2>이 책의 지도</h2>
+    <p>이 책은 아래에서 위로 쌓아 올리는 순서로 구성되어 있다. 앞 장에서 만든 부품이 다음 장의 재료가 된다. 순서대로 읽기를 권하지만, 궁금한 장으로 바로 가도 이해할 수 있도록 각 장 첫머리에 필요한 개념을 다시 짚었다.</p>
+    <div class="roadmap">
+      <a href="bits.html"><small>02 · 데이터</small>0과 1로 모든 것을<span>글자·색·소리가 숫자가 되는 법</span></a>
+      <a href="logic.html"><small>03 · 하드웨어</small>트랜지스터와 논리 게이트<span>스위치로 계산과 기억을 만든다</span></a>
+      <a href="cpu.html"><small>04–05 · CPU</small>명령을 수행하는 두뇌<span>명령어 사이클, 파이프라인, 멀티코어</span></a>
+      <a href="memory.html"><small>06–07 · 메모리</small>메모리, 캐시, 저장장치<span>가까운 곳은 빠르고 작다</span></a>
+      <a href="os.html"><small>08–09 · 운영체제</small>컴퓨터의 관리자<span>프로세스, 스케줄링, 가상 메모리</span></a>
+      <a href="network.html"><small>10–11 · 네트워크</small>컴퓨터끼리 대화하기<span>패킷, 라우팅, 웹이 열리는 과정</span></a>
+      <a href="gpu.html"><small>12 · GPU</small>수천 개의 작은 일꾼<span>병렬 처리, 그래픽, AI</span></a>
+      <a href="program.html"><small>13–14 · 종합</small>프로그램 실행과 전체 여행<span>코드 한 줄이 화면이 되기까지</span></a>
+    </div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>컴퓨터는 <b>프로그램(명령의 목록)에 따라 데이터를 처리하는 기계</b>다. 프로그램을 바꾸면 같은 기계가 다른 일을 한다.</li>
+      <li>모든 컴퓨터는 <b>입력 → 처리 → 출력</b>으로 동작하고, 처리하는 동안 <b>저장</b> 장치와 데이터를 주고받는다.</li>
+      <li>CPU는 요리사, 메모리는 조리대, 저장장치는 창고, GPU는 수많은 보조 요리사, 운영체제는 주방장이다.</li>
+      <li>CPU는 저장장치의 데이터를 직접 처리하지 않고 반드시 <b>메모리로 가져와서</b> 처리한다.</li>
+      <li>부품마다 속도가 수십~수천 배씩 차이 난다. 컴퓨터 설계의 큰 부분은 <b>느린 곳을 덜 가게 만드는 기술</b>이다.</li>
+      <li>명령어도 데이터처럼 메모리에 저장하는 <b>폰 노이만 구조</b>가 현대 컴퓨터의 뼈대다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>계산기와 컴퓨터의 가장 본질적인 차이는?</p><div class="opts">
+        <button class="opt">컴퓨터가 더 큰 숫자를 계산할 수 있다</button>
+        <button class="opt" data-correct>컴퓨터는 프로그램을 바꿔 다른 일을 하게 만들 수 있다</button>
+        <button class="opt">컴퓨터에는 화면이 있다</button>
+        <button class="opt">컴퓨터는 전기를 쓴다</button>
+      </div><div class="quiz-exp">계산 능력이 아니라 <b>프로그래밍 가능성</b>이 핵심이다. 같은 하드웨어가 프로그램에 따라 계산기, 게임기, 전화기가 된다.</div></div>
+      <div class="quiz-q"><p>주방 비유에서 “조리대”에 해당하는 부품은? 전원이 꺼지면 내용이 사라진다는 점도 닮았다.</p><div class="opts">
+        <button class="opt">SSD</button>
+        <button class="opt">CPU</button>
+        <button class="opt" data-correct>메모리(RAM)</button>
+        <button class="opt">GPU</button>
+      </div><div class="quiz-exp">RAM은 지금 작업 중인 데이터를 펼쳐 두는 곳이다. 빠르지만 전원이 꺼지면 내용이 사라진다. 오래 보관할 것은 창고(SSD)에 둔다.</div></div>
+      <div class="quiz-q"><p>사진 파일을 열 때 CPU가 처리하기 전에 반드시 일어나는 일은?</p><div class="opts">
+        <button class="opt">GPU가 파일을 압축한다</button>
+        <button class="opt" data-correct>파일 데이터가 SSD에서 메모리(RAM)로 옮겨진다</button>
+        <button class="opt">네트워크로 파일을 확인한다</button>
+        <button class="opt">화면이 꺼진다</button>
+      </div><div class="quiz-exp">CPU는 메모리에 있는 데이터만 다룰 수 있다. 저장장치의 데이터는 먼저 메모리로 올라와야 한다.</div></div>
+      <div class="quiz-q"><p>CPU 한 박자(약 0.3 ns)를 1초로 늘리면, RAM에서 데이터를 가져오는 시간(약 100 ns)은 대략 얼마가 될까?</p><div class="opts">
+        <button class="opt">약 3초</button>
+        <button class="opt" data-correct>약 5분</button>
+        <button class="opt">약 3일</button>
+        <button class="opt">약 3년</button>
+      </div><div class="quiz-exp">100 ÷ 0.3 ≈ 333배이므로 333초, 약 5분 반이다. CPU 입장에서 RAM은 생각보다 아주 먼 곳이다.</div></div>
+      <div class="quiz-q"><p>“폰 노이만 구조”의 핵심 아이디어는?</p><div class="opts">
+        <button class="opt">CPU를 여러 개 사용한다</button>
+        <button class="opt">계산을 위해 케이블을 다시 연결한다</button>
+        <button class="opt" data-correct>명령어(프로그램)도 데이터처럼 메모리에 저장한다</button>
+        <button class="opt">모든 데이터를 하드디스크에서 처리한다</button>
+      </div><div class="quiz-exp">프로그램 내장 방식 덕분에 하드웨어를 건드리지 않고 메모리 내용만 바꿔 다른 프로그램을 실행할 수 있다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  /* ---------------- anatomy ---------------- */
+  const INFO = {
+    cpu: { t: "CPU (중앙 처리 장치)", d: "프로그램의 명령을 하나씩 읽어 계산하고 판단하는 컴퓨터의 두뇌. 엄지손톱만 한 칩 안에 수십억 개의 트랜지스터가 들어 있다. 여러 개의 ‘코어’가 있어 동시에 여러 일을 한다.", k: "요리사. 레시피를 읽고 실제로 요리한다. 아주 빠르지만 손이 몇 개뿐이다.", s: "예: 8~24코어, 3~5.5 GHz, 트랜지스터 수십억 개", ch: "4·5장" },
+    ram: { t: "메모리 (RAM)", d: "지금 실행 중인 프로그램과 데이터가 올라와 있는 작업 공간. 저장장치보다 수천 배 빠르지만 전원이 꺼지면 내용이 모두 사라진다(휘발성).", k: "조리대. 넓을수록 여러 요리를 동시에 펼쳐 놓을 수 있다. 영업이 끝나면 깨끗이 치운다.", s: "예: 16~64 GB, 접근 시간 약 100 ns", ch: "6장" },
+    gpu: { t: "GPU (그래픽 처리 장치)", d: "단순한 계산을 수천 개 동시에 처리하는 데 특화된 프로세서. 화면의 수백만 픽셀 색을 한꺼번에 계산하는 데서 출발했고, 지금은 인공지능 학습의 핵심 장비다.", k: "수천 명의 보조 요리사. 각자는 단순하지만 감자 만 개를 동시에 깎는다.", s: "예: 수천~1만여 개 연산 유닛, 전용 메모리 8~24 GB", ch: "12장" },
+    ssd: { t: "저장장치 (SSD)", d: "전원이 꺼져도 데이터가 남는 장기 보관소. 운영체제, 앱, 사진, 문서가 모두 여기에 파일로 저장된다. 예전에는 회전하는 원판(HDD)을 썼고, 지금은 반도체 플래시 메모리(SSD)를 주로 쓴다.", k: "창고와 냉장고. 많이 보관하고 문을 닫아도 남지만, 가지러 가려면 걸어가야 한다.", s: "예: 512 GB~4 TB, 접근 시간 수십~100 µs", ch: "7장" },
+    power: { t: "전원부", d: "콘센트의 교류 전기를 칩이 쓰는 낮은 직류 전압(약 1 V 안팎)으로 바꾸고 안정적으로 공급한다. CPU가 순간적으로 전기를 많이 쓸 때도 전압이 흔들리지 않게 잡아 준다.", k: "주방의 가스와 전기 공급. 화력이 들쭉날쭉하면 요리를 망친다.", s: "예: 데스크톱 500~1000 W 파워 서플라이", ch: "5장(전력과 발열)" },
+    io: { t: "입출력 포트 (I/O)", d: "USB, 디스플레이 출력, 오디오 단자처럼 바깥 기기와 연결되는 통로. 키보드 입력도, 모니터 출력도 이곳을 지난다. 기기가 신호를 보내면 CPU에 ‘인터럽트’를 걸어 알린다.", k: "주문 접수 창구와 서빙 창구. 손님의 주문이 들어오고 요리가 나간다.", s: "예: USB-C 10~40 Gbps, HDMI/DisplayPort", ch: "8장(인터럽트)" },
+    nic: { t: "네트워크 장치 (Wi-Fi·이더넷)", d: "다른 컴퓨터와 데이터를 주고받는 장치. 데이터를 작은 꾸러미(패킷)로 나눠 전파나 전선으로 보낸다.", k: "배달과 주문 전화. 다른 식당과 재료와 요리를 주고받는다.", s: "예: Wi-Fi 6/7 수 Gbps, 이더넷 1~10 Gbps", ch: "10·11장" },
+    board: { t: "메인보드 (마더보드)", d: "모든 부품을 꽂고 서로 연결하는 커다란 회로 기판. 기판 위의 가는 구리 선(버스)으로 부품들이 신호를 주고받는다.", k: "주방의 바닥과 통로. 요리사와 조리대, 창고를 잇는 동선을 정한다.", s: "구리 배선 여러 층이 겹친 인쇄 회로 기판(PCB)", ch: "1장" },
+    bios: { t: "펌웨어 (BIOS/UEFI)", d: "전원을 켜면 가장 먼저 실행되는 작은 프로그램. 부품을 점검하고 저장장치에서 운영체제를 찾아 메모리로 불러온다(부팅).", k: "출근하자마자 가스 밸브를 열고 조명을 켜는 개점 절차.", s: "메인보드의 플래시 칩에 저장", ch: "8장" },
+  };
+  const board = document.getElementById("board"), info = document.getElementById("info");
+  board.querySelectorAll(".part").forEach((g) => {
+    g.setAttribute("tabindex", "0"); g.setAttribute("role", "button");
+    const show = () => {
+      board.querySelectorAll(".part").forEach((x) => x.classList.toggle("sel", x === g));
+      const I = INFO[g.dataset.k];
+      info.innerHTML = `<h4>${I.t}</h4><p style="margin:0">${I.d}</p><div class="spec">${I.s} · 자세히: ${I.ch}</div><div class="kitchen"><b>주방 비유</b> · ${I.k}</div>`;
+    };
+    g.addEventListener("click", show);
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(); } });
+  });
+
+  /* ---------------- data journey ---------------- */
+  // node layout in normalized coords
+  const NODES = {
+    in:  { x: 0.08, y: 0.5, label: "입력\n(마우스·키보드)" },
+    cpu: { x: 0.38, y: 0.3, label: "CPU" },
+    ram: { x: 0.62, y: 0.3, label: "메모리\n(RAM)" },
+    ssd: { x: 0.62, y: 0.78, label: "SSD" },
+    gpu: { x: 0.38, y: 0.78, label: "GPU" },
+    out: { x: 0.92, y: 0.5, label: "화면" },
+    net: { x: 0.08, y: 0.13, label: "인터넷" },
+  };
+  const SC = {
+    photo: [
+      ["in", "cpu", "마우스로 사진 파일을 더블클릭한다. 마우스가 <b>인터럽트</b>로 CPU에게 ‘클릭이 있었다’고 알린다."],
+      ["cpu", "ssd", "CPU(정확히는 운영체제)가 SSD에 ‘이 파일을 읽어 와’라고 요청한다."],
+      ["ssd", "ram", "SSD가 압축된 사진 데이터(JPEG, 약 3 MB)를 <b>메모리</b>로 보낸다. CPU는 창고에서 바로 요리하지 않는다."],
+      ["ram", "cpu", "CPU가 메모리에서 데이터를 조금씩 가져와 <b>압축을 푼다</b>. 1200만 화소 × 3색 = 약 36 MB의 숫자가 된다."],
+      ["cpu", "ram", "풀린 픽셀 데이터를 다시 메모리에 써 둔다."],
+      ["ram", "gpu", "GPU가 픽셀 데이터를 받아 창 크기에 맞게 <b>확대·축소</b>하고 화면용 그림을 만든다."],
+      ["gpu", "out", "완성된 화면이 초당 60번 이상 모니터로 전송된다. 사진이 나타났다!"],
+    ],
+    game: [
+      ["in", "cpu", "키보드의 W 키를 누른다. CPU가 입력을 받아 캐릭터를 앞으로 움직이기로 한다."],
+      ["ram", "cpu", "CPU가 메모리에서 캐릭터 위치, 적의 위치, 물리 규칙 데이터를 가져온다."],
+      ["cpu", "ram", "CPU가 새 위치와 충돌을 계산해 메모리에 기록한다(게임 로직)."],
+      ["cpu", "gpu", "CPU가 GPU에게 ‘이 물체들을 이 위치에 그려 줘’라는 <b>그리기 명령</b> 수천 개를 보낸다."],
+      ["ram", "gpu", "GPU가 이미 받아 둔 3D 모델과 텍스처를 사용해 수백만 픽셀의 색을 <b>동시에</b> 계산한다."],
+      ["gpu", "out", "한 장면 완성! 이 모든 과정을 1초에 60~144번 반복한다. 1장면당 약 7~16 ms."],
+    ],
+    web: [
+      ["in", "cpu", "검색창에 글자를 입력하고 Enter를 누른다."],
+      ["cpu", "net", "CPU가 검색어를 <b>패킷</b>으로 포장해 네트워크 장치로 보낸다. 패킷은 공유기, 통신사, 바다 밑 케이블을 건너 서버로 간다."],
+      ["net", "ram", "수십 ms 뒤, 서버가 보낸 결과 페이지(HTML, 이미지)가 패킷으로 도착해 메모리에 쌓인다."],
+      ["ram", "cpu", "CPU가 HTML을 읽어 글자와 상자의 배치를 계산한다(브라우저 엔진)."],
+      ["cpu", "ssd", "자주 쓰는 이미지는 다음에 빨리 쓰려고 SSD에 <b>캐시</b>로 저장해 둔다."],
+      ["cpu", "gpu", "배치가 끝난 페이지를 GPU에게 넘겨 그린다."],
+      ["gpu", "out", "검색 결과가 화면에 나타난다. 이 과정은 11장에서 자세히 다룬다."],
+    ],
+  };
+  let sc = "photo", step = 0, anim = 1, auto = null;
+  const narr = document.getElementById("flow-narr");
+  const cv = CB.canvas("#cv-flow", draw, { aspect: 0.48, minHeight: 260, maxHeight: 400 });
+  function draw(ctx, w, h) {
+    const P = CB.palette();
+    const steps = SC[sc];
+    const used = new Set(); steps.forEach(([a, b]) => { used.add(a); used.add(b); });
+    const bw = Math.min(120, w * 0.17), bh = 52;
+    const pos = (k) => [NODES[k].x * w, NODES[k].y * h];
+    // past edges
+    for (let i = 0; i < step; i++) {
+      const [a, b] = steps[i]; const [x1, y1] = pos(a), [x2, y2] = pos(b);
+      ctx.strokeStyle = i === step - 1 ? P.accent : P.border; ctx.lineWidth = i === step - 1 ? 3 : 2;
+      ctx.setLineDash(i === step - 1 ? [] : [5, 5]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    const cur = step > 0 ? steps[step - 1] : null;
+    Object.keys(NODES).forEach((k) => {
+      if (!used.has(k)) return;
+      const [x, y] = pos(k);
+      const active = cur && (cur[0] === k || cur[1] === k);
+      CB.box(ctx, x - bw / 2, y - bh / 2, bw, bh, { fill: active ? P.accent : P.surface, stroke: active ? P.accent : P.border, text: NODES[k].label, color: active ? "#fff" : P.text, size: 12.5, bold: k === "cpu" || k === "gpu", r: 10 });
+    });
+    if (cur && anim < 1) {
+      const [x1, y1] = pos(cur[0]), [x2, y2] = pos(cur[1]);
+      for (let j = 0; j < 4; j++) {
+        const t = CB.clamp(anim * 1.3 - j * 0.1, 0, 1);
+        if (t <= 0 || t >= 1) continue;
+        ctx.fillStyle = P.accent2; ctx.globalAlpha = 1 - j * 0.2;
+        ctx.beginPath(); ctx.arc(CB.lerp(x1, x2, t), CB.lerp(y1, y2, t), 6 - j, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+  const loop = CB.loop(document.getElementById("cv-flow"), (dt) => { if (anim < 1) { anim = Math.min(1, anim + dt * 1.1); cv.redraw(); } });
+  function update() {
+    const steps = SC[sc];
+    document.getElementById("flow-step").textContent = step + " / " + steps.length;
+    narr.innerHTML = step === 0 ? "<b>다음 단계</b>를 눌러 시작하세요." : `<b>${step}단계.</b> ` + steps[step - 1][2];
+    document.getElementById("flow-next").disabled = step >= steps.length;
+    cv.redraw();
+  }
+  function next() { if (step < SC[sc].length) { step++; anim = 0; update(); } else stopAuto(); }
+  function stopAuto() { if (auto) { clearInterval(auto); auto = null; document.getElementById("flow-auto").textContent = "자동 재생"; } }
+  CB.seg("flow-sc", (v) => { sc = v; step = 0; stopAuto(); update(); });
+  document.getElementById("flow-next").onclick = () => { stopAuto(); next(); };
+  document.getElementById("flow-reset").onclick = () => { step = 0; stopAuto(); update(); };
+  document.getElementById("flow-auto").onclick = (e) => {
+    if (auto) return stopAuto();
+    if (step >= SC[sc].length) step = 0;
+    e.target.textContent = "멈춤"; next();
+    auto = setInterval(next, 2600);
+  };
+  update();
+
+  /* ---------------- time scale ---------------- */
+  const OPS = [
+    ["CPU 한 박자", 0.3e-9],
+    ["L1 캐시 읽기", 1e-9],
+    ["L3 캐시 읽기", 12e-9],
+    ["메모리(RAM) 읽기", 100e-9],
+    ["SSD에서 읽기", 80e-6],
+    ["하드디스크(HDD) 읽기", 8e-3],
+    ["서울 → 미국 서버 왕복", 150e-3],
+    ["컴퓨터 재부팅", 30],
+  ];
+  const SCALES = [[1, "1초"], [60, "1분"], [3600, "1시간"], [86400, "1일"]];
+  const tscale = CB.range("tscale", (v) => SCALES[v][1], () => tcv.redraw());
+  const tcv = CB.canvas("#cv-time", (ctx, w, h) => {
+    const P = CB.palette();
+    const k = SCALES[tscale()][0] / 0.3e-9;
+    const left = Math.min(170, w * 0.36), right = 16, top = 14, rowH = (h - top - 10) / OPS.length;
+    const lmin = Math.log10(0.3e-9), lmax = Math.log10(30) + 0.3;
+    OPS.forEach(([name, t], i) => {
+      const y = top + i * rowH;
+      CB.text(ctx, name, left - 10, y + rowH / 2, { align: "right", size: w < 500 ? 11.5 : 13, color: P.text });
+      const frac = (Math.log10(t) - lmin + 0.25) / (lmax - lmin + 0.25);
+      const bw = Math.max(4, frac * (w - left - right));
+      CB.rrect(ctx, left, y + rowH * 0.18, bw, rowH * 0.64, 5);
+      ctx.fillStyle = i === 0 ? P.accent : i < 4 ? P.accent2 : i < 6 ? P.warn : P.bad; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+      const human = CB.time(t * k);
+      const inside = bw > 110;
+      CB.text(ctx, human, inside ? left + bw - 8 : left + bw + 8, y + rowH / 2, { align: inside ? "right" : "left", size: 12.5, mono: true, bold: true, color: inside ? "#fff" : P.text });
+    });
+    CB.text(ctx, "막대 길이는 로그 눈금 (한 칸마다 10배)", w - right, h - 4, { align: "right", base: "bottom", size: 11, color: P.faint });
+  }, { aspect: 0.55, minHeight: 300, maxHeight: 400 });
+})();
+</script>
+</body>
+</html>
