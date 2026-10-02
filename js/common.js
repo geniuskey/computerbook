@@ -22,7 +22,7 @@
     { slug: "gpu",      num: "12", part: "GPU",      title: "GPU: 수천 개의 작은 일꾼",    desc: "CPU와 GPU의 차이, 대량 병렬 처리, 그래픽 파이프라인과 래스터화, AI가 GPU를 쓰는 이유.", tags: ["GPU", "sim"] },
     { slug: "program",  num: "13", part: "프로그램", title: "프로그램은 어떻게 실행되는가", desc: "소스 코드 → 컴파일 → 기계어 → 로딩 → 실행. 스택과 힙, 함수 호출을 눈으로 따라간다.", tags: ["소프트웨어", "sim"] },
     { slug: "journey",  num: "14", part: "종합",     title: "클릭 한 번의 여행",           desc: "키를 누른 순간부터 화면이 바뀔 때까지, 모든 계층이 함께 일하는 모습을 따라간다.", tags: ["종합", "sim"] },
-    { slug: "glossary", num: "15", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어를 검색하고, 배운 내용을 퀴즈로 점검하자.", tags: ["정리"] },
+    { slug: "glossary", num: "15", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 140여 개를 검색하고, 26문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
   ];
 
   const CB = (window.CB = {});
