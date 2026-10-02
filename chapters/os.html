@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>운영체제: 컴퓨터의 관리자 · ComputerBook</title>
+<meta name="description" content="운영체제가 하는 일, 커널과 시스템 콜, 부팅, 프로세스와 스레드, CPU 스케줄링(FCFS·SJF·라운드 로빈), 인터럽트, 경쟁 상태와 잠금을 시뮬레이터로 배운다.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .layers { display: grid; gap: 6px; padding: 16px 18px; }
+  .layer { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; background: var(--surface); display: flex; justify-content: space-between; gap: 10px; align-items: center; transition: background .2s, border-color .2s; }
+  .layer b { font-size: 15px; }
+  .layer span { font-size: 13px; color: var(--text-dim); text-align: right; }
+  .layer.user { border-style: dashed; }
+  .layer.on { background: var(--accent); border-color: var(--accent); }
+  .layer.on b, .layer.on span { color: #fff; }
+  .modebar { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-faint); padding: 0 18px; }
+  .ptable td, .ptable th { font-family: var(--mono); font-size: 13px; text-align: center; }
+  .race { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: 10px; padding: 16px 18px; align-items: start; }
+  @media (max-width: 600px) { .race { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .race .shared { grid-column: span 2; order: -1; } }
+  .thread { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--surface); }
+  .thread h5 { margin: 0 0 6px; font-size: 13px; }
+  .thread .line { font-family: var(--mono); font-size: 12.5px; padding: 3px 6px; border-radius: 5px; color: var(--text-dim); }
+  .thread .line.cur { background: var(--accent-soft); color: var(--text); font-weight: 700; }
+  .thread .line.done { color: var(--text-faint); text-decoration: line-through; }
+  .thread .reg { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--text-dim); }
+  .shared { text-align: center; border: 2px solid var(--accent-2); border-radius: 12px; padding: 12px 8px; background: var(--accent-2-soft); }
+  .shared b { display: block; font-family: var(--mono); font-size: 30px; }
+  .shared small { color: var(--text-dim); font-size: 12px; }
+  .lockicon { font-size: 13px; margin-top: 6px; }
+</style>
+</head>
+<body data-chapter="os">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 08</div>
+    <h1>운영체제: 컴퓨터의 관리자</h1>
+    <p class="lead">컴퓨터에서 음악을 들으며 웹 서핑을 하고, 메신저 알림을 받으면서 문서를 쓴다. CPU 코어는 몇 개뿐인데 어떻게 수십 개의 프로그램이 동시에 돌아갈까? 서로 메모리를 침범하지 않고, 같은 SSD를 함께 쓰면서도 파일이 뒤섞이지 않는 이유는 뭘까? 그 뒤에는 <strong>운영체제</strong>라는 부지런한 주방장이 있다.</p>
+    <ul class="objectives">
+      <li>운영체제(OS)의 세 가지 역할(자원 관리, 추상화, 보호)을 설명한다.</li>
+      <li>커널 모드와 사용자 모드, 시스템 콜이 왜 필요한지 안다.</li>
+      <li>전원을 켠 뒤 운영체제가 실행되기까지의 부팅 과정을 따라간다.</li>
+      <li>프로세스와 스레드를 구분하고, CPU 스케줄링 방식에 따른 차이를 시뮬레이터로 비교한다.</li>
+      <li>인터럽트가 키보드·네트워크 같은 사건을 CPU에 알리는 방법을 이해한다.</li>
+      <li>여러 스레드가 같은 데이터를 고칠 때 생기는 경쟁 상태와 잠금(lock)을 체험한다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="role">
+    <h2>운영체제가 없다면</h2>
+    <p>운영체제가 없는 세상을 상상해 보자. 사진 앱을 만드는 회사는 SSD 제조사마다 다른 명령어로 블록을 읽는 코드를, 화면 칩마다 다른 방식으로 픽셀을 찍는 코드를 직접 짜야 한다. 사진 앱과 음악 앱이 동시에 실행되면 둘 다 CPU와 메모리를 독차지하려고 싸운다. 악성 프로그램은 다른 앱의 메모리를 마음대로 읽을 수 있다.</p>
+    <p><span class="term">운영체제</span><span class="en">(OS, Operating System)</span>는 하드웨어와 응용 프로그램 사이에 앉아 이 문제들을 해결한다. 윈도우, macOS, 리눅스, 안드로이드, iOS가 모두 운영체제다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>역할</th><th>하는 일</th><th>주방장이라면</th></tr></thead>
+      <tbody>
+        <tr><td><b>자원 관리</b></td><td>CPU 시간, 메모리, 저장장치, 네트워크를 여러 프로그램에 나눠 준다.</td><td>누가 언제 화구를 쓰고 조리대 어디를 쓸지 정한다.</td></tr>
+        <tr><td><b>추상화</b></td><td>“블록 5번, 6번” 대신 “파일”, “CPU 코어” 대신 “프로세스”처럼 쉬운 개념을 제공한다.</td><td>요리사에게 “냉장고 3번 칸 왼쪽 아래” 대신 “양파 가져와”라고 말할 수 있게 한다.</td></tr>
+        <tr><td><b>보호</b></td><td>프로그램끼리 서로의 메모리와 파일을 침범하지 못하게 막는다.</td><td>다른 요리사의 조리대에 손대지 못하게 한다.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="kernel">
+    <h2>커널과 시스템 콜: 창구를 통해서만</h2>
+    <p>운영체제의 핵심 부분을 <span class="term">커널</span><span class="en">(kernel, 알맹이)</span>이라 한다. CPU에는 두 가지 실행 모드가 있다. 커널은 모든 하드웨어를 직접 만질 수 있는 <b>커널 모드</b>에서, 일반 앱은 권한이 제한된 <b>사용자 모드</b>에서 실행된다. 사용자 모드에서 하드웨어를 직접 건드리는 명령을 실행하면 CPU가 거부하고 커널에 알린다.</p>
+    <p>그래서 앱이 파일을 저장하거나 네트워크로 데이터를 보내려면 커널에게 정식으로 부탁해야 한다. 이 부탁을 <span class="term">시스템 콜</span><span class="en">(system call)</span>이라 한다. 은행 금고에 손님이 직접 들어갈 수 없고 창구 직원에게 요청해야 하는 것과 같다.</p>
+    <div class="sim" id="sim-syscall">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>시스템 콜 따라가기: “파일 저장” 버튼을 누르면</h3></div>
+      <div class="layers" id="layers">
+        <div class="layer user" data-k="app"><b>메모장 앱</b><span>사용자 모드</span></div>
+        <div class="layer user" data-k="lib"><b>라이브러리 (표준 함수)</b><span>사용자 모드</span></div>
+        <div class="layer" data-k="sys"><b>시스템 콜 창구</b><span>여기서 모드가 바뀐다</span></div>
+        <div class="layer" data-k="fs"><b>커널: 파일 시스템</b><span>커널 모드</span></div>
+        <div class="layer" data-k="drv"><b>커널: SSD 드라이버</b><span>커널 모드</span></div>
+        <div class="layer" data-k="hw"><b>하드웨어: SSD</b><span>실제 기록</span></div>
+      </div>
+      <div class="stepdesc" id="sc-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:70px">“다음”을 눌러 저장 요청이 내려가는 길을 따라가 보세요.</div>
+      <div class="sim-controls"><div class="btn-row"><button class="btn primary" id="sc-next">다음 →</button><button class="btn" id="sc-reset">처음으로</button></div></div>
+    </div>
+    <div class="callout tip"><strong>드라이버</strong><p>SSD, 프린터, 그래픽 카드는 제조사마다 조작 방법이 다르다. 각 장치를 다루는 방법을 담은 커널의 부품을 <b>드라이버</b>(device driver)라 한다. 새 장치를 꽂았을 때 “드라이버를 설치하세요”라는 말이 나오는 이유다. 드라이버 덕분에 앱은 장치의 종류를 몰라도 된다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="boot">
+    <h2>부팅: 운영체제가 깨어나기까지</h2>
+    <p>전원 버튼을 누르면 메모리는 텅 비어 있다. 운영체제도 SSD에 파일로 잠들어 있을 뿐이다. 그렇다면 누가 운영체제를 메모리로 불러올까? 자기 자신을 끌어올린다는 뜻의 <span class="term">부팅</span><span class="en">(booting, bootstrap)</span>은 다음 순서로 진행된다.</p>
+    <ol>
+      <li><b>전원 공급</b>: 전원부가 안정되면 CPU가 깨어나 미리 정해진 주소의 명령부터 실행한다.</li>
+      <li><b>펌웨어(BIOS/UEFI)</b>: 메인보드의 작은 플래시 칩에 들어 있는 프로그램이 메모리, 키보드, 저장장치를 점검한다.</li>
+      <li><b>부트로더</b>: 펌웨어가 저장장치에서 부트로더라는 작은 프로그램을 찾아 실행한다.</li>
+      <li><b>커널 적재</b>: 부트로더가 운영체제 커널 파일을 메모리에 올리고 실행을 넘긴다.</li>
+      <li><b>초기화</b>: 커널이 드라이버를 불러오고, 메모리 관리를 시작하고, 첫 번째 프로세스를 띄운다.</li>
+      <li><b>로그인 화면</b>: 서비스와 화면 관리 프로그램이 차례로 실행되고, 마침내 로그인 화면이 나타난다.</li>
+    </ol>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="process">
+    <h2>프로세스와 스레드</h2>
+    <p>SSD에 저장된 앱은 그저 명령어와 데이터가 담긴 파일, 즉 <b>프로그램</b>이다. 레시피 책에 비유할 수 있다. 이 프로그램을 실행하면 운영체제가 메모리에 올리고 실행 상태를 관리하는데, 이렇게 <b>실행 중인 프로그램</b>을 <span class="term">프로세스</span><span class="en">(process)</span>라 한다. 레시피를 보고 실제로 요리가 진행 중인 상태다. 같은 브라우저를 두 번 실행하면 프로그램은 하나지만 프로세스는 두 개다.</p>
+    <p>운영체제는 프로세스마다 다음 정보를 기록해 둔다: 지금 어디까지 실행했는지(PC 값), 레지스터 값들, 사용 중인 메모리 영역, 열어 둔 파일, 상태(실행 중/대기 중/준비됨). 이 기록 덕분에 프로세스를 잠시 멈췄다가 정확히 그 자리에서 다시 이어 갈 수 있다.</p>
+    <p>한 프로세스 안에서도 여러 일을 동시에 하고 싶을 때가 있다. 웹 브라우저는 페이지를 그리면서 동시에 파일을 내려받고 동영상을 재생한다. 한 프로세스 안에서 메모리를 공유하며 따로 실행되는 흐름을 <span class="term">스레드</span><span class="en">(thread, 실)</span>라 한다. 한 주방(프로세스) 안의 여러 요리사(스레드)가 같은 조리대(메모리)를 함께 쓰는 셈이다. 함께 쓰니 빠르고 편하지만, 나중에 보겠지만 부딪칠 위험도 있다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="sched">
+    <h2>CPU 스케줄링: 누구에게 먼저 CPU를 줄까</h2>
+    <p>준비된 프로세스는 수십 개인데 CPU 코어는 몇 개뿐이다. 운영체제는 아주 짧은 시간(수 밀리초)씩 번갈아 CPU를 나눠 줘서 모두가 동시에 실행되는 것처럼 보이게 한다. 누구에게 언제, 얼마나 줄지 정하는 규칙을 <span class="term">스케줄링</span><span class="en">(scheduling)</span>이라 한다.</p>
+    <div class="callout analogy"><strong>은행 창구 줄</strong><p>창구가 하나인 은행에 손님들이 온다. 먼저 온 순서대로 처리할까(선착순)? 금방 끝나는 손님부터 처리할까(짧은 일 먼저)? 아니면 한 사람당 2분씩만 처리하고 아직 안 끝났으면 줄 맨 뒤로 보낼까(돌아가며)? 어떤 방식이냐에 따라 손님들의 평균 대기 시간과 불만이 크게 달라진다.</p></div>
+    <div class="sim" id="sim-sched">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>CPU 스케줄러 비교</h3></div>
+      <div class="sim-view"><canvas id="cv-sched"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>스케줄링 방식</span><div class="seg" id="algo"><button data-value="fcfs" class="on">선착순 (FCFS)</button><button data-value="sjf">짧은 일 먼저 (SJF)</button><button data-value="rr">돌아가며 (라운드 로빈)</button></div></div>
+        <div class="ctrl"><span>도착한 작업들</span><div class="seg" id="wset"><button data-value="convoy" class="on">긴 작업이 먼저 옴</button><button data-value="mixed">섞여 있음</button><button data-value="interactive">대화형 + 계산</button></div></div>
+        <label class="ctrl"><span>라운드 로빈의 시간 조각 <output id="q-out"></output></span><input type="range" id="q" min="1" max="8" value="2"></label>
+      </div>
+      <div class="table-wrap" style="margin:0;border:0;border-top:1px solid var(--border);border-radius:0"><table class="ptable" id="ptable"></table></div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">평균 대기 시간</span><span class="v" id="o-wait">—</span></div>
+        <div class="stat"><span class="k">평균 첫 응답 시간</span><span class="v" id="o-resp">—</span></div>
+        <div class="stat"><span class="k">작업 전환 횟수</span><span class="v" id="o-ctx">—</span></div>
+      </div>
+      <div class="sim-note">가로축은 시간(ms)이다. 해볼 것: “긴 작업이 먼저 옴”에서 선착순은 짧은 작업들이 긴 작업 뒤에서 오래 기다린다(호위 효과). 짧은 일 먼저는 평균 대기가 가장 짧지만, 작업 길이를 미리 알아야 하고 긴 작업이 계속 밀릴 수 있다. 라운드 로빈은 모두가 금방 첫 응답을 받아 반응이 빠르게 느껴지지만 전환이 잦다.</div>
+    </div>
+    <p>실제 운영체제는 이들을 섞은 정교한 방식을 쓴다. 키보드 입력을 기다리는 대화형 프로그램은 우선순위를 올려 반응을 빠르게 하고, 오래 계산만 하는 프로그램은 뒤로 돌린다. 작업을 바꿀 때마다 레지스터와 PC를 저장하고 다른 프로세스의 것을 불러오는 <span class="term">문맥 교환</span><span class="en">(context switch)</span> 비용이 들기 때문에 너무 자주 바꾸는 것도 손해다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="interrupt">
+    <h2>인터럽트: “잠깐만요!”</h2>
+    <p>CPU가 계산에 몰두하는 동안 키보드가 눌렸다. CPU는 이를 어떻게 알까? 계산하다 말고 1초에 수천 번 “키보드 눌렸어?” 하고 물어보는 방식(폴링)은 낭비가 크다. 대신 키보드가 CPU에게 직접 신호를 보낸다. 이것이 <span class="term">인터럽트</span><span class="en">(interrupt, 끼어들기)</span>다.</p>
+    <p>인터럽트를 받은 CPU는 하던 일의 위치(PC와 레지스터)를 저장하고, 운영체제에 미리 등록된 처리 코드(인터럽트 처리기)를 실행한 뒤, 원래 하던 일로 정확히 돌아간다. 요리하다가 초인종이 울리면 불을 줄이고 택배를 받은 뒤 다시 요리를 이어 가는 것과 같다.</p>
+    <div class="sim" id="sim-irq">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>인터럽트 타임라인</h3></div>
+      <div class="sim-view"><canvas id="cv-irq"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>사건 일으키기</span><div class="btn-row"><button class="btn primary" id="irq-key">⌨ 키 누르기</button><button class="btn" id="irq-net">📶 네트워크 패킷 도착</button><button class="btn" id="irq-disk">💾 SSD 읽기 완료</button></div></div>
+        <label class="check"><input type="checkbox" id="irq-timer" checked> 타이머 인터럽트 (일정 간격으로 스케줄러 호출)</label>
+      </div>
+      <div class="sim-note">회색·파랑 띠는 사용자 프로그램 A, B가 CPU를 쓰는 시간, 주황 띠는 커널의 인터럽트 처리 시간이다. 타이머 인터럽트는 운영체제가 주기적으로 CPU를 되찾아 다음 프로그램으로 바꾸는 장치다. 이것이 없으면 무한 반복에 빠진 프로그램 하나가 컴퓨터를 독차지할 수 있다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="race">
+    <h2>경쟁 상태: 동시에 고치면 생기는 일</h2>
+    <p>두 스레드가 같은 메모리에 있는 숫자 <code>count</code>를 각각 1씩 늘린다고 하자. 결과는 당연히 2가 늘어야 한다. 그런데 “1 늘리기”는 CPU에게 한 번의 동작이 아니라 세 단계다: ① 메모리에서 레지스터로 <b>읽기</b>, ② 레지스터에서 <b>더하기</b>, ③ 메모리에 <b>쓰기</b>(4장의 LOAD, ADD, STORE). 스케줄러가 그 사이 아무 때나 스레드를 바꿀 수 있다면?</p>
+    <div class="sim" id="sim-race">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>두 스레드, 하나의 계좌</h3></div>
+      <div class="race">
+        <div class="thread" id="t1"></div>
+        <div class="shared"><small>공유 메모리</small><b id="shared">100</b><small>count</small><div class="lockicon" id="lockst"></div></div>
+        <div class="thread" id="t2"></div>
+      </div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>누구를 한 단계 실행할까? (스케줄러 역할)</span><div class="btn-row"><button class="btn primary" id="run1">스레드 1 한 단계</button><button class="btn primary" id="run2">스레드 2 한 단계</button><button class="btn" id="race-reset">처음으로</button></div></div>
+        <label class="check"><input type="checkbox" id="uselock"> 잠금(lock) 사용하기</label>
+      </div>
+      <div class="stepdesc" id="race-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px">두 스레드가 각각 count를 1씩 늘린다. 정답은 102다. 해볼 것: 스레드 1 → 스레드 2 → 스레드 1 → … 처럼 번갈아 실행해 보자.</div>
+      <div class="sim-controls" style="border-top:1px solid var(--border)">
+        <div class="ctrl"><span>무작위 스케줄로 1,000번 실험</span><div class="btn-row"><button class="btn" id="race-many">실험하기</button><span class="scale-note" id="race-stat"></span></div></div>
+      </div>
+    </div>
+    <p>번갈아 실행하면 두 스레드가 모두 100을 읽고, 각자 101을 계산해 쓴다. 1이 사라졌다! 이처럼 실행 순서에 따라 결과가 달라지는 버그를 <span class="term">경쟁 상태</span><span class="en">(race condition)</span>라 한다. 은행 앱에서 이런 일이 생기면 돈이 사라진다. 더 무서운 점은 이 버그가 대부분의 실행에서는 드러나지 않다가 아주 가끔만 터진다는 것이다.</p>
+    <p>해결책은 <span class="term">잠금</span><span class="en">(lock, mutex)</span>이다. 공유 데이터를 고치는 구간에 들어가기 전에 잠금을 걸고, 끝나면 푼다. 다른 스레드는 잠금이 풀릴 때까지 기다린다. 화장실 문을 잠그는 것과 같다. 위에서 잠금을 켜고 다시 해 보자. 단, 잠금을 너무 많이 쓰면 스레드들이 서로 기다리느라 느려지고, 서로 상대의 잠금을 기다리며 영원히 멈추는 <b>교착 상태</b>(deadlock)가 생길 수도 있다.</p>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>운영체제는 <b>자원 관리, 추상화, 보호</b>를 맡는 하드웨어와 앱 사이의 관리자다.</li>
+      <li>커널은 <b>커널 모드</b>에서, 앱은 <b>사용자 모드</b>에서 돈다. 앱은 <b>시스템 콜</b>로 커널에 부탁해야 하드웨어를 쓸 수 있다.</li>
+      <li><b>프로세스</b>는 실행 중인 프로그램, <b>스레드</b>는 프로세스 안에서 메모리를 공유하는 실행 흐름이다.</li>
+      <li><b>스케줄러</b>는 CPU를 짧게 나눠 여러 프로세스에 준다. 방식에 따라 대기 시간과 반응성이 달라진다.</li>
+      <li><b>인터럽트</b>는 장치가 CPU에 사건을 알리는 신호다. 타이머 인터럽트로 OS가 CPU를 되찾는다.</li>
+      <li>여러 스레드가 공유 데이터를 동시에 고치면 <b>경쟁 상태</b>가 생긴다. <b>잠금</b>으로 막는다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>앱이 SSD에 파일을 쓰고 싶을 때 하는 일은?</p><div class="opts">
+        <button class="opt">SSD에 직접 전기 신호를 보낸다</button>
+        <button class="opt" data-correct>시스템 콜로 커널에 요청한다</button>
+        <button class="opt">CPU를 커널 모드로 직접 바꾼다</button>
+        <button class="opt">다른 앱의 메모리를 빌린다</button>
+      </div><div class="quiz-exp">사용자 모드의 앱은 하드웨어를 직접 만질 수 없다. 시스템 콜이라는 정해진 창구로만 커널에 부탁한다.</div></div>
+      <div class="quiz-q"><p>“프로그램”과 “프로세스”의 차이로 옳은 것은?</p><div class="opts">
+        <button class="opt">같은 말이다</button>
+        <button class="opt" data-correct>프로그램은 저장된 명령의 묶음, 프로세스는 메모리에 올라와 실행 중인 상태</button>
+        <button class="opt">프로세스는 저장장치에, 프로그램은 메모리에 있다</button>
+        <button class="opt">프로세스는 스레드보다 작은 단위다</button>
+      </div><div class="quiz-exp">레시피 책(프로그램)과 지금 진행 중인 요리(프로세스)의 관계다. 한 프로그램을 여러 번 실행하면 여러 프로세스가 된다.</div></div>
+      <div class="quiz-q"><p>라운드 로빈 스케줄링의 가장 큰 장점은?</p><div class="opts">
+        <button class="opt">작업 전환이 가장 적다</button>
+        <button class="opt">평균 대기 시간이 항상 가장 짧다</button>
+        <button class="opt" data-correct>모든 작업이 금방 첫 응답을 받아 반응성이 좋다</button>
+        <button class="opt">작업 길이를 미리 알 수 있다</button>
+      </div><div class="quiz-exp">시간 조각마다 돌아가며 CPU를 주므로 누구도 오래 굶지 않는다. 대신 전환 비용이 늘어난다.</div></div>
+      <div class="quiz-q"><p>타이머 인터럽트가 없다면 생길 수 있는 문제는?</p><div class="opts">
+        <button class="opt">키보드 입력을 받을 수 없다</button>
+        <button class="opt" data-correct>무한 반복에 빠진 프로그램이 CPU를 계속 독차지할 수 있다</button>
+        <button class="opt">메모리가 지워진다</button>
+        <button class="opt">파일을 저장할 수 없다</button>
+      </div><div class="quiz-exp">타이머 인터럽트는 OS가 주기적으로 CPU를 되찾을 수 있게 보장한다. 협조하지 않는 프로그램도 강제로 쉬게 할 수 있다.</div></div>
+      <div class="quiz-q"><p>두 스레드가 잠금 없이 같은 count를 1씩 늘렸더니 2가 아니라 1만 늘었다. 원인은?</p><div class="opts">
+        <button class="opt">CPU 계산 오류</button>
+        <button class="opt">메모리 고장</button>
+        <button class="opt" data-correct>읽기-더하기-쓰기 사이에 다른 스레드가 끼어들어 같은 옛 값을 읽었기 때문</button>
+        <button class="opt">캐시가 너무 작아서</button>
+      </div><div class="quiz-exp">경쟁 상태다. 두 스레드가 모두 옛 값을 읽고 각자 +1을 써서 하나의 갱신이 덮어써졌다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- syscall ---------------- */
+  const SC = [
+    ["app", "사용자가 <b>저장</b> 버튼을 누른다. 메모장은 메모리에 있는 글자 데이터를 저장하려고 라이브러리 함수 <code>save(\"메모.txt\")</code>를 부른다."],
+    ["lib", "라이브러리가 요청을 운영체제 형식에 맞게 정리한다. “파일 열기, 데이터 쓰기, 닫기”라는 시스템 콜 번호와 인자를 레지스터에 넣는다."],
+    ["sys", "특수 명령(syscall)을 실행하면 CPU가 <b>사용자 모드 → 커널 모드</b>로 바뀌고, 커널이 미리 정해 둔 입구로 점프한다. 앱이 마음대로 커널의 아무 곳으로나 들어갈 수는 없다."],
+    ["fs", "커널은 먼저 <b>권한</b>을 확인한다(이 사용자가 이 폴더에 쓸 수 있나?). 그다음 파일 시스템이 “메모.txt”에 필요한 빈 블록을 찾고 목록을 갱신한다(7장)."],
+    ["drv", "SSD 드라이버가 “블록 812번에 이 4 KB를 써라”를 SSD가 알아듣는 명령으로 바꿔 보낸다."],
+    ["hw", "SSD가 플래시 셀에 데이터를 기록하고, 끝나면 <b>인터럽트</b>로 CPU에 “다 썼다”고 알린다."],
+    ["sys", "커널이 결과(성공)를 정리해 <b>커널 모드 → 사용자 모드</b>로 돌아간다."],
+    ["app", "메모장은 “저장되었습니다”를 표시한다. 이 왕복은 수십 µs~수 ms 안에 끝난다."],
+  ];
+  let sci = -1;
+  function scRender() {
+    document.querySelectorAll("#layers .layer").forEach((l) => l.classList.toggle("on", sci >= 0 && l.dataset.k === SC[sci][0]));
+    $("sc-desc").innerHTML = sci < 0 ? "“다음”을 눌러 저장 요청이 내려가는 길을 따라가 보세요." : `<b>${sci + 1}/${SC.length}.</b> ` + SC[sci][1];
+    $("sc-next").disabled = sci >= SC.length - 1;
+  }
+  $("sc-next").onclick = () => { sci = Math.min(SC.length - 1, sci + 1); scRender(); };
+  $("sc-reset").onclick = () => { sci = -1; scRender(); };
+  scRender();
+
+  /* ---------------- scheduling ---------------- */
+  const SETS = {
+    convoy: [["A", 0, 12], ["B", 1, 2], ["C", 2, 3], ["D", 3, 2]],
+    mixed: [["A", 0, 5], ["B", 1, 8], ["C", 3, 2], ["D", 5, 6], ["E", 6, 1]],
+    interactive: [["계산", 0, 14], ["메신저", 2, 1], ["음악", 4, 1], ["타자", 7, 1], ["스크롤", 10, 1]],
+  };
+  const algo = CB.seg("algo", () => scv.redraw());
+  const wset = CB.seg("wset", () => scv.redraw());
+  const q = CB.range("q", (v) => v + " ms", () => scv.redraw());
+  function simulate(jobs, kind, quantum) {
+    jobs = jobs.map(([n, a, b], i) => ({ n, a, b, rem: b, i, first: null, end: null }));
+    const timeline = []; let t = 0, done = 0, ctx = 0, last = null;
+    const ready = [];
+    let arrivedIdx = 0;
+    const sorted = [...jobs].sort((x, y) => x.a - y.a);
+    const admit = () => { while (arrivedIdx < sorted.length && sorted[arrivedIdx].a <= t) ready.push(sorted[arrivedIdx++]); };
+    admit();
+    let rrQueue = [];
+    while (done < jobs.length) {
+      admit();
+      let cur = null;
+      if (kind === "fcfs") cur = ready.filter((j) => j.rem > 0).sort((x, y) => x.a - y.a)[0];
+      else if (kind === "sjf") { cur = last && last.rem > 0 ? last : ready.filter((j) => j.rem > 0).sort((x, y) => x.b - y.b || x.a - y.a)[0]; }
+      else {
+        ready.forEach((j) => { if (j.rem > 0 && !rrQueue.includes(j) && j !== last) rrQueue.push(j); });
+        ready.length = 0; // moved to queue
+        cur = rrQueue.shift();
+      }
+      if (!cur) { t = sorted[arrivedIdx].a; continue; }
+      const run = kind === "rr" ? Math.min(quantum, cur.rem) : cur.rem;
+      if (last && last !== cur) ctx++;
+      if (cur.first == null) cur.first = t;
+      timeline.push([cur.i, t, t + run]);
+      t += run; cur.rem -= run;
+      if (kind === "rr") { admit(); ready.forEach((j) => { if (j.rem > 0 && !rrQueue.includes(j) && j !== cur) rrQueue.push(j); }); ready.length = 0; if (cur.rem > 0) rrQueue.push(cur); }
+      if (cur.rem === 0) { cur.end = t; done++; }
+      last = cur;
+    }
+    return { jobs, timeline, ctx };
+  }
+  const scv = CB.canvas("#cv-sched", (ctx, w, h) => {
+    const P = CB.palette();
+    const { jobs, timeline, ctx: cs } = simulate(SETS[wset()], algo(), q());
+    const total = Math.max(...jobs.map((j) => j.end));
+    const left = 70, top = 14, rh = Math.min(30, (h - top - 30) / jobs.length), tw = w - left - 14;
+    const X = (t) => left + (t / total) * tw;
+    const cols = [P.accent, P.accent2, P.warn, P.ok, P.bad];
+    jobs.forEach((j, i) => {
+      const y = top + i * rh;
+      CB.text(ctx, j.n, left - 8, y + rh / 2, { align: "right", size: 12, color: P.dim });
+      ctx.strokeStyle = P.border; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(X(j.a), y + rh / 2); ctx.lineTo(X(j.end), y + rh / 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = P.dim; ctx.beginPath(); ctx.moveTo(X(j.a), y + 3); ctx.lineTo(X(j.a) + 5, y + 3); ctx.lineTo(X(j.a), y + 9); ctx.fill();
+    });
+    timeline.forEach(([i, a, b]) => { const y = top + i * rh; CB.rrect(ctx, X(a) + 0.5, y + 4, X(b) - X(a) - 1, rh - 8, 4); ctx.fillStyle = cols[i % 5]; ctx.fill(); });
+    for (let t = 0; t <= total; t += total > 20 ? 5 : 2) CB.text(ctx, String(t), X(t), h - 10, { align: "center", size: 10.5, mono: true, color: P.faint });
+    CB.text(ctx, "ms", w - 10, h - 10, { align: "right", size: 10.5, color: P.faint });
+    const waits = jobs.map((j) => j.end - j.a - j.b), resp = jobs.map((j) => j.first - j.a);
+    $("ptable").innerHTML = `<thead><tr><th>작업</th><th>도착</th><th>길이</th><th>첫 실행</th><th>끝</th><th>대기</th></tr></thead><tbody>` + jobs.map((j, i) => `<tr><td style="color:${cols[i % 5]};font-weight:700">${j.n}</td><td>${j.a}</td><td>${j.b}</td><td>${j.first}</td><td>${j.end}</td><td>${waits[i]}</td></tr>`).join("") + "</tbody>";
+    const avg = (a) => (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1);
+    CB.stat("o-wait", avg(waits) + " ms"); CB.stat("o-resp", avg(resp) + " ms"); CB.stat("o-ctx", cs + "번");
+  }, { height: 196 });
+
+  /* ---------------- interrupts ---------------- */
+  const SPAN = 8; // seconds visible
+  let it = 0, segs = [], cur = { who: "A", t0: 0 }, pending = [], sinceTimer = 0, handler = null;
+  const HANDLE = { key: ["키보드 처리", 0.35], net: ["네트워크 처리", 0.5], disk: ["SSD 완료 처리", 0.3], timer: ["스케줄러", 0.25] };
+  ["key", "net", "disk"].forEach((k) => ($("irq-" + k).onclick = () => pending.push(k)));
+  const timerChk = $("irq-timer");
+  const icv = CB.canvas("#cv-irq", (ctx, w, h) => {
+    const P = CB.palette();
+    const left = 10, right = 10, y0 = 40, bh = 40;
+    const X = (t) => left + ((t - (it - SPAN)) / SPAN) * (w - left - right);
+    const all = [...segs, { ...cur, t1: it }];
+    all.forEach((s) => {
+      if (s.t1 < it - SPAN) return;
+      const x0 = Math.max(left, X(s.t0)), x1 = X(s.t1);
+      const isK = s.who.startsWith("K:");
+      ctx.fillStyle = isK ? P.warn : s.who === "A" ? P.accent : P.accent2; ctx.globalAlpha = isK ? 0.95 : 0.6;
+      ctx.fillRect(x0, isK ? y0 - 8 : y0, Math.max(1, x1 - x0), isK ? bh + 16 : bh); ctx.globalAlpha = 1;
+      if (x1 - x0 > 46) CB.text(ctx, isK ? s.who.slice(2) : "프로그램 " + s.who, (x0 + x1) / 2, y0 + bh / 2, { align: "center", size: 11.5, bold: true, color: "#fff" });
+    });
+    CB.text(ctx, "CPU가 하는 일 (시간 →)", left, 16, { size: 12, color: P.dim });
+    CB.text(ctx, "지금", w - right, y0 + bh + 26, { align: "right", size: 11, color: P.faint });
+    const kinds = segs.filter((s) => s.who.startsWith("K:") && s.t0 > it - SPAN).length;
+    CB.text(ctx, `최근 ${SPAN}초 동안 인터럽트 ${kinds}번`, left, y0 + bh + 26, { size: 11.5, color: P.faint });
+  }, { height: 120 });
+  CB.loop($("cv-irq"), (dt) => {
+    it += dt;
+    if (handler) { if (it >= handler.end) { segs.push({ who: "K:" + handler.name, t0: handler.start, t1: it }); handler = null; cur = { who: handler_resume, t0: it }; } }
+    else {
+      sinceTimer += dt;
+      let k = pending.shift();
+      if (!k && timerChk.checked && sinceTimer > 1.6) { k = "timer"; sinceTimer = 0; }
+      if (k) {
+        segs.push({ ...cur, t1: it });
+        const [name, dur] = HANDLE[k];
+        handler = { name, start: it, end: it + dur };
+        handler_resume = k === "timer" ? (cur.who === "A" ? "B" : "A") : cur.who;
+        cur = { who: "K:" + name, t0: it };
+      }
+    }
+    segs = segs.filter((s) => s.t1 > it - SPAN - 1);
+    icv.redraw();
+  });
+  let handler_resume = "A";
+
+  /* ---------------- race ---------------- */
+  const STEPS_NL = ["reg ← count  (읽기)", "reg ← reg + 1  (더하기)", "count ← reg  (쓰기)"];
+  const STEPS_L = ["lock 잡기", "reg ← count  (읽기)", "reg ← reg + 1  (더하기)", "count ← reg  (쓰기)", "lock 풀기"];
+  let shared = 100, th, lockOwner = null;
+  const uselock = $("uselock");
+  function raceReset() { shared = 100; lockOwner = null; th = [{ pc: 0, reg: null }, { pc: 0, reg: null }]; raceRender("두 스레드가 각각 count를 1씩 늘린다. 정답은 102다. 해볼 것: 스레드 1 → 스레드 2 → 스레드 1 → … 처럼 번갈아 실행해 보자."); }
+  function steps() { return uselock.checked ? STEPS_L : STEPS_NL; }
+  function raceStep(i) {
+    const T = th[i], S = steps(); if (T.pc >= S.length) return;
+    const op = S[T.pc]; let msg = "";
+    if (op.startsWith("lock 잡기")) { if (lockOwner != null && lockOwner !== i) { raceRender(`스레드 ${i + 1}: 잠금이 스레드 ${lockOwner + 1}에게 있다. <b>기다린다</b>(아무것도 하지 못함).`); return; } lockOwner = i; msg = `스레드 ${i + 1}이 잠금을 잡았다.`; }
+    else if (op.startsWith("lock 풀기")) { lockOwner = null; msg = `스레드 ${i + 1}이 잠금을 풀었다.`; }
+    else if (op.includes("읽기")) { T.reg = shared; msg = `스레드 ${i + 1}이 count를 읽었다: reg = ${T.reg}`; }
+    else if (op.includes("더하기")) { T.reg++; msg = `스레드 ${i + 1}의 reg = ${T.reg}`; }
+    else { shared = T.reg; msg = `스레드 ${i + 1}이 count에 ${T.reg}을(를) 썼다.`; }
+    T.pc++;
+    if (th[0].pc >= S.length && th[1].pc >= S.length) msg += shared === 102 ? ` <b style="color:var(--ok)">최종 102. 정답!</b>` : ` <b style="color:var(--bad)">최종 ${shared}. 갱신 하나가 사라졌다! (경쟁 상태)</b>`;
+    raceRender(msg);
+  }
+  function raceRender(msg) {
+    const S = steps();
+    [0, 1].forEach((i) => { $("t" + (i + 1)).innerHTML = `<h5>스레드 ${i + 1}: count를 1 늘리기</h5>` + S.map((s, k) => `<div class="line ${k < th[i].pc ? "done" : k === th[i].pc ? "cur" : ""}">${s}</div>`).join("") + `<div class="reg">레지스터 reg = ${th[i].reg == null ? "?" : th[i].reg}</div>`; });
+    $("shared").textContent = shared;
+    $("lockst").textContent = uselock.checked ? (lockOwner == null ? "🔓 잠금 풀림" : `🔒 스레드 ${lockOwner + 1}이 잠금`) : "";
+    $("race-desc").innerHTML = msg;
+  }
+  $("run1").onclick = () => raceStep(0); $("run2").onclick = () => raceStep(1);
+  $("race-reset").onclick = raceReset; uselock.onchange = raceReset;
+  $("race-many").onclick = () => {
+    let bad = 0; const L = uselock.checked;
+    for (let k = 0; k < 1000; k++) {
+      let c = 0, lock = null; const T = [{ pc: 0, r: 0 }, { pc: 0, r: 0 }]; const S = L ? 5 : 3;
+      let guard = 0;
+      while ((T[0].pc < S || T[1].pc < S) && guard++ < 100) {
+        let i = Math.random() < 0.5 ? 0 : 1; if (T[i].pc >= S) i = 1 - i;
+        const t = T[i]; const op = L ? ["lock", "r", "a", "w", "u"][t.pc] : ["r", "a", "w"][t.pc];
+        if (op === "lock") { if (lock != null && lock !== i) continue; lock = i; }
+        else if (op === "u") lock = null; else if (op === "r") t.r = c; else if (op === "a") t.r++; else c = t.r;
+        t.pc++;
+      }
+      if (c !== 2) bad++;
+    }
+    $("race-stat").innerHTML = `1,000번 중 <b style="color:${bad ? "var(--bad)" : "var(--ok)"}">${bad}번</b> 틀린 결과 (${L ? "잠금 사용" : "잠금 없음"})`;
+  };
+  raceReset();
+})();
+</script>
+</body>
+</html>
