@@ -408,3 +408,10 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .ctrl textarea { font-family: var(--mono); font-size: 13px; resize: vertical; }
 .scale-note { font-size: 13px; color: var(--text-faint); }
 .sb-chlist li.part { font-size: 11px; letter-spacing: .1em; color: var(--text-faint); font-weight: 700; padding: 14px 10px 4px; text-transform: uppercase; }
+/* "만약에?" 예측 실험 */
+.whatif { margin: 28px 0; border: 2px dashed color-mix(in srgb, var(--warn) 70%, transparent); border-radius: var(--radius); padding: 16px 20px 18px; background: color-mix(in srgb, var(--warn) 6%, var(--bg-elev)); }
+.whatif .wi-head { font-size: 12px; font-weight: 800; letter-spacing: .1em; color: var(--warn); margin-bottom: 4px; }
+.whatif .wi-head::before { content: "만약에? · "; }
+.whatif .wi-q { font-weight: 700; margin: 0 0 4px !important; }
+.whatif .wi-hint { font-size: 14px; color: var(--text-dim); margin: 0 0 12px !important; }
+.whatif .quiz-exp { background: var(--bg-elev); }

@@ -241,6 +241,9 @@
       <div class="sim-note">진한 테두리 = 지금 캐시에 들어 있는 라인. 가로로 읽으면 한 번 실패할 때 옆 3칸이 따라 들어와 공짜로 적중한다. 세로로 읽으면 매번 다른 줄로 건너뛰어서, 가져온 라인을 다 쓰기도 전에 캐시에서 밀려난다. 결과는 똑같은 합계인데 시간은 몇 배 차이가 난다.</div>
     </div>
     <div class="callout deep"><strong>하드웨어를 아는 프로그래머</strong><p>게임 엔진, 데이터베이스, 인공지능 라이브러리를 만드는 개발자들은 데이터를 메모리에 어떤 순서로 둘지 신중하게 설계한다. 계산 횟수를 줄이는 것만큼 <b>캐시 실패를 줄이는 것</b>이 중요하기 때문이다. 5장의 분기 예측과 함께, “같은 결과, 다른 속도”를 만드는 대표적인 이유다.</p></div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">같은 계산을 하는 프로그램 두 개가 있다. 하나는 큰 표를 가로로, 하나는 세로로 읽는다. 표가 캐시보다 훨씬 크다면 속도 차이는?</p><p class="wi-hint">위 ‘표를 읽는 두 가지 순서’ 시뮬레이터에서 실패 횟수를 비교해 보자.</p><div class="opts">
+      <button class="opt">똑같다</button><button class="opt">세로가 조금 느리다</button><button class="opt" data-correct>세로가 몇 배 이상 느릴 수 있다</button><button class="opt">세로가 더 빠르다</button>
+    </div><div class="quiz-exp">가로로 읽으면 한 번 가져온 캐시 라인(64바이트)을 끝까지 쓰지만, 세로로 읽으면 한 칸만 쓰고 다음 줄로 건너뛴다. 실제 측정에서도 표가 크면 몇 배에서 열 배 넘게 차이가 난다. 계산은 같은데 메모리 습관이 다를 뿐이다.</div></div>
   </section>
 
   <section class="keypoints" id="summary">

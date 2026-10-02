@@ -184,6 +184,9 @@
       <div class="sim-note">값은 대표적인 크기 수준(order of magnitude)이다. 핵심은 정확한 숫자가 아니라 단계마다 <b>수십~수천 배씩</b> 느려진다는 사실이다.</div>
     </div>
     <p>CPU 입장에서 메모리(RAM)에서 데이터를 가져오는 일은 “몇 분 기다리기”이고, SSD는 “며칠”, 하드디스크는 “몇 달”, 지구 반대편 서버와 대화하는 일은 “십수 년”이다. 그래서 컴퓨터 설계의 상당 부분은 <strong>느린 곳을 덜 가게 만드는 기술</strong>이다. 캐시(6장), 가상 메모리(9장), 파이프라인(5장)이 모두 그 해법이다.</p>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">RAM이 없어서 CPU가 모든 데이터를 SSD에서 직접 읽어야 한다면, 컴퓨터는 대략 얼마나 느려질까?</p><p class="wi-hint">위 시간 변환기의 ‘메모리(RAM) 읽기’와 ‘SSD에서 읽기’ 막대를 비교해 보고 골라 보자.</p><div class="opts">
+      <button class="opt">거의 차이 없다</button><button class="opt">2배쯤</button><button class="opt" data-correct>수백~천 배</button><button class="opt">100만 배</button>
+    </div><div class="quiz-exp">RAM은 약 100 ns, SSD는 약 80 µs로 800배가량 차이 난다. 캐시가 많은 부분을 가려 주더라도 메모리가 필요한 순간마다 이만큼 기다려야 한다. 조리대 없이 창고에서 바로 요리하는 셈이다. 그래서 모든 컴퓨터는 RAM이라는 중간 단계를 둔다(6장).</div></div>
   </section>
 
   <!-- ============================================================ -->

@@ -299,6 +299,9 @@
 <span class="n">6</span>  <span class="k">HALT</span></div>
     <p>우리가 프로그래밍 언어에서 쓰는 <code>if</code>(만약), <code>while</code>(~하는 동안), <code>for</code>(~번 반복)는 모두 결국 이런 <strong>조건 점프</strong>로 번역된다(13장). 아무리 복잡한 앱도 CPU에게는 “계산하고, 저장하고, 조건에 따라 다른 줄로 점프하기”의 반복일 뿐이다.</p>
     <div class="callout deep"><strong>튜링 완전</strong><p>놀랍게도 “메모리 읽기/쓰기, 더하기/빼기, 조건 점프” 정도만 있으면 (메모리가 충분하다는 가정하에) 어떤 계산이든 할 수 있다는 것이 증명되어 있다. 이런 성질을 <b>튜링 완전</b>이라 한다. 장난감 CPU도 원리적으로는 슈퍼컴퓨터와 같은 문제를 풀 수 있다. 다만 엄청나게 느리고 메모리가 작을 뿐이다.</p></div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">카운트다운 프로그램에서 3번지의 <code>JZ 5</code>를 실수로 지워 버리면(그 칸을 0으로) 어떻게 될까?</p><p class="wi-hint">장난감 CPU의 ‘직접 작성’ 탭에 들어 있는 ‘1부터 N까지 합’에서 <code>JZ 8</code> 줄을 <code>0</code>으로 바꿔 실행해 보면 같은 일이 생긴다.</p><div class="opts">
+      <button class="opt">5에서 0까지 정상 출력</button><button class="opt" data-correct>0에서 멈추지 않고 −1, −2, …로 끝없이 내려간다</button><button class="opt">아무것도 출력하지 않는다</button><button class="opt">곧바로 HALT</button>
+    </div><div class="quiz-exp">반복을 끝내는 유일한 문이 조건 점프였다. 그 문이 사라지면 JUMP 1이 영원히 되돌아가 <b>무한 반복</b>이 된다. 시뮬레이터는 일정 단계 뒤 멈추지만 실제 컴퓨터에서는 프로그램이 ‘응답 없음’ 상태가 되고, 운영체제가 타이머 인터럽트로 CPU를 되찾아야 다른 프로그램이 돈다(8장).</div></div>
   </section>
   <!-- ============================================================ -->
   <section id="call">

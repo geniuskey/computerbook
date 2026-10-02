@@ -199,6 +199,10 @@
         <div class="stat"><span class="k">A (10진수)</span><span class="v" id="o-a">—</span></div>
         <div class="stat"><span class="k">B (10진수)</span><span class="v" id="o-b">—</span></div>
         <div class="stat"><span class="k">합 (10진수)</span><span class="v" id="o-s">—</span></div>
+        <div class="stat"><span class="k">클럭이 레지스터에 저장한 값</span><span class="v" id="o-cap">—</span></div>
+      </div>
+      <div class="sim-controls" style="border-top:1px solid var(--border)">
+        <label class="ctrl"><span>만약에? 클럭 한 박자의 길이 (올림수가 몇 칸 번질 시간인가) <output id="add-clk-out"></output></span><input type="range" id="add-clk" min="1" max="4" value="4"></label>
       </div>
       <div class="sim-note">해볼 것: A = 0111(7), B = 0001(1)로 두면 올림수가 오른쪽에서 왼쪽으로 차례차례 번져 가는 것이 보인다. 각 칸은 앞 칸의 올림수가 도착해야 답이 확정된다. 그래서 자리 수가 많은 덧셈기일수록 느려지고, 실제 CPU는 올림수를 미리 내다보는 더 영리한 회로를 쓴다.</div>
     </div>
@@ -241,6 +245,9 @@
       <div class="sim-note">4비트 레지스터가 클럭이 올라가는 순간(▲)마다 1씩 커진다. 1111(15) 다음에는 오버플로로 0000이 된다. 실제 CPU의 클럭은 이보다 약 10억 배 빠르다.</div>
     </div>
     <p>클럭 속도는 1초에 몇 번 똑딱이는지를 나타내며 단위는 <span class="term">헤르츠</span><span class="en">(Hz)</span>다. 3 GHz CPU는 1초에 30억 번 박자를 맞춘다. 한 박자에 0.33 ns. 박자를 무작정 빠르게 할 수 없는 이유, 즉 가장 느린 회로가 답을 내기 전에 다음 박자가 오면 안 된다는 것과 열 문제는 5장에서 다룬다.</p>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">클럭을 덧셈기가 답을 낼 시간보다 빠르게 올리면 어떻게 될까?</p><p class="wi-hint">4비트 덧셈기 시뮬레이터 아래의 ‘클럭 한 박자의 길이’를 1~3칸으로 줄이고 A = 0111, B = 0001을 넣어 확인해 보자.</p><div class="opts">
+      <button class="opt">더 빨리 정답이 나온다</button><button class="opt" data-correct>올림수가 다 번지기 전에 저장되어 틀린 값이 저장된다</button><button class="opt">덧셈기가 고장 난다</button><button class="opt">아무 일도 없다</button>
+    </div><div class="quiz-exp">레지스터는 클럭이 올라가는 순간의 값을 그대로 붙잡는다. 그때 아직 올림수가 도착하지 않은 칸은 틀린 값이다. 그래서 칩마다 안전하게 돌 수 있는 최고 클럭이 정해져 있고, 무리하게 올리는 ‘오버클럭’은 계산 오류나 멈춤을 일으킬 수 있다.</div></div>
   </section>
 
   <!-- ============================================================ -->
@@ -399,6 +406,7 @@
     acv.redraw();
   }
   const STAGE = 0.55;
+  let addClk = null;
   const acv = CB.canvas("#cv-add", (ctx, w, h) => {
     const P = CB.palette();
     // compute ripple from LSB (index 3) to MSB
@@ -429,8 +437,14 @@
     const total = val(aBits) + val(bBits);
     CB.text(ctx, allDone ? (carry[4] ? "넘침(5번째 자리) 1" : "넘침 없음") : "계산 중…", 8, y + bh + 39, { size: 11.5, color: allDone && carry[4] ? P.warn : P.faint });
     CB.stat("o-s", allDone ? (carry[4] ? `${total - 16} <small>(넘침! 실제 ${total})</small>` : total) : "…");
+    // 클럭이 너무 빠르면: 올림수가 도착하지 않은 칸은 올림 0으로 계산된 값이 저장된다
+    const clk = addClk ? addClk() : 4; let cap = 0;
+    for (let k = 0; k < 4; k++) { const i = 3 - k; const bit = k < clk ? sum[i] : aBits[i] ^ bBits[i]; cap += bit << k; }
+    const right = (total & 15);
+    CB.stat("o-cap", cap === right ? `<span style="color:var(--ok)">${cap} ✓</span>` : `<span style="color:var(--bad)">${cap} ✗</span> <small>(정답 ${right})</small>`);
   }, { height: 170 });
   CB.loop(document.getElementById("cv-add"), (dt) => { if (addT < STAGE * 4 + 0.1) { addT += dt; acv.redraw(); } });
+  addClk = CB.range("add-clk", (v) => v + "칸" + (v < 4 ? " (너무 빠름!)" : " (충분)"), () => acv.redraw());
   addT = 0; refresh();
 
   /* ---------------- SR latch ---------------- */

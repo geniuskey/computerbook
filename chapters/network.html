@@ -210,6 +210,7 @@
         <label class="ctrl"><span>패킷 손실률 <output id="loss-out"></output></span><input type="range" id="loss" min="0" max="40" step="5" value="15"></label>
         <label class="ctrl"><span>윈도우 크기 (확인 전에 보낼 수 있는 수) <output id="win-out"></output></span><input type="range" id="win" min="1" max="6" value="3"></label>
         <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="tcp-go">10개 보내기</button></div></div>
+        <label class="check"><input type="checkbox" id="udp"> 만약에? TCP 대신 UDP로 보내기 (확인·재전송 없음)</label>
       </div>
       <div class="sim-readout">
         <div class="stat"><span class="k">보낸 패킷 (재전송 포함)</span><span class="v" id="o-sent">—</span></div>
@@ -219,6 +220,9 @@
       <div class="sim-note">왼쪽 세로줄은 보내는 쪽, 오른쪽은 받는 쪽, 아래로 갈수록 시간이 흐른다. 파란 화살표 = 데이터, 초록 = ACK, ✕ = 도중에 사라짐, 주황 = 재전송. 해볼 것: 윈도우를 1로 하면 한 번에 하나씩 보내고 기다리느라 느리다. 윈도우를 키우면 같은 손실률에서도 훨씬 빨리 끝난다.</div>
     </div>
     <p>영상 통화나 온라인 게임은 TCP 대신 <span class="term">UDP</span>를 많이 쓴다. UDP는 확인도 재전송도 하지 않는다. 0.5초 전에 사라진 영상 조각을 다시 받아 봐야 이미 늦었기 때문이다. 정확성이 중요한 파일 전송과 웹은 TCP, 실시간성이 중요한 통화와 게임은 UDP를 주로 쓴다.</p>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">파일을 TCP 대신 UDP로 보내면, 손실률 15%에서 받는 쪽은 어떤 파일을 받게 될까?</p><p class="wi-hint">TCP 타임라인 시뮬레이터에서 ‘UDP로 보내기’를 켜고 보내 보자.</p><div class="opts">
+      <button class="opt">완전한 파일을 더 빨리</button><button class="opt">완전한 파일을 더 느리게</button><button class="opt" data-correct>중간중간 빠진, 깨진 파일</button><button class="opt">아무것도 받지 못한다</button>
+    </div><div class="quiz-exp">UDP는 확인도 재전송도 하지 않으므로 사라진 조각은 영영 오지 않는다. 그래서 파일과 웹 페이지는 TCP로, 조금 빠져도 괜찮지만 늦으면 안 되는 영상 통화와 게임은 UDP로 보낸다.</div></div>
   </section>
 
   <!-- ============================================================ -->
@@ -414,6 +418,13 @@
   let tcpEv = null, tcpT = 0, tcpEnd = 0;
   function tcpSim() {
     const N = 10, W = win(), p = loss() / 100, D = 2, TO = 5.5;
+    if ($("udp").checked) {
+      const ev = []; let lost = 0;
+      for (let i = 0; i < N; i++) { const t = i * 0.6, l = Math.random() < p; if (l) lost++; ev.push({ kind: "data", seq: i, t0: t, t1: t + D, lost: l, retx: false }); }
+      tcpEnd = Math.max(...ev.map((e) => e.t1));
+      CB.stat("o-sent", N + "개"); CB.stat("o-lostp", `<span style="color:${lost ? "var(--bad)" : "inherit"}">${lost}개 (영영 안 옴)</span>`); CB.stat("o-done", tcpEnd.toFixed(1) + " 단위 · 받은 것 " + (N - lost) + "/" + N);
+      return ev;
+    }
     const r = Math.random;
     const ev = []; // {kind:'data'|'ack', seq, t0, t1, lost, retx}
     const acked = new Array(N).fill(false), lastSend = new Array(N).fill(-1), sendCount = new Array(N).fill(0);

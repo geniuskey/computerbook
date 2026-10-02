@@ -239,10 +239,14 @@
       <div class="stepdesc" id="st-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;margin-top:14px;min-height:56px"></div>
       <div class="sim-controls">
         <label class="ctrl"><span>n <output id="fn-out"></output></span><input type="range" id="fn" min="1" max="6" value="4"></label>
+        <label class="check"><input type="checkbox" id="nobase"> 만약에? 멈춤 조건 <code>if (n == 1)</code>을 빼먹으면</label>
         <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="st-next">한 단계</button><button class="btn" id="st-run">자동 재생</button><button class="btn" id="st-reset">처음으로</button></div></div>
       </div>
       <div class="sim-note">재귀 호출이 끝나지 않으면(예: n이 1에서 멈추는 조건을 빼먹으면) 스택이 끝없이 쌓여 할당된 공간을 넘친다. 이것이 <b>스택 오버플로</b>다. 개발자 질문 사이트의 이름도 여기서 왔다.</div>
     </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">팩토리얼 함수에서 멈춤 조건 <code>if (n == 1) return 1</code>을 빼먹으면?</p><p class="wi-hint">호출 스택 시뮬레이터의 ‘멈춤 조건을 빼먹으면’을 켜고 끝까지 진행해 보자.</p><div class="opts">
+      <button class="opt">0이 나온다</button><button class="opt" data-correct>스택이 끝없이 쌓이다가 스택 오버플로로 프로그램이 종료된다</button><button class="opt">답이 무한대가 된다</button><button class="opt">컴파일 오류가 난다</button>
+    </div><div class="quiz-exp">문법은 멀쩡하므로 컴파일은 된다. 하지만 실행하면 fact(0), fact(−1), …로 끝없이 내려가며 프레임이 쌓이고, 스택 공간이 바닥나는 순간 운영체제가 프로그램을 종료한다. 이런 오류는 실행해 봐야 드러나서 ‘런타임 오류’라 부른다.</div></div>
   </section>
 
   <!-- ============================================================ -->
@@ -423,34 +427,38 @@
   const fn = CB.range("fn", (v) => String(v), () => stReset());
   let events = [], ei = 0, timer = null;
   function buildEvents() {
-    const N = fn(); const ev = [];
+    const N = fn(); const ev = []; const nobase = $("nobase").checked;
     ev.push({ line: 7, stack: [{ name: "main()", vars: "x = ?" }], msg: `프로그램 시작. 운영체제가 <code>main</code>을 부르며 스택에 첫 프레임을 쌓는다.` });
     const stk = [{ name: "main()", vars: "x = ?" }];
     function call(n) {
       stk.push({ name: `fact(${n})`, vars: `n = ${n}, r = ?` });
       ev.push({ line: 0, stack: stk.map((f) => ({ ...f })), msg: `<code>fact(${n})</code> 호출: 돌아갈 주소와 지역 변수 n = ${n}을 담은 새 프레임을 맨 위에 쌓는다.` });
-      if (n === 1) { ev.push({ line: 1, stack: stk.map((f) => ({ ...f })), msg: `n이 1이므로 더 이상 부르지 않고 1을 돌려준다. 이것이 재귀의 <b>멈춤 조건</b>이다.` }); stk.pop(); return 1; }
+      if (nobase && stk.length > 9) { ev.push({ line: 2, stack: stk.map((f) => ({ ...f })), overflow: true, msg: `<b style="color:var(--bad)">스택 오버플로!</b> 멈춤 조건이 없어서 n이 0, −1, −2…로 끝없이 내려가며 프레임이 계속 쌓였다. 스택에 정해 둔 공간(실제로는 보통 수 MB)이 꽉 차자 운영체제가 프로그램을 강제로 종료했다.` }); throw "overflow"; }
+      if (n === 1 && !nobase) { ev.push({ line: 1, stack: stk.map((f) => ({ ...f })), msg: `n이 1이므로 더 이상 부르지 않고 1을 돌려준다. 이것이 재귀의 <b>멈춤 조건</b>이다.` }); stk.pop(); return 1; }
       ev.push({ line: 2, stack: stk.map((f) => ({ ...f })), msg: `n이 1이 아니므로 <code>fact(${n - 1})</code>을 부른다. 지금 프레임은 결과를 기다리며 멈춘다.` });
       const r = call(n - 1);
       stk[stk.length - 1].vars = `n = ${n}, r = ${r}`;
       ev.push({ line: 3, stack: stk.map((f) => ({ ...f })), msg: `<code>fact(${n - 1})</code>이 ${r}을 돌려줬다. 위 프레임은 사라졌다. 이제 ${n} × ${r} = <b>${n * r}</b>을 돌려준다.` });
       stk.pop(); return n * r;
     }
-    const res = call(N);
+    let res;
+    try { res = call(N); } catch (e) { return ev; }
     stk[0].vars = `x = ${res}`;
     ev.push({ line: 8, stack: stk.map((f) => ({ ...f })), msg: `모든 fact 프레임이 사라지고 main으로 돌아왔다. x = ${res}를 출력한다. 가장 높이 쌓였을 때 프레임은 ${N + 1}개(main 포함)였다.` });
     return ev;
   }
   function stRender() {
     const e = events[ei];
-    $("fcode").innerHTML = CODE.map((l, k) => `<span style="display:block" class="${e && e.line === k ? "hl" : ""}">${l.replace("N", fn()) || " "}</span>`).join("");
-    $("frames").innerHTML = e ? e.stack.map((f, k) => `<div class="frame ${k === e.stack.length - 1 ? "top" : ""}">${f.name} <small>· ${f.vars}</small></div>`).join("") : "";
+    const nb = $("nobase").checked;
+    $("fcode").innerHTML = CODE.map((l, k) => `<span style="display:block${nb && k === 1 ? ";text-decoration:line-through;opacity:.45" : ""}" class="${e && e.line === k ? "hl" : ""}">${l.replace("N", fn()) || " "}</span>`).join("");
+    $("frames").innerHTML = e ? e.stack.map((f, k) => `<div class="frame ${k === e.stack.length - 1 ? "top" : ""}"${e.overflow && k === e.stack.length - 1 ? ' style="background:var(--bad);border-color:var(--bad)"' : ""}>${f.name} <small>· ${f.vars}</small></div>`).join("") : "";
     $("st-desc").innerHTML = e ? `<b>${ei + 1}/${events.length}.</b> ` + e.msg : "";
     $("st-next").disabled = ei >= events.length - 1;
   }
   function stReset() { if (timer) { clearInterval(timer); timer = null; $("st-run").textContent = "자동 재생"; } events = buildEvents(); ei = 0; stRender(); }
   $("st-next").onclick = () => { if (ei < events.length - 1) { ei++; stRender(); } };
   $("st-reset").onclick = stReset;
+  $("nobase").onchange = stReset;
   $("st-run").onclick = (e) => { if (timer) { clearInterval(timer); timer = null; e.target.textContent = "자동 재생"; return; } if (ei >= events.length - 1) ei = 0; e.target.textContent = "멈춤"; timer = setInterval(() => { if (ei >= events.length - 1) { clearInterval(timer); timer = null; $("st-run").textContent = "자동 재생"; return; } ei++; stRender(); }, 1100); };
   stReset();
 })();

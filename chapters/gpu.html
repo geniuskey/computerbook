@@ -221,6 +221,9 @@
       <div class="sim-note">4×4 행렬 곱은 결과 16칸 × 칸마다 곱셈 4번 = 곱셈 64번이다. 한 칸씩 하면 16단계, 16칸을 동시에 하면 1단계에 끝난다(곱셈 4번은 각 일꾼이 차례로 한다고 치자). 실제 언어 모델은 수천 × 수천 크기의 행렬을 수백 번 곱한다. 단어 하나를 만들 때마다 수십억~수조 번의 곱셈이 필요하다.</div>
     </div>
     <p>그래서 2012년 무렵 연구자들이 GPU로 신경망을 학습시키기 시작하자 인공지능은 폭발적으로 발전했다. 요즘 AI용 GPU에는 행렬 곱셈만 전문으로 하는 회로(텐서 코어)까지 들어가 있다. 처음엔 게임 화면을 그리려고 만든 칩이 세상을 바꾸는 계산기가 된 셈이다.</p>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">GPU에 ‘앞의 결과가 있어야 다음을 계산할 수 있는’ 일(예: 한 줄씩 이어지는 계산 10억 단계)을 시키면?</p><p class="wi-hint">5장의 암달의 법칙을 떠올려 보자. 병렬로 나눌 수 있는 부분이 0%라면?</p><div class="opts">
+      <button class="opt">CPU보다 수천 배 빠르다</button><button class="opt" data-correct>CPU와 비슷하거나 오히려 느리다</button><button class="opt">자동으로 병렬로 바뀐다</button><button class="opt">계산할 수 없다</button>
+    </div><div class="quiz-exp">GPU 유닛 하나하나는 CPU 코어보다 느리다. 나눌 수 없는 일이면 수천 개 중 하나만 일하고 나머지는 논다. 그래서 컴퓨터는 CPU와 GPU를 함께 쓰고, 일의 성격에 맞춰 나눠 맡긴다.</div></div>
   </section>
 
   <section class="keypoints" id="summary">
