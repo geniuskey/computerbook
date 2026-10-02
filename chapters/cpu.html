@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <title>CPU: 명령을 수행하는 두뇌 · ComputerBook</title>
-<meta name="description" content="레지스터, ALU, 제어 장치, 프로그램 카운터로 이루어진 CPU의 구조와 명령어 사이클(가져오기·해석·실행)을 장난감 CPU 시뮬레이터로 한 단계씩 실행하며 배운다.">
+<meta name="description" content="레지스터, ALU, 제어 장치, 프로그램 카운터, 버스와 데이터 경로. 명령어 사이클을 장난감 CPU로 한 단계씩 실행하고, 기계어를 조립·해독하고, 함수 호출(CALL/RET)까지 배운다.">
 <link rel="canonical" href="https://computerbook.euiyun.com/chapters/cpu.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="ComputerBook">
@@ -106,6 +106,37 @@
         <tr><td><b>플래그</b></td><td>“방금 결과가 0이었나?” 같은 짧은 상태를 기록한다.</td><td>“냄비가 끓었나?” 확인 표시</td></tr>
       </tbody>
     </table></div>
+    <p>이 부품들은 두 갈래의 길로 메모리와 이어진다. “몇 번지?”를 실어 나르는 <span class="term">주소 버스</span>와 실제 값을 실어 나르는 <span class="term">데이터 버스</span>다. 제어 장치는 박자마다 “지금은 PC가 주소 버스에 값을 올려”, “지금은 ALU가 더해”처럼 각 부품에 짧은 신호(제어 신호)를 보낸다. 이렇게 데이터가 다니는 길 전체를 <span class="term">데이터 경로</span><span class="en">(datapath)</span>라 한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 330" role="img" aria-label="장난감 CPU의 데이터 경로">
+        <defs><marker id="dp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+          <marker id="dp-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent-2)"/></marker></defs>
+        <rect x="10" y="10" width="520" height="310" rx="16" fill="none" stroke="var(--border)" stroke-dasharray="6 5"/><text x="24" y="32" class="t-dim">CPU</text>
+        <path d="M150 40 H590" stroke="var(--accent)" stroke-width="5"/><text x="380" y="34" text-anchor="middle" class="t-acc">주소 버스 (몇 번지?)</text>
+        <path d="M150 140 H590" stroke="var(--accent-2)" stroke-width="5"/><text x="380" y="132" text-anchor="middle" class="t" style="fill:var(--accent-2);font-weight:700">데이터 버스 (값)</text>
+        <rect x="40" y="60" width="90" height="44" rx="8" class="f-elev"/><text x="85" y="87" text-anchor="middle" class="t" style="font-weight:700">PC</text>
+        <path d="M110 60 V40 H150" class="s-acc" marker-end="url(#dp-a)"/>
+        <rect x="40" y="170" width="90" height="44" rx="8" class="f-elev"/><text x="85" y="197" text-anchor="middle" class="t" style="font-weight:700">IR</text>
+        <path d="M100 140 V166" stroke="var(--accent-2)" stroke-width="2" marker-end="url(#dp-b)"/>
+        <path d="M60 170 V120 H20 V40 H40" stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+        <rect x="200" y="170" width="110" height="44" rx="8" class="f-acc2-soft"/><text x="255" y="197" text-anchor="middle" class="t" style="font-weight:700">A 레지스터</text>
+        <path d="M255 144 V166" stroke="var(--accent-2)" stroke-width="2" marker-start="url(#dp-b)" marker-end="url(#dp-b)"/>
+        <path d="M360 230 L470 230 L445 280 L385 280 Z" class="f-acc-soft"/><text x="415" y="262" text-anchor="middle" class="t" style="font-weight:700">ALU</text>
+        <path d="M400 144 V226" stroke="var(--accent-2)" stroke-width="2" marker-end="url(#dp-b)"/>
+        <path d="M290 214 V240 H372" stroke="var(--accent-2)" stroke-width="2" fill="none" marker-end="url(#dp-b)"/>
+        <path d="M415 280 V300 H230 V218" stroke="var(--accent-2)" stroke-width="2" fill="none" marker-end="url(#dp-b)"/><text x="320" y="296" text-anchor="middle" class="t-mono">결과</text>
+        <rect x="40" y="250" width="150" height="54" rx="10" class="f-acc-soft"/><text x="115" y="274" text-anchor="middle" class="t" style="font-weight:700">제어 장치</text><text x="115" y="292" text-anchor="middle" class="t-mono">해독 · 지시</text>
+        <path d="M85 214 V246" class="s-line" marker-end="url(#dp-a)"/>
+        <g stroke="var(--text-faint)" stroke-dasharray="3 4" fill="none"><path d="M190 262 Q300 250 360 255"/><path d="M190 280 Q230 230 230 214"/></g>
+        <text x="200" y="320" class="t-mono">점선 = 제어 신호</text>
+        <rect x="590" y="20" width="190" height="290" rx="14" class="f-surface"/><text x="685" y="46" text-anchor="middle" class="t" style="font-weight:700">메모리</text>
+        <g class="t-mono" style="font-size:12px"><rect x="608" y="60" width="154" height="26" rx="5" class="f-elev"/><text x="618" y="78">0: LOAD 14</text>
+          <rect x="608" y="92" width="154" height="26" rx="5" class="f-elev"/><text x="618" y="110">1: ADD 15</text>
+          <text x="685" y="140" text-anchor="middle">⋮</text>
+          <rect x="608" y="246" width="154" height="26" rx="5" class="f-elev"/><text x="618" y="264">15: 7</text></g>
+      </svg>
+      <figcaption><b>그림 4-2.</b> 장난감 CPU의 데이터 경로. 주소 버스로 “어디”를, 데이터 버스로 “무엇”을 주고받는다. 명령을 가져올 때는 PC가, 데이터를 읽을 때는 IR의 주소 부분이 주소 버스를 쓴다.</figcaption>
+    </figure>
   </section>
 
   <!-- ============================================================ -->
@@ -113,6 +144,28 @@
     <h2>명령어도 숫자다</h2>
     <p>1장에서 프로그램도 데이터처럼 메모리에 저장된다고 했다. 메모리에는 숫자만 들어가니 명령어도 숫자여야 한다. CPU 설계자는 “이 숫자는 이 명령”이라는 약속표를 만드는데, 이것을 <span class="term">명령어 집합</span><span class="en">(ISA, Instruction Set Architecture)</span>이라 한다.</p>
     <p>이 장의 장난감 CPU는 명령어가 8비트다. <b>앞 4비트</b>는 무엇을 할지(<span class="term">연산 코드</span>, opcode), <b>뒤 4비트</b>는 메모리 몇 번지를 대상으로 할지(주소)를 나타낸다. 예를 들어 <code>ADD 15</code>는 <code>0010 1111</code>이다. “0010 = 더하기”, “1111 = 15번지”.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 210" role="img" aria-label="8비트 명령어의 구조: 연산 코드 4비트와 주소 4비트">
+        <g transform="translate(150,20)" style="font-family:var(--mono);font-size:22px;font-weight:700">
+          <rect x="0" width="56" height="56" rx="8" class="f-acc"/><text x="28" y="37" text-anchor="middle" style="fill:#fff">0</text>
+          <rect x="62" width="56" height="56" rx="8" class="f-acc"/><text x="90" y="37" text-anchor="middle" style="fill:#fff">0</text>
+          <rect x="124" width="56" height="56" rx="8" class="f-acc"/><text x="152" y="37" text-anchor="middle" style="fill:#fff">1</text>
+          <rect x="186" width="56" height="56" rx="8" class="f-acc"/><text x="214" y="37" text-anchor="middle" style="fill:#fff">0</text>
+          <rect x="262" width="56" height="56" rx="8" class="f-acc2-soft"/><text x="290" y="37" text-anchor="middle" style="fill:var(--text)">1</text>
+          <rect x="324" width="56" height="56" rx="8" class="f-acc2-soft"/><text x="352" y="37" text-anchor="middle" style="fill:var(--text)">1</text>
+          <rect x="386" width="56" height="56" rx="8" class="f-acc2-soft"/><text x="414" y="37" text-anchor="middle" style="fill:var(--text)">1</text>
+          <rect x="448" width="56" height="56" rx="8" class="f-acc2-soft"/><text x="476" y="37" text-anchor="middle" style="fill:var(--text)">1</text>
+          <path d="M0 72 v10 h242 v-10" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M262 72 v10 h242 v-10" fill="none" stroke="var(--accent-2)" stroke-width="2"/>
+        </g>
+        <text x="271" y="128" text-anchor="middle" class="t-acc">연산 코드 0010 = ADD</text>
+        <text x="271" y="148" text-anchor="middle" class="t-dim">무엇을 할까? (최대 16가지)</text>
+        <text x="533" y="128" text-anchor="middle" class="t" style="fill:var(--accent-2);font-weight:700">주소 1111 = 15번지</text>
+        <text x="533" y="148" text-anchor="middle" class="t-dim">어디의 값으로? (0~15번지)</text>
+        <text x="400" y="190" text-anchor="middle" class="t-dim">주소 칸이 4비트뿐이라 이 CPU는 메모리 16칸까지만 가리킬 수 있다. 64비트 CPU가 거대한 메모리를 쓰는 이유가 여기에 있다.</text>
+      </svg>
+      <figcaption><b>그림 4-3.</b> 명령어 <code>ADD 15</code>의 8비트 구조. 앞부분은 동작, 뒷부분은 대상이다.</figcaption>
+    </figure>
     <div class="table-wrap"><table class="isa">
       <thead><tr><th>명령</th><th>코드</th><th>뜻</th></tr></thead>
       <tbody>
@@ -127,6 +180,24 @@
       </tbody>
     </table></div>
     <div class="callout tip"><strong>같은 숫자, 다른 의미</strong><p>메모리에 <code>00100111</code>(39)이 있다면 이것은 “ADD 7”이라는 명령일까, 그냥 숫자 39일까? 메모리는 모른다. <b>PC가 가리켜서 명령으로 가져가면 명령</b>이고, LOAD로 읽으면 데이터다. 2장에서 말한 “모든 것은 해석의 약속”이 여기서도 그대로 적용된다.</p></div>
+    <div class="sim" id="sim-enc">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>기계어 조립기 &amp; 해독 퍼즐</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>① 조립하기: 명령을 고르면 숫자가 된다</span><div class="seg" id="enc-op"><button data-value="1" class="on">LOAD</button><button data-value="2">ADD</button><button data-value="3">SUB</button><button data-value="4">STORE</button><button data-value="5">JUMP</button><button data-value="6">JZ</button><button data-value="14">OUT</button><button data-value="15">HALT</button></div></div>
+        <label class="ctrl"><span>주소 <output id="enc-addr-out"></output></span><input type="range" id="enc-addr" min="0" max="15" value="14"></label>
+      </div>
+      <div class="pad" style="padding-top:0"><div class="bits" id="enc-bits"></div><p class="scale-note" style="text-align:center;margin:26px 0 0" id="enc-txt"></p></div>
+      <div class="sim-controls" style="border-top:1px solid var(--border)">
+        <div class="ctrl"><span>② 해독하기: 이 숫자는 어떤 명령일까?</span><div class="bits" id="dec-bits" style="justify-content:flex-start;margin-bottom:18px"></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row" id="dec-opts"></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">맞힌 문제</span><span class="v" id="o-dec-ok">0</span></div>
+        <div class="stat"><span class="k">푼 문제</span><span class="v" id="o-dec-n">0</span></div>
+        <div class="stat"><span class="k">결과</span><span class="v" id="o-dec-msg" style="font-size:15px">—</span></div>
+      </div>
+      <div class="sim-note">요령: 앞 4비트만 보고 명령 이름을, 뒤 4비트로 주소를 읽는다. 0001 = LOAD, 0010 = ADD, 0011 = SUB, 0100 = STORE, 0101 = JUMP, 0110 = JZ. CPU의 해석기(디코더)도 정확히 이 일을 회로로 한다.</div>
+    </div>
   </section>
 
   <!-- ============================================================ -->
@@ -138,6 +209,32 @@
       <li><b>해석하기</b><span class="en">(Decode)</span>: 제어 장치가 IR의 앞 4비트를 보고 무슨 명령인지, 뒤 4비트로 대상 주소가 어디인지 알아낸다.</li>
       <li><b>실행하기</b><span class="en">(Execute)</span>: ALU로 계산하거나, 메모리에 쓰거나, PC를 바꾸는(점프) 등 실제 동작을 한다.</li>
     </ol>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 270" role="img" aria-label="가져오기, 해석, 실행이 반복되는 명령어 사이클">
+        <defs><marker id="cy-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <circle cx="260" cy="135" r="92" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="4 5"/>
+        <g>
+          <rect x="190" y="18" width="140" height="50" rx="12" class="f-acc"/><text x="260" y="40" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">① 가져오기</text><text x="260" y="58" text-anchor="middle" style="fill:#fff" class="t-mono">IR ← 메모리[PC]</text>
+          <rect x="330" y="160" width="140" height="50" rx="12" class="f-acc-soft"/><text x="400" y="182" text-anchor="middle" class="t" style="font-weight:700">② 해석</text><text x="400" y="200" text-anchor="middle" class="t-mono">무슨 명령?</text>
+          <rect x="50" y="160" width="140" height="50" rx="12" class="f-acc2-soft"/><text x="120" y="182" text-anchor="middle" class="t" style="font-weight:700">③ 실행</text><text x="120" y="200" text-anchor="middle" class="t-mono">계산·저장·점프</text>
+        </g>
+        <path d="M330 52 Q390 80 400 152" class="s-acc" marker-end="url(#cy-a)"/>
+        <path d="M326 196 Q260 240 196 196" class="s-acc" marker-end="url(#cy-a)"/>
+        <path d="M110 154 Q120 80 186 52" class="s-acc" marker-end="url(#cy-a)"/>
+        <text x="260" y="128" text-anchor="middle" class="t-acc">PC + 1</text><text x="260" y="146" text-anchor="middle" class="t-dim">(가져올 때마다)</text>
+        <g transform="translate(520,40)">
+          <rect width="260" height="190" rx="12" class="f-surface"/>
+          <text x="16" y="30" class="t" style="font-weight:700">이 고리가 1초에</text>
+          <text x="16" y="54" class="t-dim">장난감 CPU (손가락): 몇 번</text>
+          <text x="16" y="78" class="t-dim">1970년대 칩: 수십만 번</text>
+          <text x="16" y="102" class="t-dim">요즘 CPU 코어 하나: 수십억 번 이상</text>
+          <text x="16" y="138" class="t" style="font-weight:700">점프는?</text>
+          <text x="16" y="162" class="t-dim">③ 실행에서 PC를 다른 값으로</text>
+          <text x="16" y="180" class="t-dim">바꿔 고리를 다른 줄로 잇는다.</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 4-4.</b> 명령어 사이클. 전원이 켜져 있는 한 이 세 단계가 끝없이 돈다. 4장의 모든 내용은 이 고리를 자세히 들여다본 것이다.</figcaption>
+    </figure>
     <p>이제 직접 돌려 보자. <b>한 단계</b> 버튼을 누를 때마다 위 세 단계 중 하나가 진행된다. 무엇이 어디로 움직이는지 반짝이는 칸을 따라가 보자.</p>
 
     <div class="sim" id="sim-toy">
@@ -173,6 +270,20 @@
       <div class="sim-note">해볼 것: “두 수 더하기”를 <b>한 단계</b>씩 끝까지 실행해 보자. PC는 가져오기 단계마다 1씩 늘어나고, JUMP·JZ만이 PC를 다른 값으로 바꾼다. “1부터 N까지 합”에서는 12번지 값(N)을 바꾸려면 “직접 작성” 탭에서 수정하면 된다.</div>
     </div>
   </section>
+  <!-- ============================================================ -->
+  <section id="micro">
+    <h2>현미경으로 본 명령 하나</h2>
+    <p>위 시뮬레이터에서 “실행” 한 단계로 보였던 일도, 회로 안에서는 더 잘게 쪼개진 동작의 연속이다. 값이 어느 버스를 타고 어디로 가는지 <code>ADD 15</code> 한 명령을 따라가 보자. 그림 4-2의 데이터 경로가 실제로 움직이는 모습이다.</p>
+    <div class="sim" id="sim-micro">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>ADD 15의 미시 단계</h3></div>
+      <div class="sim-view" style="overflow-x:auto"><div style="min-width:620px"><canvas id="cv-micro"></canvas></div></div>
+      <div class="stepdesc" id="mc-desc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px;min-height:66px"></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>진행 <output id="mc-step">0</output></span><div class="btn-row"><button class="btn" id="mc-prev">← 이전</button><button class="btn primary" id="mc-next">다음 →</button><button class="btn" id="mc-auto">자동 재생</button></div></div>
+      </div>
+      <div class="sim-note">한 명령이 9개의 작은 동작(마이크로 연산)으로 나뉜다. 실제 CPU는 이 동작들을 여러 명령에 걸쳐 겹쳐서 진행한다(5장의 파이프라인). 그래서 한 명령에 여러 단계가 필요해도 평균적으로는 한 박자에 명령 하나 이상을 끝낸다.</div>
+    </div>
+  </section>
 
   <!-- ============================================================ -->
   <section id="branch">
@@ -188,6 +299,46 @@
 <span class="n">6</span>  <span class="k">HALT</span></div>
     <p>우리가 프로그래밍 언어에서 쓰는 <code>if</code>(만약), <code>while</code>(~하는 동안), <code>for</code>(~번 반복)는 모두 결국 이런 <strong>조건 점프</strong>로 번역된다(13장). 아무리 복잡한 앱도 CPU에게는 “계산하고, 저장하고, 조건에 따라 다른 줄로 점프하기”의 반복일 뿐이다.</p>
     <div class="callout deep"><strong>튜링 완전</strong><p>놀랍게도 “메모리 읽기/쓰기, 더하기/빼기, 조건 점프” 정도만 있으면 (메모리가 충분하다는 가정하에) 어떤 계산이든 할 수 있다는 것이 증명되어 있다. 이런 성질을 <b>튜링 완전</b>이라 한다. 장난감 CPU도 원리적으로는 슈퍼컴퓨터와 같은 문제를 풀 수 있다. 다만 엄청나게 느리고 메모리가 작을 뿐이다.</p></div>
+  </section>
+  <!-- ============================================================ -->
+  <section id="call">
+    <h2>함수 호출: 갔다가 돌아오기</h2>
+    <p>프로그램에는 여러 곳에서 되풀이해 쓰는 코드 묶음, 즉 <b>함수</b>가 있다. 예를 들어 “화면에 글자 찍기”는 프로그램 곳곳에서 부른다. 함수로 점프하는 것은 JUMP로 할 수 있다. 문제는 <b>돌아오는 길</b>이다. 함수가 끝났을 때 원래 어디로 돌아가야 할까? 부른 곳이 매번 다르다.</p>
+    <p>그래서 실제 CPU에는 두 명령이 더 있다. <code>CALL n</code>은 “돌아올 주소(지금 PC 값)를 <b>스택</b>이라는 메모리 영역에 적어 두고 n번지로 점프”한다. 함수 끝의 <code>RET</code>은 “스택에 적어 둔 주소를 꺼내 PC에 넣는다”. 책을 읽다가 각주를 보러 갈 때 지금 쪽에 손가락을 끼워 두는 것과 같다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="CALL과 RET으로 함수에 다녀오는 흐름">
+        <defs><marker id="cl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+          <marker id="cl-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs>
+        <text x="130" y="24" text-anchor="middle" class="t" style="font-weight:700">본 프로그램</text>
+        <g class="t-mono" style="font-size:13px">
+          <rect x="40" y="36" width="180" height="28" rx="6" class="f-surface"/><text x="52" y="55">20: LOAD 3</text>
+          <rect x="40" y="68" width="180" height="28" rx="6" class="f-acc"/><text x="52" y="87" style="fill:#fff">21: CALL 50</text>
+          <rect x="40" y="100" width="180" height="28" rx="6" class="f-surface"/><text x="52" y="119">22: STORE 9 ◀ 돌아올 곳</text>
+          <rect x="40" y="132" width="180" height="28" rx="6" class="f-surface"/><text x="52" y="151">23: …</text>
+        </g>
+        <text x="470" y="24" text-anchor="middle" class="t" style="font-weight:700">함수 (50번지부터)</text>
+        <g class="t-mono" style="font-size:13px">
+          <rect x="380" y="36" width="180" height="28" rx="6" class="f-surface"/><text x="392" y="55">50: ADD 7</text>
+          <rect x="380" y="68" width="180" height="28" rx="6" class="f-surface"/><text x="392" y="87">51: OUT</text>
+          <rect x="380" y="100" width="180" height="28" rx="6" class="f-acc"/><text x="392" y="119" style="fill:#fff">52: RET</text>
+        </g>
+        <path d="M222 82 C300 82 300 50 376 50" class="s-acc" marker-end="url(#cl-a)"/><text x="300" y="44" text-anchor="middle" class="t-acc">① 점프</text>
+        <path d="M376 114 C300 114 300 114 224 114" stroke="var(--warn)" stroke-width="2" fill="none" marker-end="url(#cl-b)"/><text x="300" y="134" text-anchor="middle" class="t" style="fill:var(--warn);font-weight:700">③ 돌아오기</text>
+        <g transform="translate(620,30)">
+          <text x="70" y="0" text-anchor="middle" class="t" style="font-weight:700">스택</text>
+          <rect x="10" y="14" width="120" height="34" rx="6" class="f-surface"/><text x="70" y="36" text-anchor="middle" class="t-mono">…</text>
+          <rect x="10" y="52" width="120" height="34" rx="6" fill="color-mix(in srgb, var(--warn) 22%, transparent)" stroke="var(--warn)"/><text x="70" y="74" text-anchor="middle" class="t-mono" style="fill:var(--text)">22 (돌아올 주소)</text>
+          <text x="70" y="110" text-anchor="middle" class="t-dim">② CALL이 적어 둠</text>
+          <text x="70" y="128" text-anchor="middle" class="t-dim">③ RET이 꺼내 PC로</text>
+        </g>
+        <rect x="40" y="190" width="720" height="90" rx="12" class="f-surface"/>
+        <text x="60" y="218" class="t" style="font-weight:700">함수 안에서 또 함수를 부르면?</text>
+        <text x="60" y="244" class="t-dim">돌아올 주소가 스택 위에 한 칸씩 더 쌓인다. RET은 늘 맨 위의 것부터 꺼내므로</text>
+        <text x="60" y="264" class="t-dim">가장 나중에 부른 함수부터 차례로 정확히 되돌아간다. 13장에서 이 스택을 직접 쌓아 본다.</text>
+      </svg>
+      <figcaption><b>그림 4-5.</b> CALL과 RET. 돌아올 주소를 스택에 적어 두는 덕분에 같은 함수를 어디서 불러도 제자리로 돌아온다.</figcaption>
+    </figure>
+    <p>장난감 CPU에는 CALL과 RET이 없지만, 실제 CPU에는 반드시 있다. 스택의 맨 위를 가리키는 전용 레지스터(<span class="term">스택 포인터</span>)도 함께 둔다. 운영체제, 앱, 게임 모두 수천 개의 함수가 서로를 부르며 실행된다.</p>
   </section>
 
   <!-- ============================================================ -->
@@ -222,6 +373,7 @@
       <li>명령어도 숫자다. 앞부분은 연산 종류(opcode), 뒷부분은 대상(주소·레지스터)을 담는다. 이 약속표가 ISA다.</li>
       <li>CPU는 <b>가져오기 → 해석 → 실행</b>을 끝없이 반복한다.</li>
       <li>반복과 조건 판단은 모두 <b>점프와 조건 점프</b>로 만든다.</li>
+      <li>함수 호출은 <b>CALL</b>(돌아올 주소를 스택에 적고 점프)과 <b>RET</b>(적어 둔 주소로 돌아가기)으로 한다.</li>
       <li>실제 CPU는 원리는 같지만 비트 폭, 레지스터, 명령어 수, 속도, 코어 수가 훨씬 크다. x86과 ARM은 서로 다른 ISA다.</li>
     </ol>
   </section>
@@ -255,6 +407,12 @@
         <button class="opt">스마트폰 메모리가 작아서</button>
         <button class="opt">스마트폰에는 클럭이 없어서</button>
       </div><div class="quiz-exp">기계어는 특정 ISA의 약속표로 적혀 있다. 다른 ISA의 CPU는 그 숫자를 다른 뜻으로 해석한다(운영체제 차이도 또 다른 이유다).</div></div>
+      <div class="quiz-q"><p>장난감 CPU의 명령어에서 주소 칸이 4비트다. 이 CPU가 가리킬 수 있는 메모리 칸은 몇 개인가?</p><div class="opts">
+        <button class="opt">4칸</button><button class="opt">8칸</button><button class="opt" data-correct>16칸</button><button class="opt">256칸</button>
+      </div><div class="quiz-exp">4비트로 만들 수 있는 수는 2⁴ = 16가지(0~15)다. 주소 비트가 늘어날수록 더 큰 메모리를 쓸 수 있다.</div></div>
+      <div class="quiz-q"><p>CALL 명령이 점프하기 전에 스택에 적어 두는 것은?</p><div class="opts">
+        <button class="opt">함수의 이름</button><button class="opt" data-correct>함수가 끝난 뒤 돌아올 주소</button><button class="opt">A 레지스터의 값</button><button class="opt">명령어의 개수</button>
+      </div><div class="quiz-exp">RET이 그 주소를 꺼내 PC에 넣으므로, 함수를 어디서 불렀든 정확히 다음 줄로 돌아온다.</div></div>
     </div>
   </section>
 </main>
@@ -378,6 +536,118 @@
   const prog = CB.seg("prog", (v) => { $("custom-box").style.display = v === "custom" ? "" : "none"; load(v); });
   $("b-asm").onclick = () => { const { m, errs } = assemble($("asm").value); $("asm-msg").textContent = errs.length ? "⚠ " + errs.join(", ") : "✓ 메모리에 넣었습니다"; if (!errs.length) { mem = m; reset(); } };
   load("add");
+})();
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- encoder / decoder ---------------- */
+  const NM = { 1: "LOAD", 2: "ADD", 3: "SUB", 4: "STORE", 5: "JUMP", 6: "JZ", 14: "OUT", 15: "HALT" };
+  const encOp = CB.seg("enc-op", renderEnc);
+  const encAddr = CB.range("enc-addr", (v) => v + "번지", renderEnc);
+  function bitsHTML(v, hi) { return CB.bin(v, 8).split("").map((b, i) => `<span class="bit ${b === "1" ? "on" : ""}" style="${i < 4 ? "" : "border-color:var(--accent-2)"}${b === "1" && i >= 4 ? ";background:var(--accent-2)" : ""}">${b}<small>${i < 4 ? "연산" : "주소"}</small></span>`).join(""); }
+  function renderEnc() {
+    const op = Number(encOp()), noAddr = op >= 14, a = noAddr ? 0 : encAddr();
+    encAddr.el.disabled = noAddr;
+    const v = (op << 4) | a;
+    $("enc-bits").innerHTML = bitsHTML(v);
+    $("enc-txt").innerHTML = `<b>${NM[op]}${noAddr ? "" : " " + a}</b> = 2진수 <code>${CB.bin(op, 4)} ${CB.bin(a, 4)}</code> = 10진수 <b>${v}</b> = 16진수 <b>0x${CB.hex(v)}</b>`;
+  }
+  renderEnc();
+  let ok = 0, n = 0, cur = null;
+  const ops = [1, 2, 3, 4, 5, 6];
+  function newQ() {
+    const op = ops[Math.floor(Math.random() * ops.length)], a = Math.floor(Math.random() * 16);
+    cur = { op, a, v: (op << 4) | a };
+    $("dec-bits").innerHTML = bitsHTML(cur.v);
+    const cand = new Set([`${NM[op]} ${a}`]);
+    while (cand.size < 4) { const r = Math.random(); const o2 = r < 0.5 ? op : ops[Math.floor(Math.random() * ops.length)]; const a2 = r < 0.5 ? Math.floor(Math.random() * 16) : (r < 0.75 ? a : Math.floor(Math.random() * 16)); cand.add(`${NM[o2]} ${a2}`); }
+    const arr = [...cand].sort(() => Math.random() - 0.5);
+    $("dec-opts").innerHTML = arr.map((t) => `<button class="btn" data-t="${t}">${t}</button>`).join("");
+    $("dec-opts").querySelectorAll("button").forEach((b) => (b.onclick = () => {
+      const right = b.dataset.t === `${NM[cur.op]} ${cur.a}`;
+      n++; if (right) ok++;
+      CB.stat("o-dec-ok", ok); CB.stat("o-dec-n", n);
+      CB.stat("o-dec-msg", right ? `<span style="color:var(--ok)">정답! ${NM[cur.op]} ${cur.a}</span>` : `<span style="color:var(--bad)">정답은 ${NM[cur.op]} ${cur.a}</span>`);
+      setTimeout(newQ, 900);
+    }));
+  }
+  newQ();
+
+  /* ---------------- micro-steps of ADD 15 ---------------- */
+  // virtual canvas 900 x 360
+  const W = {
+    pcA: [[115, 70], [115, 34], [240, 34]], abus: [[240, 34], [690, 34]],
+    dbus: [[240, 150], [690, 150]], memA: [[690, 34], [720, 34]], memD: [[720, 150], [690, 150]],
+    dIR: [[100, 150], [100, 182]], dbusL: [[100, 150], [240, 150]],
+    irA: [[70, 182], [70, 120], [30, 120], [30, 34], [115, 34]], irCU: [[115, 232], [115, 268]],
+    dALU: [[440, 150], [440, 262]], aALU: [[330, 232], [330, 262], [402, 262]], aluA: [[455, 322], [455, 345], [290, 345], [290, 232]],
+    pcInc: [[170, 92], [205, 92], [205, 60], [170, 60]],
+  };
+  const STEPS = [
+    { on: [], wires: [], d: "<b>준비.</b> 지금 PC = 1, A = 5, 메모리 1번지에는 명령 <code>ADD 15</code>(0010 1111), 15번지에는 7이 들어 있다. 이 명령 하나가 어떻게 실행되는지 보자.", st: { pc: 1, ir: "—", a: 5, alu: "", z: 0 } },
+    { on: ["pc", "m1"], wires: ["pcA", "abus", "memA"], d: "<b>가져오기 1.</b> PC의 값 1을 <b>주소 버스</b>에 싣는다. 메모리에게 “1번지를 보여 줘”라고 말하는 것이다.", st: { pc: 1, ir: "—", a: 5, alu: "", z: 0 } },
+    { on: ["m1"], wires: ["memD", "dbus"], d: "<b>가져오기 2.</b> 메모리가 1번지의 내용 <code>0010 1111</code>을 <b>데이터 버스</b>에 싣는다.", st: { pc: 1, ir: "—", a: 5, alu: "", z: 0 } },
+    { on: ["ir"], wires: ["dbus", "dbusL", "dIR"], d: "<b>가져오기 3.</b> IR이 데이터 버스의 값을 받아 붙잡는다. 이제 IR = <code>ADD 15</code>.", st: { pc: 1, ir: "ADD 15", a: 5, alu: "", z: 0 } },
+    { on: ["pc"], wires: ["pcInc"], d: "<b>가져오기 4.</b> PC를 1 늘려 2로 만든다. 다음에 가져올 명령의 주소를 미리 준비해 둔다.", st: { pc: 2, ir: "ADD 15", a: 5, alu: "", z: 0 } },
+    { on: ["ir", "cu"], wires: ["irCU"], d: "<b>해석.</b> 제어 장치가 IR의 앞 4비트 <code>0010</code>을 해독한다. “덧셈이다. 뒤 4비트(15번지)의 값을 가져와 A에 더하라.” 이제 각 부품에 보낼 제어 신호가 정해졌다.", st: { pc: 2, ir: "ADD 15", a: 5, alu: "", z: 0 } },
+    { on: ["ir", "m15"], wires: ["irA", "abus", "memA"], d: "<b>실행 1.</b> IR의 주소 부분 15를 주소 버스에 싣는다. 이번에는 PC가 아니라 IR이 주소를 낸다.", st: { pc: 2, ir: "ADD 15", a: 5, alu: "", z: 0 } },
+    { on: ["m15", "alu"], wires: ["memD", "dbus", "dALU"], d: "<b>실행 2.</b> 메모리가 15번지의 값 7을 데이터 버스에 싣고, ALU의 한쪽 입력으로 들어간다.", st: { pc: 2, ir: "ADD 15", a: 5, alu: "? + 7", z: 0 } },
+    { on: ["a", "alu"], wires: ["aALU"], d: "<b>실행 3.</b> A 레지스터의 값 5가 ALU의 다른 쪽 입력으로 들어간다. ALU(3장의 덧셈기)가 5 + 7을 계산한다.", st: { pc: 2, ir: "ADD 15", a: 5, alu: "5 + 7 = 12", z: 0 } },
+    { on: ["a", "alu"], wires: ["aluA"], d: "<b>실행 4.</b> 결과 12를 A 레지스터에 저장한다. 결과가 0이 아니므로 Z 플래그는 0. 명령 하나가 끝났다. 다음 박자에는 PC = 2가 가리키는 명령을 가져오며 같은 일이 반복된다.", st: { pc: 2, ir: "ADD 15", a: 12, alu: "5 + 7 = 12", z: 0 } },
+  ];
+  let mi = 0, ma = 1, mauto = null;
+  const mcv = CB.canvas("#cv-micro", (ctx, w, h) => {
+    const P = CB.palette(); const sx = w / 900, sy = h / 360;
+    ctx.save(); ctx.scale(sx, sy);
+    const S = STEPS[mi], st = S.st;
+    const on = (k) => S.on.includes(k);
+    // buses base
+    const line = (pts, col, lw, dash) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); ctx.setLineDash([]); };
+    Object.entries(W).forEach(([k, pts]) => line(pts, k === "abus" ? P.accent : k === "dbus" ? P.accent2 : P.border, k === "abus" || k === "dbus" ? 4 : 2, k === "pcInc" ? [3, 3] : null));
+    CB.text(ctx, "주소 버스", 470, 22, { align: "center", size: 13, bold: true, color: P.accent });
+    CB.text(ctx, "데이터 버스", 470, 138, { align: "center", size: 13, bold: true, color: P.accent2 });
+    // active wires
+    S.wires.forEach((k) => {
+      const pts = W[k]; line(pts, P.warn, 5);
+      // moving dot
+      let L = 0; const seg = []; for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); L += d; }
+      let t = (ma % 1) * L, i = 0; while (i < seg.length - 1 && t > seg[i]) { t -= seg[i]; i++; }
+      const f = Math.min(1, t / seg[i]); const x = CB.lerp(pts[i][0], pts[i + 1][0], f), y = CB.lerp(pts[i][1], pts[i + 1][1], f);
+      ctx.fillStyle = P.warn; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill();
+    });
+    const box = (k, x, y, ww, hh, title, val) => {
+      CB.box(ctx, x, y, ww, hh, { fill: on(k) ? P.accent : P.surface, stroke: on(k) ? P.accent : P.border, r: 10 });
+      CB.text(ctx, title, x + 10, y + 16, { size: 12, color: on(k) ? "#fff" : P.dim });
+      CB.text(ctx, val, x + ww / 2, y + hh / 2 + 8, { align: "center", size: 18, bold: true, mono: true, color: on(k) ? "#fff" : P.text });
+    };
+    box("pc", 60, 70, 110, 50, "PC", String(st.pc));
+    box("ir", 40, 182, 150, 50, "IR", st.ir);
+    box("cu", 40, 268, 170, 64, "제어 장치", on("cu") ? "ADD!" : "");
+    box("a", 250, 182, 120, 50, "A 레지스터", String(st.a));
+    // ALU trapezoid
+    ctx.beginPath(); ctx.moveTo(390, 262); ctx.lineTo(520, 262); ctx.lineTo(495, 322); ctx.lineTo(415, 322); ctx.closePath();
+    ctx.fillStyle = on("alu") ? P.accent : P.surface; ctx.fill(); ctx.strokeStyle = on("alu") ? P.accent : P.border; ctx.lineWidth = 1.5; ctx.stroke();
+    CB.text(ctx, "ALU", 455, 284, { align: "center", size: 12, color: on("alu") ? "#fff" : P.dim });
+    CB.text(ctx, st.alu || " ", 455, 305, { align: "center", size: 13, bold: true, mono: true, color: on("alu") ? "#fff" : P.text });
+    CB.text(ctx, "+1", 212, 76, { size: 12, mono: true, color: on("pc") && mi === 4 ? P.warn : P.faint });
+    // memory
+    CB.box(ctx, 720, 10, 170, 340, { fill: P.surface, r: 12 });
+    CB.text(ctx, "메모리", 805, 32, { align: "center", size: 14, bold: true, color: P.text });
+    const row = (k, y, txt) => { CB.box(ctx, 735, y, 140, 34, { fill: on(k) ? P.accent : P.bg, stroke: on(k) ? P.accent : P.border, text: txt, mono: true, size: 13, color: on(k) ? "#fff" : P.text, r: 6 }); };
+    row("m0", 50, "0: LOAD 14"); row("m1", 90, "1: ADD 15"); CB.text(ctx, "⋮", 805, 150, { align: "center", size: 16, color: P.faint }); row("m14", 250, "14: 5"); row("m15", 290, "15: 7");
+    ctx.restore();
+  }, { aspect: 0.4, minHeight: 250, maxHeight: 380 });
+  function mrender() {
+    $("mc-desc").innerHTML = STEPS[mi].d; $("mc-step").textContent = mi + " / " + (STEPS.length - 1);
+    $("mc-prev").disabled = mi === 0; $("mc-next").disabled = mi === STEPS.length - 1; ma = 0; mcv.redraw();
+  }
+  function mstop() { if (mauto) { clearInterval(mauto); mauto = null; $("mc-auto").textContent = "자동 재생"; } }
+  $("mc-next").onclick = () => { mstop(); if (mi < STEPS.length - 1) { mi++; mrender(); } };
+  $("mc-prev").onclick = () => { mstop(); if (mi > 0) { mi--; mrender(); } };
+  $("mc-auto").onclick = () => { if (mauto) return mstop(); if (mi >= STEPS.length - 1) mi = 0; $("mc-auto").textContent = "멈춤"; mauto = setInterval(() => { if (mi >= STEPS.length - 1) return mstop(); mi++; mrender(); }, 2600); };
+  CB.loop($("cv-micro"), (dt) => { if (STEPS[mi].wires.length) { ma += dt * 0.8; mcv.redraw(); } });
+  mrender();
 })();
 </script>
 </body>
