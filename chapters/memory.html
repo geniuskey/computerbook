@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>메모리와 캐시 · ComputerBook</title>
+<meta name="description" content="주소와 RAM, DRAM이 계속 새로고침해야 하는 이유, 레지스터에서 SSD까지 이어지는 메모리 계층, 캐시 적중과 실패, 지역성을 시뮬레이터로 체험한다.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+<style>
+  .lockers { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; padding: 14px 18px; }
+  @media (max-width: 520px) { .lockers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .lockers .cell { padding: 4px 2px; }
+  .lockers .cell .v { display: block; font-weight: 700; font-size: 13px; color: var(--text); }
+  .lockers .cell .c { display: block; font-size: 10.5px; color: var(--text-faint); min-height: 1.2em; }
+  .ctrl-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .ctrl-inline .ctrl { flex: 1; min-width: 120px; }
+  .cache-lines { display: grid; gap: 4px; padding: 14px 18px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 520px) { .cache-lines { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .cache-lines .cell { text-align: left; padding: 6px 8px; }
+  .cache-lines .cell b { font-size: 13px; color: var(--text); }
+  .seqrow { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 18px 14px; }
+  .seqrow span { min-width: 30px; padding: 2px 4px; text-align: center; font-family: var(--mono); font-size: 11.5px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); }
+  .seqrow span.cur { outline: 2px solid var(--accent); }
+  .seqrow span.hit { background: color-mix(in srgb, var(--ok) 20%, transparent); border-color: var(--ok); color: var(--text); }
+  .seqrow span.miss { background: color-mix(in srgb, var(--bad) 16%, transparent); border-color: var(--bad); color: var(--text); }
+  .pyr { display: grid; gap: 6px; }
+  .pyr div { margin: 0 auto; text-align: center; padding: 9px 10px; border-radius: 10px; font-size: 14px; line-height: 1.4; color: #fff; }
+  .pyr div small { display: block; font-size: 12px; opacity: .9; }
+</style>
+</head>
+<body data-chapter="memory">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 06</div>
+    <h1>메모리와 캐시</h1>
+    <p class="lead">CPU가 아무리 빨라도 재료가 늦게 오면 기다릴 수밖에 없다. 1장에서 CPU의 한 박자를 1초로 늘리면 메모리까지 다녀오는 데 <strong>5분</strong>이 걸린다고 했다. 이 장은 그 5분을 어떻게 숨기는지에 대한 이야기다. 핵심 단어는 하나, <strong>“가까운 곳에 두기”</strong>다.</p>
+    <ul class="objectives">
+      <li>메모리를 “번호(주소)가 붙은 사물함”으로 이해하고 주소와 값을 구분한다.</li>
+      <li>DRAM이 전원이 꺼지면 지워지고, 켜져 있어도 계속 새로고침해야 하는 이유를 안다.</li>
+      <li>레지스터 → 캐시 → RAM → SSD로 이어지는 메모리 계층의 크기·속도·가격 관계를 설명한다.</li>
+      <li>캐시 적중과 실패를 시뮬레이터로 따라가며 평균 접근 시간을 계산한다.</li>
+      <li>시간 지역성과 공간 지역성이 무엇이며, 코드 작성 방식이 성능을 바꾸는 이유를 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="address">
+    <h2>메모리는 번호 붙은 사물함</h2>
+    <p>메모리(RAM)는 아주 긴 사물함 줄이라고 생각하면 된다. 사물함 한 칸에는 1바이트(8비트)가 들어가고, 칸마다 0번부터 시작하는 번호가 붙어 있다. 이 번호를 <span class="term">주소</span><span class="en">(address)</span>라 한다. 16 GB 메모리라면 사물함이 약 160억 칸이다.</p>
+    <p>CPU는 “1000번지 값을 줘” 또는 “1000번지에 65를 넣어”라고만 말한다. 주소만 알면 몇 번째 칸이든 똑같이 빠르게 접근할 수 있어서 <span class="term">RAM</span><span class="en">(Random Access Memory, 아무 곳이나 바로 접근하는 메모리)</span>이라는 이름이 붙었다. 처음부터 차례로 감아야 하는 카세트테이프와 대비되는 이름이다.</p>
+    <div class="sim" id="sim-lock">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>메모리 사물함: 주소와 값</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl-inline">
+          <label class="ctrl"><span>주소 (0~31)</span><input type="number" id="la" min="0" max="31" value="4"></label>
+          <label class="ctrl"><span>넣을 글자 또는 숫자</span><input type="text" id="lv" value="Hi!" maxlength="12"></label>
+          <button class="btn primary" id="lw">쓰기</button>
+          <button class="btn" id="lr">읽기</button>
+          <button class="btn" id="lp">포인터 만들기</button>
+        </div>
+      </div>
+      <div class="lockers" id="lockers"></div>
+      <div class="stepdesc" id="ldesc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px">주소와 글자를 정하고 <b>쓰기</b>를 눌러 보세요. 글자는 2장의 약속(UTF-8)에 따라 숫자로 바뀌어 한 칸에 한 바이트씩 들어갑니다.</div>
+      <div class="sim-note">해볼 것: “포인터 만들기”는 0번지에 <b>다른 칸의 주소</b>를 숫자로 적어 둔다. 값 자체가 아니라 “어디에 있는지”를 적어 둔 것이다. 프로그래밍에서 이것을 포인터라 하고, 13장에서 다시 만난다.</div>
+    </div>
+    <div class="callout tip"><strong>주소도 결국 숫자</strong><p>주소는 메모리 칸의 번호이고, 이 번호 자체도 다른 칸에 숫자로 저장할 수 있다. “사물함 3번 안에 ‘17번 사물함을 열어 봐’라는 쪽지” 같은 것이다. 이 단순한 아이디어로 목록, 트리, 웹 페이지의 링크 구조 같은 복잡한 데이터를 엮는다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="dram">
+    <h2>RAM의 정체: 새는 물동이</h2>
+    <p>3장의 래치는 트랜지스터 여러 개로 1비트를 기억했다. 빠르지만 자리를 많이 차지한다. 메인 메모리로 쓰는 <span class="term">DRAM</span><span class="en">(Dynamic RAM)</span>은 1비트를 <b>트랜지스터 1개 + 아주 작은 전기 그릇(커패시터) 1개</b>로 기억한다. 그릇에 전하가 차 있으면 1, 비어 있으면 0이다. 덕분에 아주 촘촘하게, 싸게 만들 수 있다.</p>
+    <p>문제는 이 그릇이 <strong>조금씩 샌다</strong>는 것이다. 가만히 두면 몇십 밀리초 안에 1이 0처럼 보일 만큼 전하가 빠져나간다. 그래서 메모리 칩은 모든 칸을 주기적으로 읽어서 다시 채워 넣는 <span class="term">리프레시</span><span class="en">(refresh)</span>를 끊임없이 한다. 보통 64 ms마다 한 바퀴를 돈다. 이름의 “Dynamic(동적)”이 바로 이 쉼 없는 새로고침을 뜻한다.</p>
+    <div class="sim" id="sim-dram">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>DRAM 셀의 누설과 리프레시</h3></div>
+      <div class="sim-view"><canvas id="cv-dram"></canvas></div>
+      <div class="sim-controls">
+        <label class="check"><input type="checkbox" id="refresh" checked> 리프레시 켜기 (한 줄씩 차례로 다시 채움)</label>
+        <label class="ctrl"><span>누설 속도 (온도가 높을수록 빠르다) <output id="leak-out"></output></span><input type="range" id="leak" min="0.5" max="4" step="0.5" value="1"></label>
+        <div class="btn-row"><button class="btn" id="dram-write">새 데이터 쓰기</button></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">저장한 1의 개수</span><span class="v" id="o-ones">—</span></div>
+        <div class="stat"><span class="k">0으로 잘못 읽히는 칸</span><span class="v" id="o-lost">—</span></div>
+      </div>
+      <div class="sim-note">각 칸은 커패시터 하나다. 진한 색 = 전하 가득(1). 점선 아래로 떨어지면 0으로 읽힌다(빨간 테두리). 리프레시를 끄면 저장한 데이터가 서서히 사라진다. 전원을 끄면 RAM의 내용이 사라지는 이유도 같다.</div>
+    </div>
+    <p>CPU 안의 캐시와 레지스터는 새지 않는 래치 방식의 <span class="term">SRAM</span><span class="en">(Static RAM)</span>을 쓴다. 리프레시가 필요 없고 훨씬 빠르지만, 비트당 트랜지스터가 6개 정도 들어서 같은 면적에 담을 수 있는 양이 적고 비싸다. 빠른 것은 작고 비싸며, 큰 것은 느리고 싸다. 이 맞바꿈이 다음 절의 메모리 계층을 만든다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="hierarchy">
+    <h2>메모리 계층: 가까울수록 빠르고 작다</h2>
+    <p>이상적인 메모리는 “무한히 크고, 무한히 빠르고, 공짜”일 것이다. 그런 것은 없다. 그래서 컴퓨터는 성격이 다른 메모리 여러 층을 쌓아 쓴다. 위로 갈수록 빠르고 작고 비싸며, CPU와 가깝다.</p>
+    <figure class="diagram">
+      <div class="pyr">
+        <div style="width:30%;background:#4f46e5">레지스터<small>수백 바이트 · 0.3 ns</small></div>
+        <div style="width:44%;background:#5b54e8">L1 캐시<small>코어당 수십 KB · 1 ns</small></div>
+        <div style="width:56%;background:#3b74d6">L2 캐시<small>코어당 1~2 MB · 4 ns</small></div>
+        <div style="width:68%;background:#1e87b8">L3 캐시<small>공유 수십 MB · 12 ns</small></div>
+        <div style="width:82%;background:#0e8fa8">메인 메모리 (DRAM)<small>8~64 GB · 100 ns</small></div>
+        <div style="width:100%;background:#5f6b80">저장장치 (SSD)<small>0.5~4 TB · 50~100 µs (전원이 꺼져도 남는다)</small></div>
+      </div>
+      <figcaption><b>그림 6-1.</b> 메모리 계층. 숫자는 대표적인 크기와 접근 시간이다. 한 층 내려갈 때마다 수 배~수천 배 느려진다.</figcaption>
+    </figure>
+    <div class="callout analogy"><strong>요리사의 동선</strong><p>요리사는 지금 쓰는 재료를 <b>손</b>(레지스터)에 쥐고, 자주 쓰는 양념은 <b>손 닿는 선반</b>(L1), 조금 덜 쓰는 것은 <b>뒤쪽 선반</b>(L2·L3), 오늘 쓸 재료 전체는 <b>조리대</b>(RAM), 나머지는 <b>창고</b>(SSD)에 둔다. 선반에서 꺼내는 데 1초, 조리대까지 몇 분, 창고까지는 며칠이 걸린다고 생각하면 1장의 시간 변환기와 맞아떨어진다. 좋은 요리사는 다음에 쓸 재료를 미리 선반으로 옮겨 둔다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="cache">
+    <h2>캐시: 다음에 쓸 것을 옆에 두기</h2>
+    <p><span class="term">캐시</span><span class="en">(cache)</span>는 메인 메모리의 일부 내용을 복사해 CPU 바로 옆에 둔 작고 빠른 메모리다. CPU가 어떤 주소의 데이터를 요청하면 먼저 캐시를 본다.</p>
+    <ul>
+      <li><b>캐시 적중</b><span class="en">(hit)</span>: 캐시에 있다! 1~4 ns 만에 가져온다.</li>
+      <li><b>캐시 실패</b><span class="en">(miss)</span>: 없다. 메인 메모리까지 가서 가져오고(약 100 ns), 다음을 위해 캐시에도 복사해 둔다. 캐시가 꽉 차 있으면 기존 내용 하나를 내보낸다.</li>
+    </ul>
+    <p>아래 시뮬레이터의 캐시는 8칸짜리다. 메모리 주소마다 들어갈 수 있는 캐시 칸이 정해져 있다(주소를 8로 나눈 나머지). 이런 방식을 <span class="term">직접 사상 캐시</span><span class="en">(direct-mapped cache)</span>라 한다. 접근 패턴을 바꿔 가며 적중률이 어떻게 달라지는지 보자.</p>
+    <div class="sim" id="sim-cache">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>8칸 캐시 시뮬레이터</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>접근 패턴</span><div class="seg" id="cpat"><button data-value="loop" class="on">작은 반복 (0~5를 여러 번)</button><button data-value="seq">순차 (0, 1, 2, …)</button><button data-value="conflict">충돌 (0, 8, 0, 8, …)</button><button data-value="random">무작위</button></div></div>
+        <div class="ctrl"><span>진행 <output id="cstep">0</output></span><div class="btn-row"><button class="btn primary" id="cnext">한 번 접근</button><button class="btn" id="call">끝까지</button><button class="btn" id="creset">처음으로</button></div></div>
+      </div>
+      <div class="seqrow" id="cseq"></div>
+      <div class="cache-lines" id="clines"></div>
+      <div class="stepdesc" id="cdesc" style="padding:12px 18px;border-top:1px solid var(--border);font-size:15px">“한 번 접근”을 눌러 보세요.</div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">적중 / 실패</span><span class="v" id="o-hm">—</span></div>
+        <div class="stat"><span class="k">적중률</span><span class="v" id="o-hr">—</span></div>
+        <div class="stat"><span class="k">평균 접근 시간</span><span class="v" id="o-amat">—</span></div>
+      </div>
+      <div class="sim-note">적중 = 1 ns, 실패 = 100 ns로 계산한다. “충돌” 패턴에서는 캐시가 거의 비어 있는데도 0과 8이 같은 칸(나머지 0)을 두고 서로 쫓아내 계속 실패한다. 실제 캐시는 한 주소가 들어갈 수 있는 칸을 여러 개 두어(연관 사상) 이런 충돌을 줄인다.</div>
+    </div>
+    <p>적중률이 조금만 달라져도 평균 속도는 크게 달라진다. 적중률이 99%면 평균 약 2 ns이지만, 90%면 약 11 ns로 다섯 배 넘게 느려진다. 실제 프로그램은 대부분 L1 캐시에서 95% 이상 적중한다. 어떻게 그렇게 잘 맞힐까? 비결은 프로그램의 습관, 즉 지역성에 있다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="locality">
+    <h2>지역성: 프로그램의 습관</h2>
+    <p>프로그램은 메모리를 아무렇게나 쓰지 않는다. 두 가지 뚜렷한 습관이 있다.</p>
+    <ul>
+      <li><b>시간 지역성</b>: 방금 쓴 것은 곧 또 쓴다. 반복문 안의 변수, 자주 부르는 함수가 그렇다. (“방금 쓴 소금은 곧 또 쓴다”)</li>
+      <li><b>공간 지역성</b>: 방금 쓴 것 근처를 곧 쓴다. 배열을 처음부터 차례로 읽는 경우가 그렇다. (“양파를 꺼냈으면 옆의 마늘도 곧 쓴다”)</li>
+    </ul>
+    <p>캐시는 공간 지역성을 이용하려고 한 바이트만 가져오지 않고 주변 64바이트를 한꺼번에 가져온다. 이 묶음을 <span class="term">캐시 라인</span><span class="en">(cache line)</span>이라 한다. 그래서 데이터를 <b>메모리에 놓인 순서대로</b> 읽으면 빠르고, 띄엄띄엄 건너뛰며 읽으면 느리다. 같은 계산을 하는데도 말이다.</p>
+    <div class="sim" id="sim-loc">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>표를 읽는 두 가지 순서</h3></div>
+      <div class="sim-body side">
+        <div class="sim-view"><canvas id="cv-loc"></canvas></div>
+        <div class="sim-controls">
+          <div class="ctrl"><span>읽는 순서</span><div class="seg" id="lorder"><button data-value="row" class="on">가로로 (행 우선)</button><button data-value="col">세로로 (열 우선)</button></div></div>
+          <div class="btn-row"><button class="btn primary" id="lrun">실행</button><button class="btn" id="lreset">초기화</button></div>
+          <p class="scale-note" style="margin:6px 0 0">표 한 줄이 메모리에 가로로 이어져 저장된다. 캐시 라인 = 가로 4칸, 캐시 크기 = 라인 6개.</p>
+        </div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">읽은 칸</span><span class="v" id="o-lread">0</span></div>
+        <div class="stat"><span class="k">캐시 실패</span><span class="v" id="o-lmiss">0</span></div>
+        <div class="stat"><span class="k">걸린 시간 (적중 1, 실패 100)</span><span class="v" id="o-ltime">0</span></div>
+      </div>
+      <div class="sim-note">진한 테두리 = 지금 캐시에 들어 있는 라인. 가로로 읽으면 한 번 실패할 때 옆 3칸이 따라 들어와 공짜로 적중한다. 세로로 읽으면 매번 다른 줄로 건너뛰어서, 가져온 라인을 다 쓰기도 전에 캐시에서 밀려난다. 결과는 똑같은 합계인데 시간은 몇 배 차이가 난다.</div>
+    </div>
+    <div class="callout deep"><strong>하드웨어를 아는 프로그래머</strong><p>게임 엔진, 데이터베이스, 인공지능 라이브러리를 만드는 개발자들은 데이터를 메모리에 어떤 순서로 둘지 신중하게 설계한다. 계산 횟수를 줄이는 것만큼 <b>캐시 실패를 줄이는 것</b>이 중요하기 때문이다. 5장의 분기 예측과 함께, “같은 결과, 다른 속도”를 만드는 대표적인 이유다.</p></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>메모리는 1바이트짜리 칸이 줄지은 사물함이다. 칸 번호가 <b>주소</b>이고, 주소 자체도 숫자로 저장할 수 있다(포인터).</li>
+      <li><b>DRAM</b>은 커패시터에 전하를 담아 기억한다. 전하가 새므로 계속 <b>리프레시</b>해야 하고, 전원이 꺼지면 내용이 사라진다.</li>
+      <li>빠른 메모리는 작고 비싸다. 그래서 <b>레지스터 → L1/L2/L3 캐시 → DRAM → SSD</b>의 계층으로 쌓아 쓴다.</li>
+      <li><b>캐시</b>는 최근·근처 데이터를 CPU 옆에 복사해 둔다. 적중하면 빠르고, 실패하면 메모리까지 가야 한다.</li>
+      <li>프로그램의 <b>시간·공간 지역성</b> 덕분에 캐시가 잘 맞는다. 메모리에 놓인 순서대로 읽는 코드가 빠르다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>RAM이 전원이 꺼지면 내용을 잃는 이유로 가장 알맞은 것은?</p><div class="opts">
+        <button class="opt">운영체제가 지워서</button>
+        <button class="opt" data-correct>전하(전기)로 정보를 담고 있어 공급이 끊기면 유지할 수 없어서</button>
+        <button class="opt">자석이 약해져서</button>
+        <button class="opt">캐시로 옮겨져서</button>
+      </div><div class="quiz-exp">DRAM은 새는 커패시터에, SRAM은 서로 붙잡는 래치에 정보를 담는다. 둘 다 전원이 있어야 유지된다. 이런 성질을 휘발성이라 한다.</div></div>
+      <div class="quiz-q"><p>메모리 계층에서 위(CPU 쪽)로 갈수록 어떻게 되는가?</p><div class="opts">
+        <button class="opt">크고 느리고 싸다</button>
+        <button class="opt" data-correct>작고 빠르고 비싸다</button>
+        <button class="opt">크고 빠르고 싸다</button>
+        <button class="opt">모두 비슷하다</button>
+      </div><div class="quiz-exp">레지스터와 L1 캐시는 가장 빠르지만 매우 작다. 아래로 갈수록 커지고 느려진다.</div></div>
+      <div class="quiz-q"><p>적중률 90%, 적중 시 1 ns, 실패 시 100 ns라면 평균 접근 시간은?</p><div class="opts">
+        <button class="opt">약 1 ns</button><button class="opt">약 5 ns</button><button class="opt" data-correct>약 11 ns</button><button class="opt">약 90 ns</button>
+      </div><div class="quiz-exp">0.9 × 1 + 0.1 × 100 = 0.9 + 10 = 10.9 ns. 실패 10%가 평균을 지배한다.</div></div>
+      <div class="quiz-q"><p>배열을 처음부터 끝까지 차례로 읽을 때 캐시가 잘 맞는 이유는?</p><div class="opts">
+        <button class="opt">시간 지역성</button>
+        <button class="opt" data-correct>공간 지역성: 한 번에 가져온 캐시 라인에 이웃 데이터가 함께 들어 있다</button>
+        <button class="opt">분기 예측</button>
+        <button class="opt">리프레시</button>
+      </div><div class="quiz-exp">캐시는 64바이트 묶음(라인)으로 가져온다. 이웃한 데이터를 곧 읽으면 이미 캐시에 와 있다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- lockers ---------------- */
+  const mem = new Array(32).fill(0), note = new Array(32).fill("");
+  const hot = {};
+  function renderLock() {
+    $("lockers").innerHTML = mem.map((v, i) => `<div class="cell ${hot[i] || ""}"><span class="addr">${i}번지</span><span class="v">${v}</span><span class="c">${note[i]}</span></div>`).join("");
+  }
+  const enc = new TextEncoder();
+  $("lw").onclick = () => {
+    Object.keys(hot).forEach((k) => delete hot[k]);
+    const a = CB.clamp(parseInt($("la").value) || 0, 0, 31), raw = $("lv").value;
+    let bytes;
+    if (/^\d+$/.test(raw.trim())) bytes = [Number(raw) & 255];
+    else bytes = [...enc.encode(raw)];
+    const n = Math.min(bytes.length, 32 - a);
+    for (let i = 0; i < n; i++) { mem[a + i] = bytes[i]; note[a + i] = bytes.length === 1 && /^\d+$/.test(raw.trim()) ? "" : (bytes[i] >= 32 && bytes[i] < 127 ? "'" + String.fromCharCode(bytes[i]) + "'" : "·"); hot[a + i] = "ok"; }
+    $("ldesc").innerHTML = `${a}번지부터 ${n}칸에 <b>${bytes.slice(0, n).join(", ")}</b>을(를) 썼다.` + (n < bytes.length ? " (끝 칸을 넘는 부분은 잘렸다)" : "") + (bytes.length > 1 && raw.match(/[^\x00-\x7f]/) ? " 한글·이모지는 한 글자가 여러 칸을 차지한다." : "");
+    renderLock();
+  };
+  $("lr").onclick = () => {
+    Object.keys(hot).forEach((k) => delete hot[k]);
+    const a = CB.clamp(parseInt($("la").value) || 0, 0, 31); hot[a] = "hot";
+    $("ldesc").innerHTML = `${a}번지를 읽었다 → 값은 <b>${mem[a]}</b> (2진수 <code>${CB.bin(mem[a], 8)}</code>). 메모리는 이것이 글자인지 숫자인지 주소인지 모른다. 해석은 프로그램의 몫이다.`;
+    renderLock();
+  };
+  $("lp").onclick = () => {
+    Object.keys(hot).forEach((k) => delete hot[k]);
+    const a = CB.clamp(parseInt($("la").value) || 0, 1, 31);
+    mem[0] = a; note[0] = "→ " + a + "번지"; hot[0] = "hot2"; hot[a] = "hot";
+    $("ldesc").innerHTML = `0번지에 숫자 <b>${a}</b>를 적었다. 이 숫자를 “주소”로 해석하면 0번지는 ${a}번지를 가리키는 <b>포인터</b>가 된다. ${a}번지의 값은 ${mem[a]}.`;
+    renderLock();
+  };
+  $("lw").click();
+
+  /* ---------------- DRAM ---------------- */
+  const R = 8, C = 16;
+  let charge = [], data = [], refRow = 0, refAcc = 0;
+  function writeData() { const r = CB.rng((Math.random() * 1e9) | 0); data = []; charge = []; for (let i = 0; i < R * C; i++) { const b = r() < 0.55 ? 1 : 0; data.push(b); charge.push(b ? 1 : 0); } }
+  writeData();
+  const refresh = $("refresh");
+  const leak = CB.range("leak", (v) => "×" + v, null);
+  $("dram-write").onclick = writeData;
+  const leakRates = Array.from({ length: R * C }, (_, i) => 0.05 + CB.rng(i + 3)() * 0.12);
+  const dcv = CB.canvas("#cv-dram", (ctx, w, h) => {
+    const P = CB.palette();
+    const left = 40, cw = (w - left - 10) / C, ch = (h - 20) / R;
+    let lost = 0, ones = 0;
+    for (let r = 0; r < R; r++) {
+      CB.text(ctx, "줄 " + r, left - 6, 10 + r * ch + ch / 2, { align: "right", size: 10.5, color: refresh.checked && r === refRow ? P.accent : P.faint, bold: refresh.checked && r === refRow });
+      for (let c = 0; c < C; c++) {
+        const i = r * C + c, x = left + c * cw + 2, y = 10 + r * ch + 2, ww = cw - 4, hh = ch - 4;
+        CB.rrect(ctx, x, y, ww, hh, 4); ctx.fillStyle = P.surface; ctx.fill();
+        const q = charge[i];
+        if (q > 0) { ctx.save(); CB.rrect(ctx, x, y, ww, hh, 4); ctx.clip(); ctx.fillStyle = P.accent; ctx.globalAlpha = 0.25 + 0.75 * q; ctx.fillRect(x, y + hh * (1 - q), ww, hh * q); ctx.restore(); }
+        ctx.strokeStyle = P.faint; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(x, y + hh * 0.5); ctx.lineTo(x + ww, y + hh * 0.5); ctx.stroke(); ctx.setLineDash([]);
+        const bad = data[i] === 1 && q < 0.5;
+        if (data[i]) ones++;
+        if (bad) lost++;
+        CB.rrect(ctx, x, y, ww, hh, 4); ctx.strokeStyle = bad ? P.bad : P.border; ctx.lineWidth = bad ? 2 : 1; ctx.stroke();
+      }
+    }
+    if (refresh.checked) { ctx.strokeStyle = P.accent; ctx.lineWidth = 2; ctx.strokeRect(left, 10 + refRow * ch, C * cw, ch); }
+    CB.stat("o-ones", ones);
+    CB.stat("o-lost", `<span style="color:${lost ? "var(--bad)" : "var(--ok)"}">${lost}</span>`);
+  }, { aspect: 0.42, minHeight: 220, maxHeight: 320 });
+  CB.loop($("cv-dram"), (dt) => {
+    const k = leak();
+    for (let i = 0; i < R * C; i++) charge[i] = Math.max(0, charge[i] - leakRates[i] * k * dt);
+    if (refresh.checked) {
+      refAcc += dt;
+      if (refAcc > 0.35) { refAcc = 0; refRow = (refRow + 1) % R; for (let c = 0; c < C; c++) { const i = refRow * C + c; const read = charge[i] >= 0.5 ? 1 : 0; charge[i] = read; } }
+    }
+    dcv.redraw();
+  });
+
+  /* ---------------- cache ---------------- */
+  const LINES = 8;
+  function cpattern(k) {
+    if (k === "loop") { const a = []; for (let r = 0; r < 4; r++) for (let i = 0; i < 6; i++) a.push(i); return a; }
+    if (k === "seq") return Array.from({ length: 24 }, (_, i) => i);
+    if (k === "conflict") return Array.from({ length: 16 }, (_, i) => (i % 2 ? 8 : 0));
+    const r = CB.rng(9); return Array.from({ length: 24 }, () => Math.floor(r() * 40));
+  }
+  let seq = [], pos = 0, lines = [], hits = 0, misses = 0, res = [];
+  const cpat = CB.seg("cpat", resetCache);
+  function resetCache() { seq = cpattern(cpat()); pos = 0; lines = new Array(LINES).fill(null); hits = 0; misses = 0; res = []; renderCache(-1, "“한 번 접근”을 눌러 보세요. 처음엔 캐시가 비어 있어서 무엇이든 실패(miss)합니다."); }
+  function access() {
+    if (pos >= seq.length) return;
+    const a = seq[pos], idx = a % LINES;
+    let msg;
+    if (lines[idx] === a) { hits++; res[pos] = "hit"; msg = `<b style="color:var(--ok)">적중!</b> ${a}번지 → 캐시 ${idx}번 칸(${a} ÷ 8의 나머지)에 이미 있다. 1 ns.`; }
+    else { misses++; res[pos] = "miss"; msg = `<b style="color:var(--bad)">실패.</b> ${a}번지는 캐시 ${idx}번 칸에 들어가야 하는데 ` + (lines[idx] == null ? "칸이 비어 있다." : `지금은 ${lines[idx]}번지가 차지하고 있다. ${lines[idx]}번지를 내보낸다.`) + ` 메모리에서 가져오는 데 100 ns.`; lines[idx] = a; }
+    pos++;
+    renderCache(idx, msg);
+  }
+  function renderCache(idx, msg) {
+    $("cseq").innerHTML = seq.map((a, i) => `<span class="${res[i] || ""} ${i === pos ? "cur" : ""}">${a}</span>`).join("");
+    $("clines").innerHTML = lines.map((v, i) => `<div class="cell ${i === idx ? (res[pos - 1] === "hit" ? "ok" : "bad") : ""}"><span class="addr">캐시 ${i}번 칸</span><b>${v == null ? "비어 있음" : v + "번지 데이터"}</b></div>`).join("");
+    $("cdesc").innerHTML = msg;
+    $("cstep").textContent = pos + " / " + seq.length;
+    const n = hits + misses;
+    CB.stat("o-hm", `${hits} / ${misses}`);
+    CB.stat("o-hr", n ? ((hits / n) * 100).toFixed(0) + "%" : "—");
+    CB.stat("o-amat", n ? ((hits * 1 + misses * 100) / n).toFixed(1) + " ns" : "—");
+    $("cnext").disabled = $("call").disabled = pos >= seq.length;
+  }
+  $("cnext").onclick = access;
+  $("call").onclick = () => { while (pos < seq.length) access(); };
+  $("creset").onclick = resetCache;
+  resetCache();
+
+  /* ---------------- locality ---------------- */
+  const N = 8, LW = 4, CAP = 6;
+  let order = "row", k = 0, lru = [], lmiss = 0, visited = new Set(), timer = null, lastHit = null;
+  const lorder = CB.seg("lorder", () => { resetLoc(); });
+  function resetLoc() { k = 0; lru = []; lmiss = 0; visited.clear(); lastHit = null; if (timer) { clearInterval(timer); timer = null; } $("lrun").textContent = "실행"; updLoc(); lcv.redraw(); }
+  function cellAt(i) { return lorder() === "row" ? [Math.floor(i / N), i % N] : [i % N, Math.floor(i / N)]; }
+  function stepLoc() {
+    if (k >= N * N) { clearInterval(timer); timer = null; $("lrun").textContent = "실행"; return; }
+    const [r, c] = cellAt(k); const line = r * (N / LW) + Math.floor(c / LW);
+    const at = lru.indexOf(line);
+    if (at >= 0) { lru.splice(at, 1); lastHit = true; } else { lmiss++; lastHit = false; if (lru.length >= CAP) lru.shift(); }
+    lru.push(line); visited.add(r * N + c); k++;
+    updLoc(); lcv.redraw();
+  }
+  function updLoc() { CB.stat("o-lread", k); CB.stat("o-lmiss", lmiss); CB.stat("o-ltime", (k - lmiss) * 1 + lmiss * 100); }
+  $("lrun").onclick = () => { if (timer) { clearInterval(timer); timer = null; $("lrun").textContent = "계속"; return; } if (k >= N * N) resetLoc(); $("lrun").textContent = "멈춤"; timer = setInterval(stepLoc, 90); };
+  $("lreset").onclick = resetLoc;
+  const lcv = CB.canvas("#cv-loc", (ctx, w, h) => {
+    const P = CB.palette();
+    const s = Math.min((w - 20) / N, (h - 20) / N), ox = (w - s * N) / 2, oy = (h - s * N) / 2;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const x = ox + c * s, y = oy + r * s;
+      ctx.fillStyle = visited.has(r * N + c) ? P.accent : P.surface; ctx.globalAlpha = visited.has(r * N + c) ? 0.35 : 1;
+      ctx.fillRect(x + 1, y + 1, s - 2, s - 2); ctx.globalAlpha = 1;
+    }
+    // cache lines
+    lru.forEach((line) => { const r = Math.floor(line / (N / LW)), c0 = (line % (N / LW)) * LW; ctx.strokeStyle = P.accent2; ctx.lineWidth = 3; ctx.strokeRect(ox + c0 * s + 1.5, oy + r * s + 1.5, LW * s - 3, s - 3); });
+    if (k > 0) { const [r, c] = cellAt(k - 1); ctx.fillStyle = lastHit ? P.ok : P.bad; ctx.beginPath(); ctx.arc(ox + c * s + s / 2, oy + r * s + s / 2, s * 0.22, 0, 7); ctx.fill(); }
+    // grid lines for cache line boundaries
+    ctx.strokeStyle = P.border; ctx.lineWidth = 1;
+    for (let r = 0; r <= N; r++) { ctx.beginPath(); ctx.moveTo(ox, oy + r * s); ctx.lineTo(ox + N * s, oy + r * s); ctx.stroke(); }
+    for (let c = 0; c <= N; c += LW) { ctx.beginPath(); ctx.moveTo(ox + c * s, oy); ctx.lineTo(ox + c * s, oy + N * s); ctx.stroke(); }
+  }, { aspect: 0.8, minHeight: 260, maxHeight: 380 });
+  updLoc();
+})();
+</script>
+</body>
+</html>
