@@ -392,7 +392,7 @@
     const rtt = one * 2;
     CB.stat("o-rtt", (rtt * 1000).toFixed(1) + " ms");
     CB.stat("o-real", sat ? "≈ " + Math.round(rtt * 1000 + 100) + " ms" : (rtt * 1500).toFixed(0) + "~" + (rtt * 2000).toFixed(0) + " ms");
-    CB.stat("o-cyc2", "약 " + CB.fmt(rtt / 0.3e-9, 2) + " 박자");
+    CB.stat("o-cyc2", "약 " + CB.kn(rtt / 0.3e-9) + " 박자");
   }
   calc();
 })();

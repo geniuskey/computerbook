@@ -82,6 +82,14 @@
     for (const [v, n] of steps) if (Math.abs(s) >= v * 0.9995) return Number((s / v).toPrecision(3)) + " " + n;
     return s.toExponential(2) + " 초";
   };
+  /** 큰 수를 한국어 단위로: CB.kn(1040000) → "104만" */
+  CB.kn = function (n) {
+    const a = Math.abs(n);
+    if (a >= 1e12) return Number((n / 1e12).toPrecision(3)) + "조";
+    if (a >= 1e8) return Number((n / 1e8).toPrecision(3)) + "억";
+    if (a >= 1e4) return Number((n / 1e4).toPrecision(3)) + "만";
+    return String(Math.round(n));
+  };
   CB.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   /** 결정적 난수(시드) */
   CB.rng = function (seed = 1) { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; };
