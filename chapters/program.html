@@ -285,7 +285,7 @@
       list.forEach((st) => {
         if (st.k === "assign") { emitExpr(st.e); vars.has(st.v) || vars.set(st.v, st.v); code.push({ op: "STORE", a: st.v, note: `${st.v} = …` }); }
         else if (st.k === "print") { emitExpr(st.e); code.push({ op: "OUT", note: "출력" }); }
-        else { const L1 = "반복" + ++lbl, L2 = "끝" + lbl; vars.has(st.v) || vars.set(st.v, st.v); code.push({ label: L1, op: "LOAD", a: st.v, note: `while ${st.v} 검사` }); code.push({ op: "JZ", a: L2, note: "0이면 탈출" }); gen(st.body); code.push({ op: "JUMP", a: L1, note: "처음으로" }); code.push({ label: L2, op: null }); }
+        else { const L1 = "loop" + ++lbl, L2 = "end" + lbl; vars.has(st.v) || vars.set(st.v, st.v); code.push({ label: L1, op: "LOAD", a: st.v, note: `while ${st.v} 검사` }); code.push({ op: "JZ", a: L2, note: "0이면 탈출" }); gen(st.body); code.push({ op: "JUMP", a: L1, note: "처음으로" }); code.push({ label: L2, op: null }); }
       });
     }
     gen(stmts); code.push({ op: "HALT" });
