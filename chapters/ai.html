@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>AI는 어떻게 계산하나 · ComputerBook</title>
+<meta name="description" content="인공지능도 결국 곱셈과 덧셈이다. 인공 뉴런과 학습, 경사 하강, 신경망과 행렬 곱셈, 다음 단어 예측, 모델 크기와 GPU 메모리의 관계를 시뮬레이터로 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/ai.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="AI는 어떻게 계산하나 · ComputerBook">
+<meta property="og:description" content="인공지능도 결국 곱셈과 덧셈이다. 인공 뉴런과 학습, 경사 하강, 신경망과 행렬 곱셈, 다음 단어 예측, 모델 크기와 GPU 메모리의 관계를 시뮬레이터로 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/ai.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"AI는 어떻게 계산하나","name":"AI는 어떻게 계산하나 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/ai.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/ai.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":17,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"인공지능도 결국 곱셈과 덧셈이다. 인공 뉴런과 학습, 경사 하강, 신경망과 행렬 곱셈, 다음 단어 예측, 모델 크기와 GPU 메모리의 관계를 시뮬레이터로 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"17 AI는 어떻게 계산하나","item":"https://computerbook.euiyun.com/chapters/ai.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+</head>
+<body data-chapter="ai">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 17</div>
+    <h1>AI는 어떻게 계산하나</h1>
+    <p class="lead">사진 속 고양이를 알아보고, 질문에 답하고, 글을 이어 쓰는 AI. 마법처럼 보이지만 그 속에서 CPU와 GPU가 하는 일은 지금까지 배운 것과 같다. <strong>엄청나게 많은 곱셈과 덧셈</strong>이다. 이 장에서는 AI가 “배운다”는 것이 무슨 뜻인지, 왜 GPU가 필요한지, 왜 큰 모델은 메모리를 그렇게 많이 먹는지를 작은 실험으로 하나씩 확인한다.</p>
+    <ul class="objectives">
+      <li>규칙을 직접 짜는 프로그램과 예시로 배우는 머신러닝의 차이를 설명한다.</li>
+      <li>인공 뉴런 하나가 “곱하고 더하고 판단하는” 계산임을 시뮬레이터로 확인한다.</li>
+      <li>학습이 오차를 줄이는 방향으로 숫자를 조금씩 고치는 과정(경사 하강)임을 이해한다.</li>
+      <li>신경망 계산이 행렬 곱셈이며, 그래서 GPU와 잘 맞는다는 것을 연결한다.</li>
+      <li>언어 모델이 다음 단어의 확률을 계산하는 방식과 모델 크기·메모리·속도의 관계를 계산해 본다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="learn">
+    <h2>규칙을 짜는 대신 예시로 배운다</h2>
+    <p>지금까지 본 프로그램은 사람이 규칙을 하나하나 적은 것이었다. “잔액이 출금액보다 적으면 거절한다” 같은 식이다. 그런데 “사진에 고양이가 있으면 참”이라는 규칙은 어떻게 적을까? 귀가 뾰족하고, 수염이 있고… 하다 보면 끝이 없다. 각도, 조명, 털 색이 바뀔 때마다 예외가 생긴다.</p>
+    <p><span class="term">머신러닝</span><span class="en">(machine learning)</span>은 순서를 뒤집는다. 사람이 규칙을 적는 대신, <b>문제와 정답이 붙은 예시</b>를 잔뜩 보여 주고 컴퓨터가 규칙을 스스로 찾게 한다. 찾아낸 규칙은 사람이 읽을 수 있는 문장이 아니라 수많은 숫자의 묶음이다. 이 묶음을 <span class="term">모델</span><span class="en">(model)</span>이라 하고, 숫자 하나하나를 <span class="term">매개변수</span><span class="en">(parameter, 가중치)</span>라 한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 270" role="img" aria-label="전통적인 프로그래밍과 머신러닝의 입력과 출력 비교">
+        <defs><marker id="ai-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="30" y="34" class="t" style="font-weight:700">전통적인 프로그래밍</text>
+        <rect x="30" y="50" width="150" height="70" rx="10" class="f-surface s-line"/><text x="105" y="80" text-anchor="middle" class="t" style="font-weight:700">규칙</text><text x="105" y="102" text-anchor="middle" class="t-dim">사람이 작성</text>
+        <rect x="200" y="50" width="150" height="70" rx="10" class="f-surface s-line"/><text x="275" y="80" text-anchor="middle" class="t" style="font-weight:700">데이터</text><text x="275" y="102" text-anchor="middle" class="t-dim">새 메일</text>
+        <path d="M360 85 H430" class="s-acc" marker-end="url(#ai-a)"/>
+        <rect x="440" y="50" width="130" height="70" rx="10" class="f-acc"/><text x="505" y="91" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">컴퓨터</text>
+        <path d="M580 85 H640" class="s-acc" marker-end="url(#ai-a)"/>
+        <rect x="650" y="50" width="120" height="70" rx="10" class="f-acc2-soft"/><text x="710" y="80" text-anchor="middle" class="t" style="font-weight:700">답</text><text x="710" y="102" text-anchor="middle" class="t-dim">스팸? 아님?</text>
+        <text x="30" y="164" class="t" style="font-weight:700">머신러닝</text>
+        <rect x="30" y="180" width="150" height="70" rx="10" class="f-surface s-line"/><text x="105" y="210" text-anchor="middle" class="t" style="font-weight:700">데이터</text><text x="105" y="232" text-anchor="middle" class="t-dim">메일 10만 통</text>
+        <rect x="200" y="180" width="150" height="70" rx="10" class="f-surface s-line"/><text x="275" y="210" text-anchor="middle" class="t" style="font-weight:700">정답</text><text x="275" y="232" text-anchor="middle" class="t-dim">사람이 붙인 표시</text>
+        <path d="M360 215 H430" class="s-acc" marker-end="url(#ai-a)"/>
+        <rect x="440" y="180" width="130" height="70" rx="10" class="f-acc"/><text x="505" y="210" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">학습</text><text x="505" y="232" text-anchor="middle" class="t" style="fill:#fff">숫자 조정 반복</text>
+        <path d="M580 215 H640" class="s-acc" marker-end="url(#ai-a)"/>
+        <rect x="650" y="180" width="120" height="70" rx="10" class="f-acc-soft"/><text x="710" y="210" text-anchor="middle" class="t" style="font-weight:700">규칙 = 모델</text><text x="710" y="232" text-anchor="middle" class="t-dim">숫자 묶음</text>
+      </svg>
+      <figcaption><b>그림 17-1.</b> 전통적인 프로그램은 규칙을 받아 답을 낸다. 머신러닝은 예시와 정답을 받아 규칙(모델)을 만든다. 만들어진 모델은 이후 새 데이터에 답을 내는 데 쓰인다.</figcaption>
+    </figure>
+    <p>AI의 일은 두 단계로 나뉜다. 예시로 숫자를 맞춰 가는 <span class="term">학습</span><span class="en">(training)</span>, 그리고 완성된 모델로 새 질문에 답하는 <span class="term">추론</span><span class="en">(inference)</span>이다. 주방으로 치면 학습은 요리사가 수천 번 맛을 보며 레시피를 다듬는 기간이고, 추론은 다듬어진 레시피로 손님 요리를 내는 영업 시간이다. 학습은 몇 달 동안 GPU 수천 대가 필요할 수 있지만, 추론은 휴대폰에서도 돌아갈 수 있다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="neuron">
+    <h2>인공 뉴런 하나: 곱하고, 더하고, 판단한다</h2>
+    <p>신경망의 가장 작은 부품은 <span class="term">인공 뉴런</span><span class="en">(artificial neuron)</span>이다. 하는 일은 단순하다. 입력 몇 개를 받아 각각에 <b>가중치</b>를 곱해 더하고, 마지막에 <b>편향</b>(기준점)을 더한 다음, 그 값이 0보다 크면 “예”, 작으면 “아니오”라고 답한다.</p>
+    <div class="codebox">점수 = w1 × 단맛 + w2 × 신맛 + b
+점수 &gt; 0 이면 “귤”, 아니면 “레몬”</div>
+    <p>가중치는 “이 입력을 얼마나 중요하게 볼까”를 뜻한다. 단맛이 귤의 증거라면 w1은 양수로 크게, 신맛이 레몬의 증거라면 w2는 음수가 된다. 이 숫자를 사람이 정하지 않고 예시로부터 찾아내는 것이 학습이다. 아래에서 직접 숫자를 돌려 보고, 컴퓨터가 고치는 모습도 지켜보자.</p>
+    <div class="sim" id="sim-neuron">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>뉴런 하나로 귤과 레몬 가르기</h3></div>
+      <div class="sim-view"><canvas id="cv-neuron"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>w1 (단맛의 가중치) <output id="nw1-out"></output></span><input type="range" id="nw1" min="-6" max="6" step="0.1" value="1"></label>
+        <label class="ctrl"><span>w2 (신맛의 가중치) <output id="nw2-out"></output></span><input type="range" id="nw2" min="-6" max="6" step="0.1" value="1"></label>
+        <label class="ctrl"><span>b (편향) <output id="nb-out"></output></span><input type="range" id="nb" min="-6" max="6" step="0.1" value="-1"></label>
+        <div class="ctrl"><span>학습</span><div class="btn-row"><button class="btn" id="nn-step">틀린 것 하나 고치기</button><button class="btn primary" id="nn-auto">자동 학습</button><button class="btn" id="nn-new">새 과일</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">정답률</span><span class="v" id="o-nn-acc">—</span></div>
+        <div class="stat"><span class="k">고친 횟수</span><span class="v" id="o-nn-steps">0</span></div>
+        <div class="stat"><span class="k">현재 식</span><span class="v" id="o-nn-eq" style="font-size:14px">—</span></div>
+      </div>
+      <div class="sim-note">가로축은 단맛, 세로축은 신맛이다. 동그라미는 귤, 세모는 레몬. 배경색은 뉴런의 판단(주황 = 귤, 초록 = 레몬)이고, 경계선이 점수 0인 곳이다. 고리가 쳐진 과일은 뉴런이 틀린 것. “틀린 것 하나 고치기”를 누르면 틀린 과일 하나를 골라 그 과일 쪽으로 경계가 조금 움직이도록 가중치를 고친다. 이 단순한 규칙(퍼셉트론 학습)을 반복하는 것만으로 경계가 제자리를 찾아간다.</div>
+    </div>
+    <div class="callout analogy"><div class="title">요리사의 맛 판정</div><p>신참 요리사가 귤과 레몬을 맛만 보고 구분하려 한다. 처음엔 엉터리로 판정하다가, 틀릴 때마다 “단맛을 조금 더 믿자”, “신맛을 더 무겁게 보자”처럼 기준을 살짝 고친다. 뉴런의 학습도 같다. 한 번에 정답을 깨닫는 것이 아니라 <b>틀린 만큼 조금씩</b> 고친다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="descent">
+    <h2>학습이란 오차의 골짜기를 내려가는 것</h2>
+    <p>뉴런이 몇 개일 때는 틀린 것을 하나씩 고쳐도 되지만, 숫자가 수십억 개라면 더 체계적인 방법이 필요하다. 먼저 모델이 얼마나 틀렸는지를 숫자 하나로 잰다. 이것을 <span class="term">손실</span><span class="en">(loss, 오차)</span>이라 한다. 손님 불만 점수라고 생각하면 된다. 그러면 학습은 “불만 점수가 가장 낮아지는 가중치 찾기”가 된다.</p>
+    <p>가중치를 가로축, 손실을 세로축에 그리면 울퉁불퉁한 지형이 된다. 눈을 가리고 산에서 내려오려면? 발밑의 기울기를 느끼고 <b>내리막 쪽으로 한 걸음</b>씩 가면 된다. 이것이 <span class="term">경사 하강법</span><span class="en">(gradient descent)</span>이다. 한 걸음의 크기를 <span class="term">학습률</span><span class="en">(learning rate)</span>이라 한다.</p>
+    <div class="sim" id="sim-gd">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>경사 하강: 공을 골짜기로 굴리기</h3></div>
+      <div class="sim-view"><canvas id="cv-gd"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>학습률 (한 걸음의 크기) <output id="gd-lr-out"></output></span><input type="range" id="gd-lr" min="0" max="5" step="1" value="1"></label>
+        <div class="ctrl"><span>시작 위치 (그래프를 눌러도 된다)</span><div class="seg" id="gd-start"><button data-value="3.2" class="on">오른쪽</button><button data-value="0.6">가운데</button><button data-value="-3.4">왼쪽</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn" id="gd-step">한 걸음</button><button class="btn primary" id="gd-run">자동으로 굴리기</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">걸음 수</span><span class="v" id="o-gd-n">0</span></div>
+        <div class="stat"><span class="k">현재 손실</span><span class="v" id="o-gd-loss">—</span></div>
+        <div class="stat"><span class="k">상태</span><span class="v" id="o-gd-state">—</span></div>
+      </div>
+      <div class="sim-note">위는 가중치에 따른 손실 지형, 아래는 걸음마다 손실이 어떻게 변했는지다. 해볼 것: 학습률을 아주 작게 하면 너무 느리고, 아주 크게 하면 골짜기를 건너뛰며 튀어 다니거나 아예 밖으로 날아가 버린다. 또 오른쪽에서 출발하면 왼쪽의 더 깊은 골짜기를 모른 채 얕은 골짜기에 머문다(지역 최솟값). 실제 모델은 이런 지형이 수십억 차원이라 그림으로 그릴 수 없을 뿐, 원리는 같다.</div>
+    </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">학습률을 가장 크게 하면 공은 어떻게 될까?</p><p class="wi-hint">걸음 크기 = 학습률 × 기울기다. 가파른 곳에서 큰 걸음을 내디디면 어디에 떨어질지 생각해 보자. 예측한 다음 위에서 확인해 보자.</p><div class="opts">
+      <button class="opt">가장 빨리 바닥에 도착한다</button><button class="opt" data-correct>바닥을 지나쳐 반대편 더 높은 곳으로 튀며 점점 멀어진다</button><button class="opt">그 자리에 멈춘다</button><button class="opt">학습률은 결과에 영향이 없다</button>
+    </div><div class="quiz-exp">걸음이 너무 크면 골짜기 바닥을 건너뛰어 반대쪽 비탈에 떨어진다. 그곳이 더 가파르면 다음 걸음은 더 커지고, 결국 손실이 폭발한다(발산). 실제 AI 학습에서도 학습률은 가장 먼저 조정하는 값이다.</div></div>
+    <p>그렇다면 수십억 개 가중치의 기울기는 어떻게 구할까? 출력에서 생긴 오차를 거꾸로 거슬러 올라가며 “이 가중치가 오차에 얼마나 책임이 있나”를 한꺼번에 계산하는 방법이 있다. 이것을 <span class="term">역전파</span><span class="en">(backpropagation)</span>라 한다. 학습은 “예시 넣기 → 오차 재기 → 역전파로 기울기 구하기 → 모든 가중치를 한 걸음 고치기”를 수백만 번 반복하는 일이다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="network">
+    <h2>뉴런을 쌓으면 신경망, 계산은 행렬 곱셈</h2>
+    <p>뉴런 하나는 직선 하나로만 나눌 수 있다. 하지만 뉴런을 여러 개 나란히 놓아 <b>층</b>을 만들고, 층의 출력을 다음 층의 입력으로 넣으면 훨씬 복잡한 경계도 표현할 수 있다. 이것이 <span class="term">신경망</span><span class="en">(neural network)</span>이고, 층이 많으면 <span class="term">딥러닝</span><span class="en">(deep learning)</span>이라 부른다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 330" role="img" aria-label="입력 3개, 숨은 층 4개, 출력 2개로 된 신경망과 그것이 행렬 곱셈임을 보여 주는 그림">
+        <g class="s-line" stroke-width="1" opacity=".55">
+          <path d="M80 90 L230 60 M80 90 L230 130 M80 90 L230 200 M80 90 L230 270 M80 165 L230 60 M80 165 L230 130 M80 165 L230 200 M80 165 L230 270 M80 240 L230 60 M80 240 L230 130 M80 240 L230 200 M80 240 L230 270"/>
+          <path d="M230 60 L380 125 M230 60 L380 205 M230 130 L380 125 M230 130 L380 205 M230 200 L380 125 M230 200 L380 205 M230 270 L380 125 M230 270 L380 205"/>
+        </g>
+        <g class="f-surface s-line" stroke-width="1.5"><circle cx="80" cy="90" r="20"/><circle cx="80" cy="165" r="20"/><circle cx="80" cy="240" r="20"/></g>
+        <g class="f-surface"><circle cx="230" cy="60" r="20"/><circle cx="230" cy="130" r="20"/><circle cx="230" cy="200" r="20"/><circle cx="230" cy="270" r="20"/><circle cx="380" cy="125" r="24"/><circle cx="380" cy="205" r="24"/></g>
+        <g class="f-acc-soft s-acc" stroke-width="1.5"><circle cx="230" cy="60" r="20"/><circle cx="230" cy="130" r="20"/><circle cx="230" cy="200" r="20"/><circle cx="230" cy="270" r="20"/></g>
+        <g class="f-acc2-soft s-line" stroke-width="1.5"><circle cx="380" cy="125" r="24"/><circle cx="380" cy="205" r="24"/></g>
+        <text x="80" y="95" text-anchor="middle" class="t-mono">x1</text><text x="80" y="170" text-anchor="middle" class="t-mono">x2</text><text x="80" y="245" text-anchor="middle" class="t-mono">x3</text>
+        <text x="380" y="130" text-anchor="middle" class="t" style="font-size:12px">귤</text><text x="380" y="209" text-anchor="middle" class="t" style="font-size:11px">레몬</text>
+        <text x="80" y="300" text-anchor="middle" class="t-dim">입력 3</text><text x="230" y="312" text-anchor="middle" class="t-dim">숨은 층 4</text><text x="380" y="266" text-anchor="middle" class="t-dim">출력 2</text>
+        <text x="155" y="24" text-anchor="middle" class="t-acc">선 12개 = 가중치 12개</text><text x="320" y="24" text-anchor="middle" class="t-acc">선 8개</text>
+        <rect x="450" y="40" width="320" height="250" rx="12" class="f-surface s-line"/>
+        <text x="470" y="70" class="t" style="font-weight:700">한 층의 계산 = 행렬 × 벡터</text>
+        <g stroke-width="1"><rect x="470" y="92" width="19" height="19" rx="3" class="f-acc-soft s-acc"/><rect x="470" y="114" width="19" height="19" rx="3" class="f-acc-soft s-acc"/><rect x="470" y="136" width="19" height="19" rx="3" class="f-acc-soft s-acc"/><rect x="470" y="158" width="19" height="19" rx="3" class="f-acc-soft s-acc"/><rect x="540" y="92" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="562" y="92" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="584" y="92" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="540" y="114" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="562" y="114" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="584" y="114" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="540" y="136" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="562" y="136" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="584" y="136" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="540" y="158" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="562" y="158" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="584" y="158" width="19" height="19" rx="3" class="f-elev s-line"/><rect x="640" y="103" width="19" height="19" rx="3" class="f-acc2-soft s-line"/><rect x="640" y="125" width="19" height="19" rx="3" class="f-acc2-soft s-line"/><rect x="640" y="147" width="19" height="19" rx="3" class="f-acc2-soft s-line"/></g>
+        <text x="515" y="137" text-anchor="middle" class="t" style="font-size:18px">=</text><text x="620" y="137" text-anchor="middle" class="t" style="font-size:16px">×</text>
+        <text x="480" y="198" text-anchor="middle" class="t-dim" style="font-size:11px">h (4)</text><text x="572" y="198" text-anchor="middle" class="t-dim" style="font-size:11px">가중치 W (4×3)</text><text x="650" y="198" text-anchor="middle" class="t-dim" style="font-size:11px">x (3)</text>
+        <text x="470" y="226" class="t-dim">줄마다 곱하고 더하기 = 뉴런 4개를 동시에</text>
+        <text x="470" y="250" class="t-dim">대형 언어 모델: 이런 행렬이 수백 층,</text>
+        <text x="470" y="270" class="t-dim">가중치는 수십억 ~ 수천억 개</text>
+      </svg>
+      <figcaption><b>그림 17-2.</b> 작은 신경망. 층과 층을 잇는 선 하나가 가중치 하나다. 한 층의 계산을 모아 쓰면 행렬과 벡터의 곱셈이 된다.</figcaption>
+    </figure>
+    <p>여기서 12장의 이야기가 연결된다. 행렬 곱셈은 “서로 독립적인 곱셈과 덧셈을 엄청나게 많이” 하는 일이다. 4번째 뉴런의 계산이 1번째 뉴런의 결과를 기다릴 필요가 없다. 수천 개의 단순한 코어로 같은 계산을 한꺼번에 하는 GPU가 AI에 쓰이는 이유가 바로 이것이다. 요즘 GPU에는 행렬 곱셈만 전문으로 하는 <b>텐서 코어</b>까지 들어 있다.</p>
+    <div class="callout deep"><div class="title">NPU: AI 전용 계산기</div><p>휴대폰과 노트북에는 <span class="term">NPU</span><span class="en">(Neural Processing Unit)</span>라는 칩이 따로 들어가기도 한다. GPU처럼 그래픽까지 하지 않고 행렬 곱셈만 아주 적은 전력으로 하도록 만든 전용 회로다. 사진 속 얼굴 찾기, 음성 인식, 배경 흐림 같은 AI 기능을 배터리를 덜 쓰면서 처리한다. 4장에서 본 것처럼 범용 부품보다 한 가지 일에 특화한 부품이 빠르고 효율적이다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="nextword">
+    <h2>챗봇의 정체: 다음 단어 맞히기</h2>
+    <p>대화형 AI의 핵심인 <span class="term">대형 언어 모델</span><span class="en">(LLM, Large Language Model)</span>이 하는 일은 놀랍도록 단순하다. 지금까지의 글을 보고 <b>다음에 올 조각의 확률</b>을 계산한다. 그중 하나를 고르고, 그것을 글 뒤에 붙인 다음 다시 다음 조각을 예측한다. 이 반복으로 문장이 만들어진다.</p>
+    <p>모델이 읽고 쓰는 단위는 글자도 단어도 아닌 <span class="term">토큰</span><span class="en">(token)</span>이다. “컴퓨터가”는 “컴퓨터”와 “가”처럼 자주 쓰이는 조각으로 나뉜다. 각 토큰은 2장에서 본 것처럼 결국 번호(숫자)로 바뀌어 신경망에 들어간다.</p>
+    <div class="sim" id="sim-next">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>장난감 언어 모델로 문장 이어 쓰기</h3></div>
+      <div class="sim-view">
+        <div class="pad" id="nx-text" style="font-size:17px;min-height:56px;line-height:1.7"></div>
+        <canvas id="cv-next"></canvas>
+      </div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>첫 단어</span><div class="seg" id="nx-start"><button data-value="요리사" class="on">요리사</button><button data-value="CPU">CPU</button><button data-value="고양이">고양이</button></div></div>
+        <label class="ctrl"><span>온도 (무작위성) <output id="nx-temp-out"></output></span><input type="range" id="nx-temp" min="0.1" max="2" step="0.1" value="1"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="nx-one">다음 토큰</button><button class="btn" id="nx-all">문장 끝까지</button><button class="btn" id="nx-reset">처음부터</button></div></div>
+      </div>
+      <div class="sim-note">이 장난감 모델은 짧은 예문 30여 개에서 “이 토큰 다음에 어떤 토큰이 몇 번 왔나”만 세어 확률을 만든다. 막대는 다음 토큰 후보와 확률이다. <b>온도</b>를 낮추면 가장 확률 높은 후보만 고르고(늘 같은 문장), 높이면 드문 후보도 자주 뽑혀 엉뚱한 문장이 나온다. 진짜 LLM은 바로 앞 한 토큰이 아니라 앞의 수천~수십만 토큰 전체를 보고, 수천억 개의 가중치로 확률을 계산한다는 점만 다르다.</div>
+    </div>
+    <div class="callout warn"><div class="title">그럴듯함 ≠ 사실</div><p>언어 모델은 “가장 그럴듯하게 이어지는 글”을 만든다. 그 글이 사실인지는 따로 확인하지 않는다. 그래서 존재하지 않는 책 제목이나 틀린 숫자를 자신 있게 말하기도 한다. 이것을 <span class="term">환각</span><span class="en">(hallucination)</span>이라 한다. 중요한 정보는 출처를 확인하는 습관이 필요하다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="size">
+    <h2>모델 크기, 메모리, 그리고 속도</h2>
+    <p>“80억(8B) 매개변수 모델”이라는 말은 가중치 숫자가 80억 개라는 뜻이다. 숫자 하나를 16비트(2바이트)로 저장하면 모델 크기는 80억 × 2 = 16 GB다. 추론하려면 이 숫자들이 전부 메모리에 올라와 있어야 한다. 6장에서 본 대로 RAM(조리대)에 없으면 SSD(창고)까지 다녀와야 하니 매우 느려진다.</p>
+    <p>더 중요한 사실이 있다. 언어 모델은 <b>토큰 하나를 만들 때마다 가중치 전체를 한 번씩 읽는다</b>. 그래서 생성 속도는 계산 능력보다 메모리 대역폭에 크게 좌우된다. 대략 <code>초당 토큰 ≈ 메모리 대역폭 ÷ 모델 크기</code>다. 숫자를 8비트나 4비트로 줄여 저장하는 <span class="term">양자화</span><span class="en">(quantization)</span>가 널리 쓰이는 이유다. 정확도는 조금 잃지만 크기가 줄고 속도는 빨라진다.</p>
+    <div class="sim" id="sim-mem">
+      <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>이 모델이 내 기기에서 돌아갈까</h3></div>
+      <div class="sim-view"><canvas id="cv-mem"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>매개변수 수</span><div class="seg" id="mm-p"><button data-value="1">1B</button><button data-value="3">3B</button><button data-value="8" class="on">8B</button><button data-value="70">70B</button><button data-value="405">405B</button></div></div>
+        <div class="ctrl"><span>숫자 하나의 크기</span><div class="seg" id="mm-b"><button data-value="4">32비트</button><button data-value="2" class="on">16비트</button><button data-value="1">8비트</button><button data-value="0.5">4비트</button></div></div>
+        <div class="ctrl"><span>기기</span><div class="seg" id="mm-d"><button data-value="0">휴대폰</button><button data-value="1" class="on">노트북</button><button data-value="2">게임용 GPU</button><button data-value="3">AI용 GPU</button><button data-value="4">GPU 8대 서버</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">모델 크기</span><span class="v" id="o-mm-size">—</span></div>
+        <div class="stat"><span class="k">기기 메모리</span><span class="v" id="o-mm-cap">—</span></div>
+        <div class="stat"><span class="k">예상 생성 속도</span><span class="v" id="o-mm-tps">—</span></div>
+      </div>
+      <div class="sim-note">아래쪽 글은 계산된 속도로 실제로 흘러나오는 모습이다(사람이 읽는 속도는 초당 5~10 토큰 정도). 기기 수치는 대표적인 값을 단순화했고, 실제로는 대화 내용을 기억하는 메모리(KV 캐시)와 운영체제 몫이 더 필요하다. 해볼 것: 70B 모델을 16비트로 게임용 GPU에 올려 보고, 4비트로 바꿔 보자. 그다음 같은 모델을 AI용 GPU 여러 대에 나눠 올려 보자.</div>
+    </div>
+    <p>그래서 AI 회사들은 메모리가 크고 대역폭이 넓은(HBM을 쌓은) GPU를 수천, 수만 대씩 연결해 쓴다. 학습할 때는 가중치뿐 아니라 기울기와 중간 결과까지 저장해야 해서 추론보다 몇 배의 메모리가 필요하다. 한편 휴대폰에서는 1~3B 정도의 작은 모델을 4비트로 줄여 NPU로 돌린다. 같은 원리 위에서 규모만 다른 것이다.</p>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>머신러닝은 규칙을 직접 짜는 대신 <b>예시와 정답</b>으로 규칙(모델)을 찾는다. 모델은 수많은 숫자(<b>가중치</b>)의 묶음이다.</li>
+      <li>인공 뉴런은 입력에 가중치를 곱해 더하고 편향을 더해 판단한다. 틀린 만큼 가중치를 조금씩 고치는 것이 학습이다.</li>
+      <li><b>경사 하강법</b>은 손실이 줄어드는 방향으로 한 걸음씩 가중치를 옮긴다. 학습률이 너무 작으면 느리고, 너무 크면 발산한다.</li>
+      <li>신경망 한 층의 계산은 <b>행렬 곱셈</b>이다. 독립적인 곱셈이 매우 많아 GPU·NPU가 잘 맞는다.</li>
+      <li>언어 모델은 <b>다음 토큰의 확률</b>을 반복해서 계산한다. 그럴듯함이 사실을 보장하지는 않는다.</li>
+      <li>모델 크기 = 매개변수 수 × 숫자 하나의 크기. 생성 속도는 대략 <b>메모리 대역폭 ÷ 모델 크기</b>다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>머신러닝이 전통적인 프로그래밍과 가장 다른 점은?</p><div class="opts">
+        <button class="opt">더 빠른 CPU를 쓴다</button><button class="opt" data-correct>사람이 규칙을 적는 대신 예시와 정답에서 규칙을 찾는다</button><button class="opt">인터넷이 꼭 필요하다</button><button class="opt">0과 1을 쓰지 않는다</button>
+      </div><div class="quiz-exp">머신러닝은 데이터와 정답으로부터 규칙에 해당하는 가중치를 찾아낸다. 계산 자체는 여전히 0과 1의 곱셈과 덧셈이다.</div></div>
+      <div class="quiz-q"><p>인공 뉴런 하나가 하는 계산으로 맞는 것은?</p><div class="opts">
+        <button class="opt">입력을 정렬한다</button><button class="opt" data-correct>입력 × 가중치를 모두 더하고 편향을 더한 뒤 판단한다</button><button class="opt">입력 중 가장 큰 값을 고른다</button><button class="opt">입력을 암호화한다</button>
+      </div><div class="quiz-exp">가중합 + 편향, 그리고 그 값으로 판단(활성화)하는 것이 뉴런의 전부다.</div></div>
+      <div class="quiz-q"><p>학습률을 지나치게 크게 잡으면?</p><div class="opts">
+        <button class="opt">항상 더 좋은 모델이 나온다</button><button class="opt">학습이 멈춘다</button><button class="opt" data-correct>골짜기를 건너뛰며 손실이 커지는 발산이 일어날 수 있다</button><button class="opt">모델 크기가 커진다</button>
+      </div><div class="quiz-exp">걸음이 너무 크면 최솟값을 지나쳐 반대쪽 비탈로 튀고, 점점 더 멀어질 수 있다.</div></div>
+      <div class="quiz-q"><p>AI 학습과 추론에 GPU가 널리 쓰이는 가장 큰 이유는?</p><div class="opts">
+        <button class="opt">화면 출력이 필요해서</button><button class="opt" data-correct>신경망 계산이 서로 독립적인 곱셈·덧셈이 매우 많은 행렬 곱셈이라서</button><button class="opt">GPU는 분기 예측이 뛰어나서</button><button class="opt">GPU에만 저장 공간이 있어서</button>
+      </div><div class="quiz-exp">행렬 곱셈은 수많은 곱셈을 동시에 할 수 있는 대표적인 병렬 작업이다. 12장에서 본 GPU의 강점과 딱 맞는다.</div></div>
+      <div class="quiz-q"><p>70B(700억) 매개변수 모델을 16비트로 저장하면 필요한 메모리는 대략?</p><div class="opts">
+        <button class="opt">7 GB</button><button class="opt">35 GB</button><button class="opt" data-correct>140 GB</button><button class="opt">700 GB</button>
+      </div><div class="quiz-exp">700억 × 2바이트 = 1400억 바이트 ≈ 140 GB. 24 GB GPU 한 장에는 들어가지 않는다. 4비트로 줄이면 약 35 GB가 된다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const f1 = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+
+  /* ---------------- single neuron (perceptron) ---------------- */
+  let pts = [], nnSteps = 0, flash = -1;
+  function genFruit(seed) {
+    const r = CB.rng(seed); pts = [];
+    const g = () => (r() + r() + r() - 1.5) * 0.22;
+    for (let i = 0; i < 16; i++) pts.push({ x: 0.68 + g(), y: 0.32 + g(), c: 1 });
+    for (let i = 0; i < 16; i++) pts.push({ x: 0.36 + g(), y: 0.66 + g(), c: -1 });
+    pts.forEach((p) => { p.x = Math.min(0.97, Math.max(0.03, p.x)); p.y = Math.min(0.97, Math.max(0.03, p.y)); });
+    // 선형 분리가 되도록 경계 근처 겹침 정리
+    pts.forEach((p) => { const s = p.x - p.y; if (p.c === 1 && s < 0.08) { p.x += 0.06; p.y -= 0.06; } if (p.c === -1 && s > -0.08) { p.x -= 0.06; p.y += 0.06; } });
+  }
+  let seed = 7; genFruit(seed);
+  const w1 = CB.range("nw1", (v) => v.toFixed(1), () => draw());
+  const w2 = CB.range("nw2", (v) => v.toFixed(1), () => draw());
+  const bb = CB.range("nb", (v) => v.toFixed(1), () => draw());
+  const score = (p) => w1() * p.x + w2() * p.y + bb();
+  const wrong = () => pts.map((p, i) => i).filter((i) => Math.sign(score(pts[i]) || -1) !== pts[i].c);
+  function draw() {
+    const bad = wrong().length;
+    CB.stat("o-nn-acc", Math.round(((pts.length - bad) / pts.length) * 100) + "%" + (bad === 0 ? " ✓" : ""));
+    CB.stat("o-nn-steps", nnSteps + "번");
+    CB.stat("o-nn-eq", `${w1().toFixed(1)}×단맛 ${f1(w2())}×신맛 ${f1(bb())}`);
+    ncv.redraw();
+  }
+  const ncv = CB.canvas("#cv-neuron", (ctx, w, h) => {
+    const P = CB.palette();
+    const S = Math.min(h - 60, w - 70), ox = Math.max(46, (w - S) / 2), oy = 14;
+    const X = (x) => ox + x * S, Y = (y) => oy + (1 - y) * S;
+    const n = 30, cs = S / n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const s = w1() * ((i + 0.5) / n) + w2() * (1 - (j + 0.5) / n) + bb();
+      ctx.fillStyle = s > 0 ? P.warn : P.ok; ctx.globalAlpha = 0.13; ctx.fillRect(ox + i * cs, oy + j * cs, cs + 0.5, cs + 0.5);
+    }
+    ctx.globalAlpha = 1; ctx.strokeStyle = P.border; ctx.lineWidth = 1; ctx.strokeRect(ox, oy, S, S);
+    // boundary line w1 x + w2 y + b = 0
+    ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, S, S); ctx.clip();
+    ctx.strokeStyle = P.text; ctx.lineWidth = 2.2; ctx.beginPath();
+    if (Math.abs(w2()) > 1e-6) { const yA = -(bb() + w1() * -0.1) / w2(), yB = -(bb() + w1() * 1.1) / w2(); ctx.moveTo(X(-0.1), Y(yA)); ctx.lineTo(X(1.1), Y(yB)); }
+    else if (Math.abs(w1()) > 1e-6) { const x0 = -bb() / w1(); ctx.moveTo(X(x0), Y(-0.1)); ctx.lineTo(X(x0), Y(1.1)); }
+    ctx.stroke(); ctx.restore();
+    const bad = new Set(wrong());
+    pts.forEach((p, i) => {
+      const px = X(p.x), py = Y(p.y);
+      ctx.fillStyle = p.c === 1 ? P.warn : P.ok; ctx.strokeStyle = P.bg; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (p.c === 1) ctx.arc(px, py, 6.5, 0, Math.PI * 2); else { ctx.moveTo(px, py - 8); ctx.lineTo(px + 7.5, py + 5.5); ctx.lineTo(px - 7.5, py + 5.5); ctx.closePath(); }
+      ctx.fill(); ctx.stroke();
+      if (bad.has(i)) { ctx.strokeStyle = P.bad; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.stroke(); }
+      if (i === flash) { ctx.strokeStyle = P.accent; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, py, 15, 0, Math.PI * 2); ctx.stroke(); }
+    });
+    CB.text(ctx, "단맛 →", ox + S, oy + S + 18, { align: "right", size: 12, color: P.dim });
+    ctx.save(); ctx.translate(ox - 16, oy); ctx.rotate(-Math.PI / 2); CB.text(ctx, "신맛 →", 0, 0, { align: "right", size: 12, color: P.dim }); ctx.restore();
+    ctx.fillStyle = P.warn; ctx.beginPath(); ctx.arc(ox + 8, oy + S + 34, 5.5, 0, Math.PI * 2); ctx.fill(); CB.text(ctx, "귤", ox + 18, oy + S + 34, { size: 12, color: P.dim });
+    ctx.fillStyle = P.ok; ctx.beginPath(); ctx.moveTo(ox + 56, oy + S + 28); ctx.lineTo(ox + 62, oy + S + 39); ctx.lineTo(ox + 50, oy + S + 39); ctx.closePath(); ctx.fill(); CB.text(ctx, "레몬", ox + 68, oy + S + 34, { size: 12, color: P.dim });
+  }, { aspect: 0.62, minHeight: 300, maxHeight: 440 });
+  function learnOne() {
+    const bad = wrong(); if (!bad.length) { flash = -1; return false; }
+    const i = bad[Math.floor(Math.random() * bad.length)], p = pts[i], lr = 0.8;
+    const cl = (v) => Math.max(-6, Math.min(6, Math.round(v * 10) / 10));
+    w1.set(cl(w1() + lr * p.c * p.x)); w2.set(cl(w2() + lr * p.c * p.y)); bb.set(cl(bb() + lr * p.c * 0.5));
+    nnSteps++; flash = i; draw(); return true;
+  }
+  $("nn-step").onclick = () => { stopAuto(); learnOne(); };
+  let auto = false, acc = 0;
+  function stopAuto() { auto = false; $("nn-auto").textContent = "자동 학습"; }
+  $("nn-auto").onclick = () => { if (auto) return stopAuto(); auto = true; $("nn-auto").textContent = "멈춤"; };
+  $("nn-new").onclick = () => { stopAuto(); seed += 13; genFruit(seed); flash = -1; nnSteps = 0; w1.set(1); w2.set(1); bb.set(-1); draw(); };
+  CB.loop($("cv-neuron"), (dt) => { if (!auto) return; acc += dt; if (acc < 0.18) return; acc = 0; if (!learnOne() || nnSteps > 400) { flash = -1; stopAuto(); draw(); } });
+  draw();
+
+  /* ---------------- gradient descent ---------------- */
+  const F = (w) => 0.05 * w ** 4 - 0.5 * w * w + 0.3 * w + 2;
+  const G = (w) => 0.2 * w ** 3 - w + 0.3;
+  const LRS = [0.02, 0.1, 0.4, 0.9, 1.2, 2.0];
+  const LRN = ["0.02 (아주 작게)", "0.1", "0.4", "0.9", "1.2", "2.0 (아주 크게)"];
+  let gbox = null, gw = 3.2, hist = [], diverged = false, running = false, gacc = 0;
+  const lri = CB.range("gd-lr", (v) => LRN[v], () => resetGD());
+  const gstart = CB.seg("gd-start", (v) => { gw = Number(v); resetGD(gw); });
+  function resetGD(w0) { if (w0 != null) gw = w0; else gw = Number(gstart()); hist = [{ w: gw, l: F(gw) }]; diverged = false; running = false; $("gd-run").textContent = "자동으로 굴리기"; gdStat(); if (gcv) gcv.redraw(); }
+  function stepGD() {
+    if (diverged) return false;
+    const prev = gw; gw = gw - LRS[lri()] * G(gw);
+    if (!isFinite(gw) || Math.abs(gw) > 4.6) { diverged = true; gw = Math.max(-4.6, Math.min(4.6, isFinite(gw) ? gw : 4.6)); }
+    hist.push({ w: gw, l: F(gw) });
+    gdStat(); gcv.redraw();
+    return !diverged && (Math.abs(gw - prev) > 1e-4 || hist.length < 3);
+  }
+  function gdStat() {
+    const n = hist.length - 1, l = F(gw);
+    CB.stat("o-gd-n", n + "걸음");
+    CB.stat("o-gd-loss", diverged ? "<span style='color:var(--bad)'>폭발</span>" : l.toFixed(3));
+    let st = "출발 전";
+    if (diverged) st = "<span style='color:var(--bad)'>발산! 지형 밖으로</span>";
+    else if (n > 0 && Math.abs(G(gw)) < 0.01) st = gw < 0 ? "<span style='color:var(--ok)'>깊은 골짜기 도착</span>" : "<span style='color:var(--warn)'>얕은 골짜기에 갇힘</span>";
+    else if (n > 4) { const a = hist[n].w - hist[n - 1].w, b = hist[n - 1].w - hist[n - 2].w; st = a * b < 0 ? "좌우로 튀는 중" : "내려가는 중"; }
+    else if (n > 0) st = "내려가는 중";
+    CB.stat("o-gd-state", st);
+  }
+  let gcv = null;
+  gcv = CB.canvas("#cv-gd", (ctx, w, h) => {
+    const P = CB.palette();
+    const topH = h - 110;
+    const box = { x: 46, y: 12, w: w - 46 - 14, h: topH - 34 };
+    const data = []; for (let x = -4.2; x <= 4.2; x += 0.05) data.push([x, F(x)]);
+    const tr = hist.slice(-40);
+    CB.chart(ctx, box, { x: [-4.2, 4.2], y: [0, 6], xLabel: "", yLabel: "손실", xFmt: () => "", series: [{ data, color: P.accent, width: 2.5, fill: P.accent + "18" }] });
+    const X = (v) => box.x + ((v + 4.2) / 8.4) * box.w, Y = (v) => box.y + box.h - (Math.min(6.4, v) / 6) * box.h;
+    CB.text(ctx, "가중치 w →", box.x + box.w, box.y + box.h + 14, { align: "right", size: 11.5, color: P.dim });
+    ctx.strokeStyle = P.warn; ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath();
+    tr.forEach((p, i) => { const px = X(p.w), py = Y(p.l) - 9; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.stroke(); ctx.setLineDash([]);
+    tr.forEach((p, i) => { if (i === tr.length - 1) return; ctx.fillStyle = P.warn; ctx.globalAlpha = 0.35 + 0.5 * (i / tr.length); ctx.beginPath(); ctx.arc(X(p.w), Y(p.l) - 9, 3, 0, Math.PI * 2); ctx.fill(); });
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = diverged ? P.bad : P.warn; ctx.strokeStyle = P.bg; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(gw), Math.max(box.y + 9, Y(F(gw)) - 9), 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // history strip
+    const hb = { x: 46, y: topH + 8, w: w - 46 - 14, h: 66 };
+    const N = Math.max(20, hist.length);
+    CB.chart(ctx, hb, { x: [0, N], y: [0, 6], yTicks: [0, 3, 6], xTicks: [], yFmt: (v) => String(v), series: [{ data: hist.map((p, i) => [i, Math.min(6, p.l)]), color: P.warn, width: 2 }] });
+    CB.text(ctx, "걸음마다 손실 →", hb.x + hb.w, hb.y + hb.h + 14, { align: "right", size: 11.5, color: P.dim });
+    gbox = box;
+  }, { aspect: 0.6, minHeight: 330, maxHeight: 440 });
+  $("cv-gd").addEventListener("click", (e) => {
+    const b = gbox; if (!b) return; const r = e.currentTarget.getBoundingClientRect(), x = e.clientX - r.left;
+    if (x < b.x || x > b.x + b.w) return; resetGD(Math.round((((x - b.x) / b.w) * 8.4 - 4.2) * 10) / 10);
+  });
+  $("gd-step").onclick = () => { running = false; $("gd-run").textContent = "자동으로 굴리기"; stepGD(); };
+  $("gd-run").onclick = () => { if (running) { running = false; $("gd-run").textContent = "자동으로 굴리기"; return; } if (diverged || hist.length > 60) resetGD(); running = true; $("gd-run").textContent = "멈춤"; };
+  CB.loop($("cv-gd"), (dt) => { if (!running) return; gacc += dt; if (gacc < 0.28) return; gacc = 0; if (!stepGD() || hist.length > 60) { running = false; $("gd-run").textContent = "자동으로 굴리기"; } });
+  resetGD();
+
+  /* ---------------- toy next-token model (bigram) ---------------- */
+  const CORPUS = [
+    "요리사 는 칼 로 양파 를 썬다 .", "요리사 는 조리대 에서 양파 를 볶는다 .", "요리사 는 창고 에서 재료 를 꺼낸다 .", "요리사 는 주문 을 받으면 요리 를 시작 한다 .",
+    "요리사 가 바쁘면 보조 요리사 가 돕는다 .", "보조 요리사 는 감자 를 썬다 .", "요리사 는 맛 을 보고 소금 을 넣는다 .", "주방장 은 요리사 에게 주문 을 나눠 준다 .",
+    "CPU 는 명령어 를 하나씩 실행 한다 .", "CPU 는 메모리 에서 데이터 를 읽는다 .", "CPU 는 캐시 에서 데이터 를 먼저 찾는다 .", "CPU 가 바쁘면 컴퓨터 가 느려진다 .",
+    "CPU 는 1초 에 수십억 번 계산 한다 .", "GPU 는 수천 개 의 코어 로 계산 한다 .", "메모리 는 데이터 를 잠깐 기억 한다 .", "컴퓨터 는 0 과 1 로 계산 한다 .",
+    "컴퓨터 는 메모리 에서 프로그램 을 읽는다 .", "운영체제 는 CPU 를 나눠 준다 .", "프로그램 은 메모리 에 올라가야 실행 된다 .",
+    "고양이 는 조리대 위 에서 잠 을 잔다 .", "고양이 는 생선 을 좋아 한다 .", "고양이 가 키보드 위 를 걷는다 .", "고양이 는 창고 에서 쥐 를 찾는다 .",
+    "고양이 는 햇볕 에서 잠 을 잔다 .", "고양이 가 바쁘면 아무도 모른다 .", "키보드 는 키 의 번호 를 보낸다 .", "쥐 는 창고 에서 재료 를 먹는다 .",
+    "요리 를 시작 하면 주방 이 바빠진다 .", "재료 를 꺼내면 요리사 가 썬다 .", "계산 이 끝나면 결과 를 메모리 에 쓴다 .", "데이터 를 먼저 찾으면 빠르다 .",
+  ];
+  const BG = {};
+  CORPUS.forEach((s) => { const t = s.split(" "); for (let i = 0; i < t.length - 1; i++) { const a = t[i], b = t[i + 1]; (BG[a] = BG[a] || {})[b] = (BG[a][b] || 0) + 1; } });
+  const nxStart = CB.seg("nx-start", () => nxReset());
+  const temp = CB.range("nx-temp", (v) => v.toFixed(1), () => xcv.redraw());
+  let toks = [], done = false, lastPick = null, nxTimer = 0;
+  function cands() {
+    const last = toks[toks.length - 1], m = BG[last] || {}, T = temp();
+    const arr = Object.entries(m).map(([k, c]) => [k, Math.pow(c, 1 / T)]);
+    const Z = arr.reduce((s, a) => s + a[1], 0) || 1;
+    return arr.map(([k, v]) => [k, v / Z]).sort((a, b) => b[1] - a[1]);
+  }
+  function render() {
+    $("nx-text").innerHTML = toks.map((t, i) => `<span style="${i === toks.length - 1 && toks.length > 1 ? "background:var(--accent-soft);border-radius:4px;" : ""}padding:1px 3px;margin-right:2px;border-bottom:2px solid var(--border)">${t}</span>`).join("") + (done ? "" : ' <span style="color:var(--faint)">▍</span>');
+    xcv.redraw();
+  }
+  function nxReset() { clearInterval(nxTimer); toks = [nxStart()]; done = false; lastPick = null; render(); }
+  function nxOne() {
+    if (done) return false;
+    const c = cands(); if (!c.length) { done = true; render(); return false; }
+    let r = Math.random(), pick = c[c.length - 1][0];
+    for (const [k, p] of c) { if ((r -= p) <= 0) { pick = k; break; } }
+    lastPick = pick; toks.push(pick); if (pick === "." || toks.length > 24) done = true; render(); return !done;
+  }
+  $("nx-one").onclick = () => { clearInterval(nxTimer); nxOne(); };
+  $("nx-all").onclick = () => { clearInterval(nxTimer); if (done) nxReset(); nxTimer = setInterval(() => { if (!nxOne()) clearInterval(nxTimer); }, 380); };
+  $("nx-reset").onclick = nxReset;
+  const xcv = CB.canvas("#cv-next", (ctx, w, h) => {
+    const P = CB.palette(); const c = done ? [] : cands().slice(0, 6);
+    CB.text(ctx, done ? "문장이 끝났다. “처음부터”를 누르거나 온도를 바꿔 다시 해 보자." : `“${toks[toks.length - 1]}” 다음에 올 토큰의 확률`, 12, 18, { size: 12.5, color: P.dim, bold: !done });
+    const lw = Math.min(110, w * 0.26), bx = 12 + lw, bw = w - bx - 70;
+    c.forEach(([k, p], i) => {
+      const y = 38 + i * 30;
+      CB.text(ctx, k, bx - 10, y + 11, { align: "right", size: 14, bold: i === 0 });
+      CB.rrect(ctx, bx, y, bw, 22, 5); ctx.fillStyle = P.surface; ctx.fill();
+      CB.rrect(ctx, bx, y, Math.max(3, bw * p), 22, 5); ctx.fillStyle = i === 0 ? P.accent : P.accent2; ctx.globalAlpha = i === 0 ? 0.9 : 0.6; ctx.fill(); ctx.globalAlpha = 1;
+      CB.text(ctx, Math.round(p * 100) + "%", bx + bw + 8, y + 11, { size: 12.5, mono: true, color: P.dim });
+    });
+  }, { height: 230 });
+  nxReset();
+
+  /* ---------------- model memory calculator ---------------- */
+  const DEV = [
+    { n: "휴대폰", mem: 12, bw: 60 }, { n: "노트북", mem: 32, bw: 120 }, { n: "게임용 GPU", mem: 24, bw: 1000 },
+    { n: "AI용 GPU", mem: 80, bw: 3350 }, { n: "GPU 8대 서버", mem: 640, bw: 26800 },
+  ];
+  const mp = CB.seg("mm-p", () => mmUpd()), mb = CB.seg("mm-b", () => mmUpd()), md = CB.seg("mm-d", () => mmUpd());
+  const SAMPLE = "컴퓨터 는 결국 0 과 1 을 아주 빠르게 옮기고 더하는 기계 다 . 언어 모델 도 다르지 않다 . 토큰 하나 를 만들 때마다 가중치 전체 를 메모리 에서 읽어 와 곱하고 더한다 . 그래서 메모리 가 크고 빨라야 한다 . ".split(" ");
+  let shown = 0, tacc = 0;
+  function mm() { const size = Number(mp()) * Number(mb()), d = DEV[Number(md())], fits = size <= d.mem * 0.9; return { size, d, fits, tps: fits ? d.bw / size : 0 }; }
+  function mmUpd() {
+    const m = mm(); shown = 0; tacc = 0;
+    CB.stat("o-mm-size", m.size >= 1 ? m.size.toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + " GB" : Math.round(m.size * 1000) + " MB");
+    CB.stat("o-mm-cap", m.d.mem + " GB · " + (m.d.bw >= 1000 ? (m.d.bw / 1000).toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + " TB/s" : m.d.bw + " GB/s"));
+    CB.stat("o-mm-tps", m.fits ? `<span style="color:${m.tps < 5 ? "var(--warn)" : "var(--ok)"}">초당 약 ${m.tps >= 100 ? Math.round(m.tps).toLocaleString("ko-KR") : m.tps.toFixed(1)} 토큰</span>` : "<span style='color:var(--bad)'>메모리 부족</span>");
+    mcv.redraw();
+  }
+  const mcv = CB.canvas("#cv-mem", (ctx, w, h) => {
+    const P = CB.palette(), m = mm();
+    const max = Math.max(m.size, m.d.mem) * 1.08, L = 16, R = w - 16, bw = R - L;
+    const sx = (v) => L + (v / max) * bw;
+    CB.text(ctx, `${m.d.n} 메모리 ${m.d.mem} GB`, L, 18, { size: 12.5, bold: true, color: P.dim });
+    CB.rrect(ctx, L, 30, sx(m.d.mem) - L, 34, 7); ctx.fillStyle = P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.lineWidth = 1.2; ctx.stroke();
+    CB.text(ctx, `모델 가중치 ${m.size >= 1 ? m.size.toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + " GB" : Math.round(m.size * 1000) + " MB"}`, L, 84, { size: 12.5, bold: true, color: P.dim });
+    CB.rrect(ctx, L, 96, Math.max(4, sx(m.size) - L), 34, 7); ctx.fillStyle = m.fits ? P.accent : P.bad; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = P.text; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(sx(m.d.mem), 26); ctx.lineTo(sx(m.d.mem), 136); ctx.stroke(); ctx.setLineDash([]);
+    if (!m.fits) CB.text(ctx, "들어가지 않음", Math.min(R - 4, sx(m.size) - 8), 113, { align: "right", size: 12.5, bold: true, color: "#fff" });
+    // streaming text
+    const ty = 152; CB.rrect(ctx, L, ty, bw, h - ty - 12, 8); ctx.fillStyle = P.surface; ctx.fill();
+    if (!m.fits) { CB.text(ctx, "가중치가 메모리에 다 올라가지 않아 실행할 수 없다. 숫자를 줄이거나(양자화) 더 큰 기기를 골라 보자.", L + 12, ty + 22, { size: 12.5, color: P.bad }); return; }
+    ctx.save(); ctx.beginPath(); ctx.rect(L + 8, ty + 4, bw - 16, h - ty - 20); ctx.clip();
+    let x = L + 12, y = ty + 22; const words = []; for (let i = 0; i < shown; i++) words.push(SAMPLE[i % SAMPLE.length]);
+    ctx.font = "15px " + CB.font();
+    const lines = [[]]; words.forEach((t) => { const tw = ctx.measureText(t + " ").width; if (x + tw > R - 12) { lines.push([]); x = L + 12; } lines[lines.length - 1].push([t, x]); x += tw; });
+    const maxLines = Math.max(1, Math.floor((h - ty - 24) / 24)), vis = lines.slice(-maxLines);
+    vis.forEach((ln, li) => ln.forEach(([t, tx]) => CB.text(ctx, t, tx, y + li * 24, { size: 15 })));
+    ctx.restore();
+  }, { height: 270 });
+  CB.loop($("cv-mem"), (dt) => {
+    const m = mm(); if (!m.fits) return;
+    const rate = Math.min(m.tps, 80); tacc += dt * rate;
+    if (tacc >= 1) { shown += Math.floor(tacc); tacc -= Math.floor(tacc); if (shown > 400) shown = 0; mcv.redraw(); }
+  });
+  mmUpd();
+})();
+</script>
+</body>
+</html>

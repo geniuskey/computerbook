@@ -22,7 +22,10 @@
     { slug: "gpu",      num: "12", part: "GPU",      title: "GPU: 수천 개의 작은 일꾼",    desc: "CPU와 GPU의 차이, 대량 병렬 처리, 그래픽 파이프라인과 래스터화, AI가 GPU를 쓰는 이유.", tags: ["GPU", "sim"] },
     { slug: "program",  num: "13", part: "프로그램", title: "프로그램은 어떻게 실행되는가", desc: "소스 코드 → 컴파일 → 기계어 → 로딩 → 실행. 스택과 힙, 함수 호출을 눈으로 따라간다.", tags: ["소프트웨어", "sim"] },
     { slug: "journey",  num: "14", part: "종합",     title: "클릭 한 번의 여행",           desc: "메시지·웹 검색·게임·사진 네 장면으로 모든 계층이 함께 일하는 모습을 따라가고, 병목 실험실에서 느린 구간을 찾는다.", tags: ["종합", "sim"] },
-    { slug: "glossary", num: "15", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 148개를 검색하고, 26문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
+    { slug: "io",       num: "15", part: "더 깊이",  title: "입출력과 버스",               desc: "장치와 대화하는 법. 폴링·인터럽트·DMA, USB·PCIe 대역폭, 화면이 그려지는 원리와 화면 찢김.", tags: ["하드웨어", "sim"] },
+    { slug: "security", num: "16", part: "더 깊이",  title: "보안의 기초",                 desc: "해시와 비밀번호, 무차별 대입, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증.", tags: ["보안", "sim"] },
+    { slug: "ai",       num: "17", part: "더 깊이",  title: "AI는 어떻게 계산하나",        desc: "인공 뉴런과 학습, 경사 하강, 신경망과 행렬, 다음 단어 예측, 모델 크기와 GPU 메모리.", tags: ["AI", "sim"] },
+    { slug: "glossary", num: "18", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 180개를 검색하고, 32문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
   ];
 
   const CB = (window.CB = {});

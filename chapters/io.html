@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>입출력과 버스 · ComputerBook</title>
+<meta name="description" content="CPU가 키보드, SSD, 화면 같은 장치와 대화하는 방법. 장치 컨트롤러와 드라이버, 폴링·인터럽트·DMA, USB·PCIe의 대역폭, 프레임 버퍼와 주사율, 화면 찢김과 V-Sync를 시뮬레이터로 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/io.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="입출력과 버스 · ComputerBook">
+<meta property="og:description" content="CPU가 키보드, SSD, 화면 같은 장치와 대화하는 방법. 장치 컨트롤러와 드라이버, 폴링·인터럽트·DMA, USB·PCIe의 대역폭, 프레임 버퍼와 주사율, 화면 찢김과 V-Sync를 시뮬레이터로 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/io.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"입출력과 버스","name":"입출력과 버스 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/io.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/io.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":15,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"CPU가 키보드, SSD, 화면 같은 장치와 대화하는 방법. 장치 컨트롤러와 드라이버, 폴링·인터럽트·DMA, USB·PCIe의 대역폭, 프레임 버퍼와 주사율, 화면 찢김과 V-Sync를 시뮬레이터로 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"15 입출력과 버스","item":"https://computerbook.euiyun.com/chapters/io.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+</head>
+<body data-chapter="io">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 15</div>
+    <h1>입출력과 버스</h1>
+    <p class="lead">CPU와 메모리만으로는 아무 쓸모가 없다. 키보드로 명령을 받고, SSD에서 파일을 읽고, 화면에 그림을 보내고, 네트워크로 대화해야 비로소 컴퓨터가 된다. 이 장에서는 CPU가 수많은 바깥 장치와 <strong>어떻게 말을 주고받는지</strong>, 그리고 그 대화가 왜 컴퓨터 속도를 좌우하는지 살펴본다. 주방으로 치면 주문 창구, 식자재 반입구, 서빙 창구의 이야기다.</p>
+    <ul class="objectives">
+      <li>장치 컨트롤러, 레지스터, 드라이버가 장치와의 대화를 나눠 맡는 구조를 설명한다.</li>
+      <li>폴링, 인터럽트, DMA의 차이를 시뮬레이터로 비교하고 CPU가 아끼는 시간을 확인한다.</li>
+      <li>USB, PCIe, SATA 같은 연결 방식의 대역폭 차이를 전송 시간으로 느껴 본다.</li>
+      <li>프레임 버퍼와 주사율, 화면 찢김과 V-Sync의 원리를 이해한다.</li>
+      <li>키 하나를 눌렀을 때 글자가 화면에 나타나기까지의 경로를 따라간다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="device">
+    <h2>장치마다 작은 관리인이 있다</h2>
+    <p>CPU가 SSD의 플래시 셀이나 Wi-Fi 칩의 전파를 직접 조종하지는 않는다. 각 장치에는 그 장치를 전문으로 다루는 작은 칩, 즉 <span class="term">장치 컨트롤러</span><span class="en">(device controller)</span>가 붙어 있다. 컨트롤러 안에는 CPU가 읽고 쓸 수 있는 몇 개의 칸(<b>장치 레지스터</b>)이 있다. “명령” 칸, “상태” 칸, “데이터” 칸 같은 것이다. CPU는 이 칸에 “블록 812번을 읽어라”라고 적고, 상태 칸을 보고 일이 끝났는지 확인한다.</p>
+    <p>장치마다 칸의 의미와 사용법이 다르기 때문에, 운영체제는 장치별 사용 설명서를 프로그램으로 만들어 둔다. 이것이 8장에서 본 <span class="term">드라이버</span>다. 앱은 “파일을 읽어 줘”라고만 말하고, 드라이버가 그 장치의 언어로 번역해 컨트롤러에게 전한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="CPU, 메모리, 그리고 여러 장치 컨트롤러가 버스로 연결된 구조">
+        <defs><marker id="io-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="30" y="20" width="160" height="70" rx="12" class="f-acc"/><text x="110" y="52" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">CPU</text><text x="110" y="72" text-anchor="middle" style="fill:#fff" class="t-mono">드라이버가 실행됨</text>
+        <rect x="240" y="20" width="140" height="70" rx="12" class="f-acc2-soft"/><text x="310" y="52" text-anchor="middle" class="t" style="font-weight:700">메모리</text><text x="310" y="72" text-anchor="middle" class="t-mono">RAM</text>
+        <path d="M110 90 V130 M310 90 V130" class="s-acc" marker-start="url(#io-a)"/>
+        <path d="M30 136 H770" stroke="var(--accent)" stroke-width="6"/><text x="560" y="126" class="t-acc">공용 통로 (버스 · PCIe)</text>
+        <g>
+          <path d="M100 142 V170 M260 142 V170 M420 142 V170 M580 142 V170 M720 142 V170" class="s-line" stroke-width="2"/>
+          <rect x="40" y="170" width="120" height="66" rx="10" class="f-elev"/><text x="100" y="196" text-anchor="middle" class="t" style="font-weight:700">SSD 컨트롤러</text><text x="100" y="216" text-anchor="middle" class="t-mono">명령·상태·데이터</text>
+          <rect x="200" y="170" width="120" height="66" rx="10" class="f-elev"/><text x="260" y="196" text-anchor="middle" class="t" style="font-weight:700">GPU</text><text x="260" y="216" text-anchor="middle" class="t-mono">프레임 버퍼</text>
+          <rect x="360" y="170" width="120" height="66" rx="10" class="f-elev"/><text x="420" y="196" text-anchor="middle" class="t" style="font-weight:700">USB 컨트롤러</text><text x="420" y="216" text-anchor="middle" class="t-mono">키보드·마우스</text>
+          <rect x="520" y="170" width="120" height="66" rx="10" class="f-elev"/><text x="580" y="196" text-anchor="middle" class="t" style="font-weight:700">네트워크 칩</text><text x="580" y="216" text-anchor="middle" class="t-mono">Wi-Fi·이더넷</text>
+          <rect x="660" y="170" width="120" height="66" rx="10" class="f-elev"/><text x="720" y="196" text-anchor="middle" class="t" style="font-weight:700">오디오 칩</text><text x="720" y="216" text-anchor="middle" class="t-mono">스피커·마이크</text>
+        </g>
+        <g class="t-dim"><text x="100" y="262" text-anchor="middle">플래시 칩</text><text x="260" y="262" text-anchor="middle">모니터</text><text x="420" y="262" text-anchor="middle">USB 기기</text><text x="580" y="262" text-anchor="middle">안테나·케이블</text><text x="720" y="262" text-anchor="middle">스피커</text></g>
+        <text x="400" y="290" text-anchor="middle" class="t-dim">CPU는 각 컨트롤러의 레지스터에 명령을 적고, 컨트롤러가 실제 장치를 다룬다.</text>
+      </svg>
+      <figcaption><b>그림 15-1.</b> 입출력 장치의 구조. 장치마다 컨트롤러라는 작은 관리인이 있고, CPU와 메모리, 컨트롤러들은 공용 통로(버스)로 이어져 있다.</figcaption>
+    </figure>
+    <div class="callout analogy"><strong>주방의 창구들</strong><p>요리사(CPU)가 직접 시장에 가거나 손님 테이블까지 음식을 나르지는 않는다. 식자재 반입 담당(SSD 컨트롤러), 서빙 담당(GPU), 주문 접수 담당(USB 컨트롤러)이 따로 있고, 요리사는 이들에게 쪽지(레지스터)로 지시한다. 담당자마다 일하는 방식이 달라서, 주방장(운영체제)은 담당자별 업무 매뉴얼(드라이버)을 갖고 있다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="dma">
+    <h2>끝났는지 어떻게 알까: 폴링, 인터럽트, DMA</h2>
+    <p>CPU가 SSD에게 “블록을 읽어라”라고 시켰다. SSD는 CPU보다 수만 배 느리다. 그동안 CPU는 무엇을 해야 할까? 세 가지 방법이 있다.</p>
+    <ul>
+      <li><b>폴링</b><span class="en">(polling)</span>: CPU가 “다 됐어?” 하고 상태 칸을 쉬지 않고 확인한다. 간단하지만 기다리는 내내 CPU가 묶인다. 배달 앱을 1초마다 새로고침하는 것과 같다.</li>
+      <li><b>인터럽트</b>(8장): 장치가 일을 마치면 CPU에게 신호를 보낸다. CPU는 그동안 다른 일을 한다. 대신 데이터 조각이 올 때마다 CPU가 직접 메모리로 옮겨 담아야 한다.</li>
+      <li><b>DMA</b><span class="en">(Direct Memory Access)</span>: CPU는 “이 파일 전체를 메모리 이 위치로 옮겨 놓고 다 되면 알려 줘”라고 한 번만 지시한다. DMA 장치가 메모리로 직접 옮기고, 모두 끝났을 때 인터럽트를 한 번 건다.</li>
+    </ul>
+    <div class="sim" id="sim-dma">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>파일 하나를 읽는 동안 CPU는 무엇을 하나</h3></div>
+      <div class="sim-view"><canvas id="cv-dma"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>방식</span><div class="seg" id="dma-mode"><button data-value="poll" class="on">폴링</button><button data-value="irq">인터럽트</button><button data-value="dma">DMA</button></div></div>
+        <label class="ctrl"><span>읽을 블록 수 <output id="dma-n-out"></output></span><input type="range" id="dma-n" min="4" max="24" value="12"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="dma-go">다시 재생</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">CPU가 다른 일을 한 비율</span><span class="v" id="o-dma-free">—</span></div>
+        <div class="stat"><span class="k">인터럽트 횟수</span><span class="v" id="o-dma-irq">—</span></div>
+        <div class="stat"><span class="k">CPU가 직접 옮긴 블록</span><span class="v" id="o-dma-copy">—</span></div>
+      </div>
+      <div class="sim-note">위쪽 띠는 CPU, 아래쪽 띠는 SSD다. 빨강 = 상태 확인하며 기다림, 파랑 = CPU가 데이터를 메모리로 옮김, 주황 = 설정, 초록 = 다른 프로그램을 위한 일. 해볼 것: 세 방식에서 초록색이 얼마나 되는지 비교해 보자. 실제 비율 차이는 훨씬 극단적이다. SSD 블록 하나를 기다리는 동안 CPU는 수십만 박자를 보낸다.</div>
+    </div>
+    <p>그래서 요즘 컴퓨터에서 대량의 데이터를 옮기는 장치, 즉 SSD, GPU, 네트워크 칩, 오디오 칩은 거의 모두 DMA를 쓴다. 4K 영상을 녹화하거나 큰 게임을 설치하는 동안에도 CPU가 다른 일을 여유 있게 할 수 있는 이유다. 반면 키보드처럼 가끔 아주 적은 데이터를 보내는 장치는 인터럽트만으로 충분하다.</p>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">DMA 없이 초당 수백 MB의 4K 영상을 녹화하면 무슨 일이 생길까?</p><p class="wi-hint">위 시뮬레이터의 “인터럽트” 방식에서 블록 수를 최대로 늘려 보자. 실제 영상은 초당 수만 블록이다.</p><div class="opts">
+      <button class="opt">아무 차이 없다</button><button class="opt" data-correct>CPU가 데이터 옮기기에 묶여 다른 앱이 버벅이거나 영상이 끊긴다</button><button class="opt">영상 화질이 좋아진다</button><button class="opt">저장 공간을 덜 쓴다</button>
+    </div><div class="quiz-exp">블록이 올 때마다 CPU가 인터럽트를 받고 직접 옮겨야 하므로 CPU 시간의 상당 부분이 단순 운반에 쓰인다. 처리가 밀리면 데이터를 제때 비우지 못해 영상 프레임이 빠진다. DMA는 운반을 전담 장치에 맡겨 이 문제를 없앤다.</div></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="bus">
+    <h2>연결 통로의 폭: USB, PCIe, SATA</h2>
+    <p>장치와 컴퓨터를 잇는 통로는 종류마다 폭(대역폭, 10장)이 크게 다르다. 같은 SSD라도 어떤 통로에 꽂느냐에 따라 속도가 수십 배 차이 난다. 요즘 고속 통로들은 공통점이 있다. 여러 가닥의 전선에 0과 1을 동시에 싣는 대신, 몇 가닥에 아주 빠르게 차례로 싣고(직렬), 필요하면 이런 가닥 묶음(레인)을 여러 개 나란히 쓴다. PCIe x4는 레인 4개, x16은 16개다.</p>
+    <div class="sim" id="sim-bw">
+      <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>이 파일을 옮기는 데 얼마나 걸릴까</h3></div>
+      <div class="sim-controls" style="border-top:0">
+        <div class="ctrl"><span>옮길 것</span><div class="seg" id="bw-file"><button data-value="3e6">사진 한 장 (3 MB)</button><button data-value="3e9" class="on">사진 1,000장 (3 GB)</button><button data-value="5e10">4K 영화 (50 GB)</button><button data-value="1.5e11">대작 게임 (150 GB)</button></div></div>
+      </div>
+      <div class="sim-view"><canvas id="cv-bw"></canvas></div>
+      <div class="sim-note">실제로 체감되는 대략적인 속도(MB/s)를 기준으로 했다. 표시 이름의 Gbps(비트) 값과 MB/s(바이트)는 8배 차이가 나고, 실제 속도는 규격 최대치보다 낮다. 가장 느린 구간이 전체 속도를 정한다는 점도 기억하자. 빠른 SSD를 USB 2.0 포트에 꽂으면 USB 2.0 속도밖에 나오지 않는다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="display">
+    <h2>화면은 어떻게 그려지나: 프레임 버퍼와 주사율</h2>
+    <p>GPU는 완성된 화면 한 장을 메모리의 특별한 영역에 그려 둔다. 이 영역을 <span class="term">프레임 버퍼</span><span class="en">(frame buffer)</span>라 한다. 4K 화면이면 약 830만 픽셀 × 4바이트 ≈ 33 MB다. 모니터는 이 버퍼를 1초에 60번(60 Hz), 또는 120번, 144번씩 <b>위에서 아래로 한 줄씩</b> 읽어 가며 화면을 다시 칠한다. 1초에 화면을 몇 번 다시 칠하는지가 <span class="term">주사율</span><span class="en">(refresh rate)</span>이다.</p>
+    <p>문제는 GPU가 그림을 완성하는 속도(초당 프레임 수, fps)와 모니터가 읽는 속도가 맞지 않을 때 생긴다. 모니터가 화면의 절반쯤 읽었을 때 GPU가 새 그림으로 바꿔 버리면, 화면의 위쪽은 옛 그림, 아래쪽은 새 그림이 된다. 움직이는 물체가 가로로 어긋나 보이는 이 현상이 <span class="term">화면 찢김</span><span class="en">(tearing)</span>이다.</p>
+    <div class="sim" id="sim-tear">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>화면 찢김과 V-Sync (슬로 모션)</h3></div>
+      <div class="sim-view"><canvas id="cv-tear"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>GPU가 그리는 속도 <output id="tear-fps-out"></output></span><input type="range" id="tear-fps" min="20" max="200" step="5" value="90"></label>
+        <label class="check"><input type="checkbox" id="tear-vs"> V-Sync 켜기 (모니터가 다 읽을 때까지 바꾸지 않고 기다림)</label>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">모니터 주사율</span><span class="v">60 Hz</span></div>
+        <div class="stat"><span class="k">이번 화면의 찢긴 곳</span><span class="v" id="o-tear-n">—</span></div>
+        <div class="stat"><span class="k">실제로 보이는 장면 수</span><span class="v" id="o-tear-shown">—</span></div>
+      </div>
+      <div class="sim-note">흰 막대가 오른쪽으로 움직이는 게임 화면이다. 모니터가 위에서 아래로 읽어 내려가는 동안(주황 선) GPU가 그림을 바꾸면 막대가 어긋난다. 해볼 것: 90 fps에서 V-Sync를 켜면 찢김이 사라지지만 장면 수가 60으로 묶인다. 40 fps에서 V-Sync를 켜면? 같은 그림이 두 번씩 보이는 순간이 생겨 뚝뚝 끊긴다. 요즘 모니터의 가변 주사율(G-Sync, FreeSync)은 모니터가 GPU의 속도에 맞춰 기다려 주는 방식으로 두 문제를 함께 푼다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="keyboard">
+    <h2>키 하나가 글자가 되기까지</h2>
+    <p>지금까지 본 조각들을 모아, 키보드의 <kbd>A</kbd> 키를 눌러 메모장에 ‘a’가 나타나기까지를 따라가 보자. 14장의 큰 여행 중 첫 몇 걸음을 확대한 것이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="키 입력이 화면의 글자가 되기까지의 단계">
+        <defs><marker id="kb-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <g>
+          <rect x="10" y="30" width="140" height="80" rx="12" class="f-surface"/><text x="80" y="58" text-anchor="middle" class="t" style="font-weight:700">① 키보드 칩</text><text x="80" y="80" text-anchor="middle" class="t-dim">스위치 눌림 감지</text><text x="80" y="98" text-anchor="middle" class="t-mono">스캔 코드 0x04</text>
+          <rect x="170" y="30" width="140" height="80" rx="12" class="f-surface"/><text x="240" y="58" text-anchor="middle" class="t" style="font-weight:700">② USB 컨트롤러</text><text x="240" y="80" text-anchor="middle" class="t-dim">1 ms마다 상태 수신</text><text x="240" y="98" text-anchor="middle" class="t-mono">→ 인터럽트</text>
+          <rect x="330" y="30" width="140" height="80" rx="12" class="f-acc-soft"/><text x="400" y="58" text-anchor="middle" class="t" style="font-weight:700">③ 드라이버</text><text x="400" y="80" text-anchor="middle" class="t-dim">0x04 = ‘A 키’</text><text x="400" y="98" text-anchor="middle" class="t-mono">키 사건 만들기</text>
+          <rect x="490" y="30" width="140" height="80" rx="12" class="f-acc-soft"/><text x="560" y="58" text-anchor="middle" class="t" style="font-weight:700">④ 운영체제</text><text x="560" y="80" text-anchor="middle" class="t-dim">자판 배열·한영 적용</text><text x="560" y="98" text-anchor="middle" class="t-mono">→ 앞에 있는 창</text>
+          <rect x="650" y="30" width="140" height="80" rx="12" class="f-acc2-soft"/><text x="720" y="58" text-anchor="middle" class="t" style="font-weight:700">⑤ 메모장 앱</text><text x="720" y="80" text-anchor="middle" class="t-dim">글자 ‘a’ 추가</text><text x="720" y="98" text-anchor="middle" class="t-mono">메모리에 0x61</text>
+          <rect x="490" y="150" width="140" height="80" rx="12" class="f-acc2-soft"/><text x="560" y="178" text-anchor="middle" class="t" style="font-weight:700">⑥ GPU</text><text x="560" y="200" text-anchor="middle" class="t-dim">글꼴을 픽셀로</text><text x="560" y="218" text-anchor="middle" class="t-mono">프레임 버퍼에 그림</text>
+          <rect x="330" y="150" width="140" height="80" rx="12" class="f-acc"/><text x="400" y="178" text-anchor="middle" style="fill:#fff;font-weight:700" class="t">⑦ 모니터</text><text x="400" y="200" text-anchor="middle" style="fill:#fff" class="t-dim">다음 주사 때</text><text x="400" y="218" text-anchor="middle" style="fill:#fff" class="t-mono">‘a’가 보인다</text>
+        </g>
+        <path d="M150 70 H166" class="s-acc" marker-end="url(#kb-a)"/><path d="M310 70 H326" class="s-acc" marker-end="url(#kb-a)"/><path d="M470 70 H486" class="s-acc" marker-end="url(#kb-a)"/><path d="M630 70 H646" class="s-acc" marker-end="url(#kb-a)"/>
+        <path d="M720 110 V190 H634" class="s-acc" fill="none" marker-end="url(#kb-a)"/><path d="M490 190 H474" class="s-acc" marker-end="url(#kb-a)"/>
+        <text x="20" y="168" class="t-dim">키보드는 ‘A’라는 글자를 모른다.</text><text x="20" y="188" class="t-dim">“네 번째 키가 눌렸다”만 알린다.</text><text x="20" y="208" class="t-dim">대문자·한글·배열은 운영체제가 정한다.</text>
+      </svg>
+      <figcaption><b>그림 15-2.</b> 키 입력의 여행. 전체는 대개 10~30 ms 걸리는데, 그중 대부분은 USB가 상태를 읽는 간격과 모니터의 다음 주사를 기다리는 시간이다.</figcaption>
+    </figure>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li>장치마다 <b>컨트롤러</b>가 있고, CPU는 컨트롤러의 레지스터에 명령을 적어 장치를 다룬다. 장치별 사용법은 <b>드라이버</b>가 안다.</li>
+      <li><b>폴링</b>은 계속 확인하며 기다리고, <b>인터럽트</b>는 장치가 알려 주며, <b>DMA</b>는 대량 운반을 전담 장치에 맡겨 CPU를 해방한다.</li>
+      <li>연결 통로(USB, PCIe, SATA)는 대역폭이 크게 다르다. 가장 느린 구간이 전체 속도를 정한다.</li>
+      <li>GPU는 <b>프레임 버퍼</b>에 그림을 그리고, 모니터는 <b>주사율</b>만큼 위에서 아래로 읽는다. 둘이 어긋나면 <b>화면 찢김</b>, V-Sync로 맞추면 끊김이 생길 수 있다.</li>
+      <li>키보드는 “몇 번 키”만 알리고, 글자의 의미는 드라이버와 운영체제가 정한다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>CPU가 장치에 명령을 내리는 일반적인 방법은?</p><div class="opts">
+        <button class="opt">장치의 부품을 직접 전기로 움직인다</button><button class="opt" data-correct>장치 컨트롤러의 레지스터(명령·상태 칸)에 값을 쓴다</button><button class="opt">장치에 프로그램을 복사해 넣는다</button><button class="opt">GPU를 통해서만 명령한다</button>
+      </div><div class="quiz-exp">컨트롤러가 실제 장치를 다루고, CPU는 정해진 칸에 명령을 적고 상태를 읽는다. 그 절차를 담은 프로그램이 드라이버다.</div></div>
+      <div class="quiz-q"><p>대용량 파일을 읽을 때 CPU 부담이 가장 적은 방식은?</p><div class="opts">
+        <button class="opt">폴링</button><button class="opt">블록마다 인터럽트</button><button class="opt" data-correct>DMA</button>
+      </div><div class="quiz-exp">DMA는 전체 운반을 맡아서 하고 끝날 때 한 번만 알린다. CPU는 처음 설정과 마지막 확인만 하면 된다.</div></div>
+      <div class="quiz-q"><p>NVMe SSD를 USB 2.0 포트에 연결한 외장 케이스에 넣었다. 속도는?</p><div class="opts">
+        <button class="opt">NVMe 속도 그대로</button><button class="opt" data-correct>USB 2.0 속도로 제한된다</button><button class="opt">두 속도의 평균</button><button class="opt">더 빨라진다</button>
+      </div><div class="quiz-exp">데이터는 가장 좁은 통로를 지나야 한다. USB 2.0은 실제로 초당 수십 MB 정도다.</div></div>
+      <div class="quiz-q"><p>게임이 90 fps로 돌고 모니터는 60 Hz다. V-Sync를 끄면 생기기 쉬운 현상은?</p><div class="opts">
+        <button class="opt">화면이 흑백이 된다</button><button class="opt" data-correct>화면의 위아래가 다른 장면으로 어긋나는 찢김</button><button class="opt">소리가 끊긴다</button><button class="opt">해상도가 낮아진다</button>
+      </div><div class="quiz-exp">모니터가 화면을 읽는 도중에 GPU가 버퍼를 바꾸면 위쪽은 옛 장면, 아래쪽은 새 장면이 된다.</div></div>
+      <div class="quiz-q"><p>키보드가 컴퓨터에 보내는 것은?</p><div class="opts">
+        <button class="opt">글자 ‘a’의 유니코드 번호</button><button class="opt" data-correct>어느 키가 눌리거나 떼어졌는지에 대한 코드</button><button class="opt">화면에 그릴 픽셀</button><button class="opt">한글 자모</button>
+      </div><div class="quiz-exp">키보드는 키의 위치 번호(스캔 코드)만 보낸다. 같은 키가 영어 자판에서는 a, 한글 자판에서는 ㅁ이 되는 것은 운영체제가 해석하기 때문이다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  /* ---------------- polling / interrupt / DMA ---------------- */
+  const mode = CB.seg("dma-mode", () => { play(); });
+  const nb = CB.range("dma-n", (v) => v + "개", () => play());
+  let tt = 0;
+  const RD = 1, COPY = 0.18, ISR = 0.06, SETUP = 0.35;
+  function plan() {
+    const n = nb(), m = mode();
+    const cpu = [], dev = []; let t = 0, irq = 0, copied = 0;
+    if (m === "dma") { cpu.push(["setup", 0, SETUP]); t = SETUP; }
+    for (let i = 0; i < n; i++) {
+      const s = t, e = t + RD; dev.push([s, e]);
+      if (m === "poll") { cpu.push(["wait", s, e]); cpu.push(["copy", e, e + COPY]); t = e + COPY; copied++; }
+      else if (m === "irq") { cpu.push(["other", s, e]); cpu.push(["copy", e, e + ISR + COPY]); irq++; copied++; t = e; }
+      else { t = e; }
+    }
+    if (m === "irq") { /* fill gaps after last */ }
+    if (m === "dma") { cpu.push(["other", SETUP, t]); cpu.push(["copy", t, t + ISR]); irq = 1; t += ISR; }
+    const end = Math.max(t, ...cpu.map((c) => c[2]));
+    // normalize "other" segments for irq: CPU does other work whenever not copying
+    let busy = 0; cpu.forEach((c) => { if (c[0] !== "other") busy += c[2] - c[1]; });
+    return { cpu, dev, end, irq, copied, free: Math.max(0, 1 - busy / end) };
+  }
+  function play() { tt = 0; const p = plan(); CB.stat("o-dma-free", Math.round(p.free * 100) + "%"); CB.stat("o-dma-irq", p.irq + "번"); CB.stat("o-dma-copy", p.copied + "개"); }
+  $("dma-go").onclick = play;
+  const COL = { wait: "bad", copy: "accent", setup: "warn", other: "ok" };
+  const dcv = CB.canvas("#cv-dma", (ctx, w, h) => {
+    const P = CB.palette(); const p = plan();
+    const left = 64, right = 12, X = (t) => left + (t / p.end) * (w - left - right), now = Math.min(tt, p.end);
+    const lane = (y, label) => { CB.text(ctx, label, left - 8, y + 18, { align: "right", size: 12, bold: true, color: P.dim }); CB.rrect(ctx, left, y, w - left - right, 36, 6); ctx.fillStyle = P.surface; ctx.fill(); };
+    lane(24, "CPU"); lane(92, "SSD");
+    // background other work for irq
+    p.cpu.forEach(([k, s, e]) => { const e2 = Math.min(e, now); if (e2 <= s) return; ctx.fillStyle = P[COL[k]]; ctx.globalAlpha = k === "other" ? 0.55 : 0.9; ctx.fillRect(X(s), 24, Math.max(1, X(e2) - X(s)), 36); ctx.globalAlpha = 1; });
+    p.dev.forEach(([s, e], i) => { const e2 = Math.min(e, now); if (e2 <= s) return; CB.rrect(ctx, X(s) + 1, 94, Math.max(1, X(e2) - X(s) - 2), 32, 4); ctx.fillStyle = P.accent2; ctx.globalAlpha = 0.75; ctx.fill(); ctx.globalAlpha = 1; if (X(e) - X(s) > 22 && e2 >= e) CB.text(ctx, String(i + 1), (X(s) + X(e)) / 2, 110, { align: "center", size: 10.5, mono: true, color: "#fff" }); });
+    ctx.strokeStyle = P.text; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(now), 16); ctx.lineTo(X(now), 132); ctx.stroke();
+    const lg = [["wait", "기다리며 확인"], ["copy", "직접 옮기기·처리"], ["setup", "설정"], ["other", "다른 일"]];
+    let lx = left; lg.forEach(([k, t]) => { ctx.fillStyle = P[COL[k]]; ctx.fillRect(lx, 146, 12, 12); CB.text(ctx, t, lx + 16, 152, { size: 11.5, color: P.dim }); lx += 30 + t.length * 11; });
+  }, { height: 170 });
+  CB.loop($("cv-dma"), (dt) => { const p = plan(); if (tt < p.end) { tt += dt * p.end / 4; dcv.redraw(); } });
+  play();
+
+  /* ---------------- bandwidth ---------------- */
+  const IF = [["USB 2.0", 35], ["Wi-Fi 6 (실사용)", 100], ["기가 이더넷", 115], ["USB 3.2 Gen1 (5 Gbps)", 400], ["SATA SSD", 550], ["USB 3.2 Gen2 (10 Gbps)", 900], ["USB4 / 썬더볼트 (40 Gbps)", 3000], ["NVMe SSD (PCIe 4.0 x4)", 7000], ["NVMe SSD (PCIe 5.0 x4)", 14000]];
+  const bwFile = CB.seg("bw-file", () => bcv.redraw());
+  const bcv = CB.canvas("#cv-bw", (ctx, w, h) => {
+    const P = CB.palette(); const B = Number(bwFile());
+    const left = Math.min(200, w * 0.42), right = 90, top = 10, rh = (h - top - 10) / IF.length;
+    const ts = IF.map(([, mb]) => B / (mb * 1e6));
+    const lmin = Math.log10(Math.min(...ts)) - 0.3, lmax = Math.log10(Math.max(...ts)) + 0.05;
+    IF.forEach(([name], i) => {
+      const y = top + i * rh, t = ts[i];
+      CB.text(ctx, name, left - 8, y + rh / 2, { align: "right", size: w < 520 ? 10 : 12, color: P.text });
+      const bw = Math.max(4, ((Math.log10(t) - lmin) / (lmax - lmin)) * (w - left - right));
+      CB.rrect(ctx, left, y + rh * 0.2, bw, rh * 0.6, 4); ctx.fillStyle = t > 600 ? P.bad : t > 60 ? P.warn : P.accent; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+      CB.text(ctx, CB.time(t), left + bw + 6, y + rh / 2, { size: 12, mono: true, bold: true, color: P.text });
+    });
+  }, { aspect: 0.5, minHeight: 280, maxHeight: 360 });
+
+  /* ---------------- tearing ---------------- */
+  const fps = CB.range("tear-fps", (v) => v + " fps", null);
+  const vs = $("tear-vs");
+  let st = 0.31; // simulated seconds
+  const SLOW = 0.1, HZ = 60, SPEED = 4; // bar moves 1.6 screen widths per second (simulated)
+  const tcv = CB.canvas("#cv-tear", (ctx, w, h) => {
+    const P = CB.palette(); const f = fps(), useVs = vs.checked;
+    const period = 1 / HZ, refreshStart = Math.floor(st / period) * period, frac = (st - refreshStart) / period;
+    const barX = (frameIdx) => (((frameIdx / f) * SPEED) % 1.2) - 0.1;
+    // which frame is in the buffer at simulated time t
+    const frameAt = (t) => {
+      if (!useVs) return Math.floor(t * f) - 1; // latest finished frame
+      // with vsync: buffer swaps only at refresh boundaries; shows latest frame finished before refresh start
+      const rs = Math.floor(t / period) * period; return Math.floor(rs * f) - 1;
+    };
+    const band = 4, rows = Math.ceil(h / band);
+    let tears = 0, last = null, shownSet = new Set();
+    ctx.fillStyle = "#1b2233"; ctx.fillRect(0, 0, w, h);
+    for (let r = 0; r < rows; r++) {
+      const yFrac = r / rows;
+      const scanned = yFrac <= frac;
+      const tRow = scanned ? refreshStart + yFrac * period : refreshStart - period + yFrac * period; // previous refresh for unscanned rows
+      const fi = frameAt(tRow);
+      if (last != null && fi !== last && scanned === (r > 0 && (r - 1) / rows <= frac)) tears++;
+      last = fi; shownSet.add(fi);
+      const x = barX(fi) * w;
+      ctx.fillStyle = "#f2f4f8"; ctx.fillRect(x, r * band, w * 0.08, band + 0.5);
+    }
+    ctx.strokeStyle = P.warn; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, frac * h); ctx.lineTo(w, frac * h); ctx.stroke();
+    CB.text(ctx, "모니터가 지금 읽는 줄", 8, Math.min(h - 10, frac * h + 12), { size: 11, color: P.warn });
+    // stats over one refresh
+    let t2 = 0, prev = null; for (let r = 0; r < rows; r++) { const fi = frameAt(refreshStart + (r / rows) * period); if (prev != null && fi !== prev) t2++; prev = fi; }
+    CB.stat("o-tear-n", t2 ? `<span style="color:var(--bad)">${t2}군데</span>` : '<span style="color:var(--ok)">없음</span>');
+    CB.stat("o-tear-shown", "초당 " + (useVs ? Math.min(f, HZ) : f) + "장" + (useVs && f < HZ ? " (일부 반복)" : ""));
+  }, { aspect: 0.4, minHeight: 200, maxHeight: 300 });
+  CB.loop($("cv-tear"), (dt) => { st += dt * SLOW; tcv.redraw(); });
+})();
+</script>
+</body>
+</html>
