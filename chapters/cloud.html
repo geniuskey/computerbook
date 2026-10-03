@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>클라우드와 데이터센터 · ComputerBook</title>
+<meta name="description" content="내 사진과 메시지는 어디에 저장될까. 데이터센터를 3D로 둘러보며 하루 동안의 트래픽과 자동 확장을 시뮬레이션하고, 가상화와 컨테이너, 복제와 장애 대비, 전기와 냉각, CDN을 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/cloud.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="클라우드와 데이터센터 · ComputerBook">
+<meta property="og:description" content="내 사진과 메시지는 어디에 저장될까. 데이터센터를 3D로 둘러보며 하루 동안의 트래픽과 자동 확장을 시뮬레이션하고, 가상화와 컨테이너, 복제와 장애 대비, 전기와 냉각, CDN을 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/cloud.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"클라우드와 데이터센터","name":"클라우드와 데이터센터 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/cloud.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/cloud.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":20,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-03","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"내 사진과 메시지는 어디에 저장될까. 데이터센터를 3D로 둘러보며 하루 동안의 트래픽과 자동 확장을 시뮬레이션하고, 가상화와 컨테이너, 복제와 장애 대비, 전기와 냉각, CDN을 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"20 클라우드와 데이터센터","item":"https://computerbook.euiyun.com/chapters/cloud.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+</head>
+<body data-chapter="cloud">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 20</div>
+    <h1>클라우드와 데이터센터</h1>
+    <p class="lead">휴대폰을 잃어버려도 사진이 남아 있고, 새 노트북에 로그인하면 메일이 그대로 있다. 데이터가 “구름 위”에 있기 때문이라고들 한다. 하지만 구름의 정체는 창고만 한 건물에 줄지어 선 수만 대의 컴퓨터다. 이 장에서는 그 건물, <strong>데이터센터</strong> 안으로 들어가 본다.</p>
+    <ul class="objectives">
+      <li>클라우드가 “다른 회사의 컴퓨터를 필요한 만큼 빌려 쓰는 것”임을 설명한다.</li>
+      <li>데이터센터를 3D로 둘러보고, 하루 동안 사용자가 늘고 줄 때 서버가 자동으로 늘고 주는 모습을 확인한다.</li>
+      <li>가상 머신과 컨테이너가 컴퓨터 한 대를 여럿으로 나누는 방법을 이해한다.</li>
+      <li>데이터를 여러 곳에 복제해 고장에 대비하는 원리를 실험한다.</li>
+      <li>데이터센터의 전기·냉각 문제와 CDN이 응답을 빠르게 하는 이유를 안다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="what">
+    <h2>클라우드는 남의 컴퓨터를 빌려 쓰는 것</h2>
+    <p>식당을 열려면 주방이 필요하다. 직접 짓자니 돈이 많이 들고, 손님이 몰리는 주말에 맞춰 크게 지으면 평일엔 텅 빈다. 그래서 요즘은 필요한 만큼 시간 단위로 빌리는 <b>공유 주방</b>이 있다. <span class="term">클라우드</span><span class="en">(cloud computing)</span>가 바로 컴퓨터의 공유 주방이다. 서비스 회사는 서버를 사는 대신 클라우드 회사의 <span class="term">데이터센터</span><span class="en">(data center)</span>에서 필요한 만큼 빌려 쓰고, 쓴 만큼 돈을 낸다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 260" role="img" aria-label="휴대폰에서 데이터센터 안의 서버까지 요청이 가는 경로">
+        <defs><marker id="cl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <rect x="20" y="95" width="90" height="70" rx="12" class="f-surface s-line"/><text x="65" y="126" text-anchor="middle" class="t" style="font-weight:700">내 폰</text><text x="65" y="146" text-anchor="middle" class="t-dim" style="font-size:12px">사진 올리기</text>
+        <path d="M112 130 H158" class="s-acc" marker-end="url(#cl-a)"/>
+        <ellipse cx="205" cy="130" rx="45" ry="32" class="f-acc-soft s-acc"/><text x="205" y="135" text-anchor="middle" class="t">인터넷</text>
+        <path d="M252 130 H292" class="s-acc" marker-end="url(#cl-a)"/>
+        <rect x="296" y="20" width="484" height="225" rx="14" class="f-surface s-line"/>
+        <text x="314" y="44" class="t" style="font-weight:700">데이터센터</text>
+        <rect x="314" y="100" width="110" height="60" rx="10" class="f-acc"/><text x="369" y="126" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">로드 밸런서</text><text x="369" y="146" text-anchor="middle" class="t" style="fill:#fff;font-size:11.5px">일 나눠 주기</text>
+        <g>
+          <rect x="470" y="58" width="120" height="40" rx="8" class="f-acc-soft s-acc"/><text x="530" y="83" text-anchor="middle" class="t">웹 서버 1</text>
+          <rect x="470" y="110" width="120" height="40" rx="8" class="f-acc-soft s-acc"/><text x="530" y="135" text-anchor="middle" class="t">웹 서버 2</text>
+          <rect x="470" y="162" width="120" height="40" rx="8" class="f-acc-soft s-acc"/><text x="530" y="187" text-anchor="middle" class="t">웹 서버 …</text>
+        </g>
+        <path d="M426 130 L466 78 M426 130 H466 M426 130 L466 182" class="s-acc" fill="none"/>
+        <rect x="630" y="70" width="130" height="50" rx="8" class="f-acc2-soft s-line"/><text x="695" y="92" text-anchor="middle" class="t" style="font-weight:700">데이터베이스</text><text x="695" y="110" text-anchor="middle" class="t-dim" style="font-size:11.5px">계정·댓글</text>
+        <rect x="630" y="140" width="130" height="50" rx="8" class="f-acc2-soft s-line"/><text x="695" y="162" text-anchor="middle" class="t" style="font-weight:700">저장소</text><text x="695" y="180" text-anchor="middle" class="t-dim" style="font-size:11.5px">사진 원본 × 3벌</text>
+        <path d="M592 120 L628 96 M592 140 L628 164" class="s-acc" fill="none"/>
+        <text x="538" y="232" text-anchor="middle" class="t-dim" style="font-size:12px">이런 서버가 건물 하나에 수만 대</text>
+      </svg>
+      <figcaption><b>그림 20-1.</b> 사진 한 장이 클라우드에 저장되는 길. 로드 밸런서가 요청을 한가한 서버에 나눠 주고, 사진은 여러 벌로 복사해 저장한다.</figcaption>
+    </figure>
+    <p>여기 나오는 것들은 모두 이 책에서 본 부품이다. 서버 한 대는 CPU, 메모리, SSD, 네트워크 카드를 가진 컴퓨터(1장)이고, 운영체제(8장)가 돌고, 웹 서버 프로그램(11장)이 요청을 받는다. 다른 점은 <b>규모</b>와, 그 규모에서 생기는 문제를 푸는 방법이다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="dc">
+    <h2>데이터센터의 하루: 자동 확장</h2>
+    <p>서비스를 쓰는 사람은 시간대마다 다르다. 새벽엔 적고, 저녁엔 많고, 인기 공연 예매가 열리는 순간엔 폭발한다. 서버를 가장 바쁜 순간에 맞춰 늘 켜 두면 대부분의 시간에 돈과 전기를 버리고, 평소에 맞춰 두면 몰리는 순간 서비스가 멈춘다. 클라우드의 답은 <span class="term">자동 확장</span><span class="en">(auto scaling)</span>이다. 서버가 바빠지면 새 서버를 켜고, 한가해지면 끈다.</p>
+    <div class="sim" id="sim-dc">
+      <div class="sim-head"><span class="sim-tag">3D</span><h3>데이터센터의 하루</h3></div>
+      <div class="sim-view"><canvas id="cv-dc"></canvas><canvas id="cv-dc-chart"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>오늘의 상황</span><div class="seg" id="dc-day"><button data-value="normal" class="on">평범한 하루</button><button data-value="event">20시 공연 예매</button></div></div>
+        <div class="ctrl"><span>서버 운영 방식</span><div class="seg" id="dc-mode"><button data-value="f20">고정 20대</button><button data-value="f80">고정 80대</button><button data-value="auto" class="on">자동 확장</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="dc-go">하루 재생</button><button class="btn" id="dc-pause">일시 정지</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">시각</span><span class="v" id="o-dc-time">—</span></div>
+        <div class="stat"><span class="k">초당 요청</span><span class="v" id="o-dc-req">—</span></div>
+        <div class="stat"><span class="k">켜진 서버</span><span class="v" id="o-dc-on">—</span></div>
+        <div class="stat"><span class="k">응답 시간</span><span class="v" id="o-dc-lat">—</span></div>
+        <div class="stat"><span class="k">오늘 서버 비용</span><span class="v" id="o-dc-cost">—</span></div>
+      </div>
+      <div class="sim-note">3D 모형의 납작한 상자 하나가 서버 한 대다. 꺼진 서버는 회색, 켜지는 중인 서버는 파랑, 켜진 서버는 바쁜 정도에 따라 초록 → 주황 → 빨강이 된다. 드래그하면 돌아간다. 아래 그래프의 파란 선은 요청량, 초록 면은 켜진 서버가 감당할 수 있는 양이다. 서버 한 대는 초당 1,000건, 한 시간 사용료는 1,000원으로 단순화했다. 새 서버가 켜지는 데는 5분이 걸린다. 해볼 것: “20시 공연 예매”에서 세 가지 방식을 비교하자. 고정 20대는 무너지고, 고정 80대는 버티지만 비싸고, 자동 확장은 싸지만 몰리는 첫 몇 분 동안 느려진다.</div>
+    </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">자동 확장을 켜 두었는데도 예매가 열린 직후 몇 분 동안 응답이 느려지는 이유는?</p><p class="wi-hint">위 시뮬레이터에서 20시 부근 그래프를 자세히 보자. 파란 선이 초록 면을 넘는 구간이 있다.</p><div class="opts">
+      <button class="opt">자동 확장은 원래 느리게 만드는 기능이라서</button><button class="opt" data-correct>새 서버를 켜고 준비하는 데 시간이 걸려, 그 사이 요청이 처리 능력을 넘어서</button><button class="opt">인터넷 선이 끊겨서</button><button class="opt">사용자가 너무 적어서</button>
+    </div><div class="quiz-exp">서버를 켜고 운영체제와 프로그램을 띄우는 데 몇 분이 걸린다(22장의 부팅을 떠올리자). 그래서 큰 행사가 예정되어 있으면 미리 서버를 늘려 두고, 몰리는 순간에는 대기열(“접속 대기 중, 내 앞에 1,234명”)로 들어오는 속도를 조절한다.</div></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="virt">
+    <h2>한 대를 여럿으로: 가상 머신과 컨테이너</h2>
+    <p>데이터센터의 서버는 CPU 코어가 수십~수백 개, 메모리가 수백 GB에서 몇 TB에 이른다. 작은 서비스 하나가 통째로 쓰기엔 너무 크다. 그래서 한 대를 여러 개의 가짜 컴퓨터로 쪼개 여러 고객에게 빌려준다. 9장의 가상 메모리가 프로그램마다 “나만의 메모리”라는 착각을 주었듯, <span class="term">하이퍼바이저</span><span class="en">(hypervisor)</span>는 운영체제마다 “나만의 컴퓨터”라는 착각을 준다. 이렇게 만든 가짜 컴퓨터를 <span class="term">가상 머신</span><span class="en">(VM, virtual machine)</span>이라 한다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 270" role="img" aria-label="가상 머신과 컨테이너의 계층 구조 비교">
+        <text x="200" y="26" text-anchor="middle" class="t" style="font-weight:700">가상 머신</text>
+        <text x="600" y="26" text-anchor="middle" class="t" style="font-weight:700">컨테이너</text>
+        <g>
+          <rect x="30" y="40" width="105" height="34" rx="6" class="f-acc-soft s-acc"/><text x="82" y="62" text-anchor="middle" class="t" style="font-size:12.5px">앱 A</text>
+          <rect x="148" y="40" width="105" height="34" rx="6" class="f-acc-soft s-acc"/><text x="200" y="62" text-anchor="middle" class="t" style="font-size:12.5px">앱 B</text>
+          <rect x="266" y="40" width="105" height="34" rx="6" class="f-acc-soft s-acc"/><text x="318" y="62" text-anchor="middle" class="t" style="font-size:12.5px">앱 C</text>
+          <rect x="30" y="80" width="105" height="40" rx="6" class="f-acc2-soft s-line"/><text x="82" y="105" text-anchor="middle" class="t" style="font-size:12.5px">운영체제</text>
+          <rect x="148" y="80" width="105" height="40" rx="6" class="f-acc2-soft s-line"/><text x="200" y="105" text-anchor="middle" class="t" style="font-size:12.5px">운영체제</text>
+          <rect x="266" y="80" width="105" height="40" rx="6" class="f-acc2-soft s-line"/><text x="318" y="105" text-anchor="middle" class="t" style="font-size:12.5px">운영체제</text>
+          <rect x="30" y="128" width="341" height="40" rx="6" class="f-acc"/><text x="200" y="153" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">하이퍼바이저</text>
+          <rect x="30" y="176" width="341" height="40" rx="6" class="f-surface s-line"/><text x="200" y="201" text-anchor="middle" class="t">서버 하드웨어 (CPU · 메모리 · SSD)</text>
+          <text x="200" y="244" text-anchor="middle" class="t-dim" style="font-size:12px">운영체제를 통째로 여러 벌 → 무겁지만 완전히 분리</text>
+        </g>
+        <g>
+          <rect x="430" y="64" width="105" height="56" rx="6" class="f-acc-soft s-acc"/><text x="482" y="88" text-anchor="middle" class="t" style="font-size:12.5px">앱 A</text><text x="482" y="106" text-anchor="middle" class="t-dim" style="font-size:11px">+ 필요한 부품</text>
+          <rect x="548" y="64" width="105" height="56" rx="6" class="f-acc-soft s-acc"/><text x="600" y="88" text-anchor="middle" class="t" style="font-size:12.5px">앱 B</text><text x="600" y="106" text-anchor="middle" class="t-dim" style="font-size:11px">+ 필요한 부품</text>
+          <rect x="666" y="64" width="105" height="56" rx="6" class="f-acc-soft s-acc"/><text x="718" y="88" text-anchor="middle" class="t" style="font-size:12.5px">앱 C</text><text x="718" y="106" text-anchor="middle" class="t-dim" style="font-size:11px">+ 필요한 부품</text>
+          <rect x="430" y="128" width="341" height="40" rx="6" class="f-acc2-soft s-line"/><text x="600" y="153" text-anchor="middle" class="t">운영체제 하나 (커널 공유)</text>
+          <rect x="430" y="176" width="341" height="40" rx="6" class="f-surface s-line"/><text x="600" y="201" text-anchor="middle" class="t">서버 하드웨어</text>
+          <text x="600" y="244" text-anchor="middle" class="t-dim" style="font-size:12px">커널은 함께 쓰고 앱만 상자에 → 가볍고 빨리 뜸</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 20-2.</b> 가상 머신은 운영체제까지 통째로 나누고, 컨테이너는 운영체제 하나를 함께 쓰면서 앱만 분리한다.</figcaption>
+    </figure>
+    <p><span class="term">컨테이너</span><span class="en">(container)</span>는 더 가벼운 방법이다. 운영체제 커널은 하나를 함께 쓰고, 앱과 그 앱에 필요한 부품만 상자에 담아 서로 보이지 않게 분리한다. 운영체제를 부팅할 필요가 없으니 몇 초 만에 뜬다. 위 시뮬레이터에서 새 서버가 켜지는 5분을 줄이고 싶다면, 서버는 미리 켜 두고 컨테이너만 빠르게 늘리는 방법을 쓴다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="replica">
+    <h2>고장은 반드시 난다: 복제</h2>
+    <p>하드디스크 한 개가 1년 안에 고장 날 확률은 1~2% 정도다. 작아 보이지만 데이터센터에 디스크가 10만 개 있으면 <b>하루에 몇 개씩</b> 고장 난다. 그러니 고장은 “혹시”가 아니라 “매일”의 일이다. 그래서 같은 데이터를 여러 곳에 복사해 두는 <span class="term">복제</span><span class="en">(replication)</span>를 한다. 그리고 복사본을 어디에 두느냐가 중요하다. 같은 건물에 세 벌을 두면 건물에 정전이 났을 때 모두 사라진다. 클라우드는 전기와 냉각, 네트워크가 독립된 구역인 <span class="term">가용 영역</span><span class="en">(availability zone)</span>을 여러 개 두고 복사본을 나눠 담는다.</p>
+    <div class="sim" id="sim-rep">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>사진 8장을 지켜라</h3></div>
+      <div class="sim-view"><canvas id="cv-rep"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>복사본 개수</span><div class="seg" id="rp-n"><button data-value="1">1벌</button><button data-value="2">2벌</button><button data-value="3" class="on">3벌</button></div></div>
+        <div class="ctrl"><span>복사본 두는 곳</span><div class="seg" id="rp-pol"><button data-value="same">한 구역 안에</button><button data-value="spread" class="on">구역마다 나눠서</button></div></div>
+        <div class="ctrl"><span>사고 일으키기</span><div class="btn-row"><button class="btn" id="rp-one">디스크 1개 고장</button><button class="btn" id="rp-zone">구역 A 정전</button><button class="btn primary" id="rp-fix">모두 복구</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">살아 있는 사진</span><span class="v" id="o-rp-ok">—</span></div>
+        <div class="stat"><span class="k">고장 난 서버</span><span class="v" id="o-rp-dead">—</span></div>
+        <div class="stat"><span class="k">필요한 저장 공간</span><span class="v" id="o-rp-space">—</span></div>
+      </div>
+      <div class="sim-note">사각형이 서버(디스크), 그 안의 번호 칩이 사진 복사본이다. 해볼 것: 1벌로 두고 디스크를 몇 개 고장 내 보자. 그다음 3벌을 “한 구역 안에” 두고 구역 A를 정전시켜 보고, “구역마다 나눠서”로 바꿔 같은 사고를 내 보자. 실제 클라우드 저장소는 복사본이 하나 사라지면 즉시 다른 곳에 새로 만들어 항상 개수를 유지한다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="power">
+    <h2>전기와 냉각, 그리고 거리</h2>
+    <p>서버 한 대는 수백 W, AI용 GPU 서버는 10 kW 넘게 쓴다. 그 전기는 전부 열이 되고, 열을 빼내는 데 또 전기가 든다. 데이터센터의 효율을 나타내는 <span class="term">PUE</span><span class="en">(Power Usage Effectiveness)</span>는 “건물 전체 전력 ÷ 컴퓨터가 쓴 전력”이다. 1.0이면 냉각에 한 푼도 안 쓴다는 뜻인데, 최신 데이터센터는 1.1~1.2, 오래된 곳은 1.5~2 정도다. 그래서 데이터센터는 차가운 바깥 공기나 바닷물, 강물을 쓰기 좋은 곳에 짓고, 최근의 AI용 서버는 칩에 물을 직접 흘려 식히기도 한다. 전 세계 데이터센터가 쓰는 전기는 세계 전체의 1~2% 수준이고, AI 때문에 빠르게 늘고 있다.</p>
+    <p>또 하나의 문제는 거리다. 10장에서 본 것처럼 빛도 서울에서 미국까지 왕복하는 데 0.1초 넘게 걸린다. 그래서 동영상이나 이미지처럼 많은 사람이 받아 가는 파일은 사용자 가까운 도시마다 복사본을 두는데, 이것을 <span class="term">CDN</span><span class="en">(Content Delivery Network)</span>이라 한다. 같은 영상을 볼 때 서울 사람은 서울 근처 서버에서, 파리 사람은 파리 근처 서버에서 받는다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>어디서 받나</th><th>왕복 시간(대략)</th><th>영상 시작까지</th></tr></thead>
+      <tbody>
+        <tr><td>같은 도시의 CDN 서버</td><td>5~10 ms</td><td>거의 즉시</td></tr>
+        <tr><td>국내 다른 지역 데이터센터</td><td>10~20 ms</td><td>빠름</td></tr>
+        <tr><td>일본·동남아</td><td>40~80 ms</td><td>약간 기다림</td></tr>
+        <tr><td>미국 서부</td><td>130~160 ms</td><td>눈에 띄게 느림</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li><b>클라우드</b>는 데이터센터의 컴퓨터를 필요한 만큼 빌려 쓰고 쓴 만큼 내는 방식이다.</li>
+      <li><b>로드 밸런서</b>가 요청을 여러 서버에 나누고, <b>자동 확장</b>이 바쁜 정도에 따라 서버 수를 늘리고 줄인다. 새 서버가 뜨는 데는 시간이 걸린다.</li>
+      <li><b>가상 머신</b>은 운영체제째로, <b>컨테이너</b>는 앱만 분리해 한 대를 여럿이 나눠 쓴다.</li>
+      <li>규모가 크면 고장은 매일 일어난다. 데이터는 <b>여러 구역에 복제</b>해 지킨다.</li>
+      <li>데이터센터는 전기와 냉각(PUE)이 큰 과제이고, <b>CDN</b>은 사용자 가까이에 복사본을 두어 거리를 줄인다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>클라우드를 쓰는 가장 큰 이유로 알맞은 것은?</p><div class="opts">
+        <button class="opt">컴퓨터가 필요 없어진다</button><button class="opt" data-correct>필요한 만큼만 빌려 쓰고, 사용량에 따라 늘리고 줄일 수 있다</button><button class="opt">인터넷이 없어도 된다</button><button class="opt">데이터가 고장 나지 않는다</button>
+      </div><div class="quiz-exp">서버를 미리 사 둘 필요 없이 사용량에 맞춰 빌린다. 컴퓨터는 여전히 데이터센터 어딘가에서 돌고 있다.</div></div>
+      <div class="quiz-q"><p>여러 서버에 요청을 골고루 나눠 주는 장치는?</p><div class="opts">
+        <button class="opt">하이퍼바이저</button><button class="opt">DNS</button><button class="opt" data-correct>로드 밸런서</button><button class="opt">CDN</button>
+      </div><div class="quiz-exp">로드 밸런서는 식당 입구의 안내 직원처럼 한가한 서버에 손님(요청)을 보낸다.</div></div>
+      <div class="quiz-q"><p>컨테이너가 가상 머신보다 훨씬 빨리 뜨는 이유는?</p><div class="opts">
+        <button class="opt">하드웨어가 다르다</button><button class="opt" data-correct>운영체제를 새로 부팅하지 않고 이미 돌고 있는 커널을 함께 쓴다</button><button class="opt">메모리를 쓰지 않는다</button><button class="opt">인터넷에서 실행된다</button>
+      </div><div class="quiz-exp">가상 머신은 운영체제 전체를 부팅해야 하지만, 컨테이너는 앱과 그 부품만 분리된 상자에서 시작한다.</div></div>
+      <div class="quiz-q"><p>사진 복사본 3벌을 모두 같은 구역에 두었을 때 위험한 사고는?</p><div class="opts">
+        <button class="opt">디스크 한 개 고장</button><button class="opt" data-correct>그 구역 전체의 정전</button><button class="opt">사용자가 늘어남</button><button class="opt">사진 크기가 커짐</button>
+      </div><div class="quiz-exp">같은 구역의 복사본은 그 구역의 정전·화재·네트워크 장애를 함께 겪는다. 그래서 서로 독립된 구역에 나눠 둔다.</div></div>
+      <div class="quiz-q"><p>PUE가 1.5인 데이터센터에서 서버들이 1 MW를 쓴다면 건물 전체 전력은?</p><div class="opts">
+        <button class="opt">0.5 MW</button><button class="opt">1 MW</button><button class="opt" data-correct>1.5 MW</button><button class="opt">3 MW</button>
+      </div><div class="quiz-exp">PUE = 전체 ÷ 컴퓨터. 나머지 0.5 MW는 주로 냉각과 전력 변환에 쓰인다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------------- day simulation ---------------- */
+  const MAXS = 80, CAP = 1000, BOOT = 5;
+  const day = CB.seg("dc-day", () => dcReset()), mode = CB.seg("dc-mode", () => dcReset());
+  function traffic(min) {
+    const h = min / 60;
+    const base = 3000 + 13000 * Math.exp(-((h - 12.5) ** 2) / 6) + 22000 * Math.exp(-((h - 21) ** 2) / 4.5) + 2000 * Math.sin(h * 2.3);
+    let t = Math.max(1800, base);
+    if (day() === "event") { const dt = min - 20 * 60; if (dt >= 0 && dt < 60) t += 52000 * (dt < 2 ? dt / 2 : Math.exp(-(dt - 2) / 25)); }
+    return t;
+  }
+  let S = null, playing = false;
+  function dcReset() {
+    const m = mode(), fixed = m === "f20" ? 20 : m === "f80" ? 80 : null;
+    S = { t: 0, on: fixed || 8, pending: [], cost: 0, hist: [], lat: 40, fixed, load: 0 };
+    playing = false; dcStat(); chart.redraw(); scene.redraw();
+  }
+  function latency(load, on) { const rho = load / (on * CAP); return rho < 0.95 ? 40 / (1 - rho * 0.9) : 40 / (1 - 0.95 * 0.9) + (rho - 0.95) * 6000; }
+  function dcStep(dmin) {
+    S.t += dmin;
+    const load = traffic(S.t);
+    if (!S.fixed) {
+      S.pending = S.pending.filter((p) => { if (p <= S.t) { S.on = Math.min(MAXS, S.on + 1); return false; } return true; });
+      const want = Math.min(MAXS, Math.ceil(load / (CAP * 0.6)));
+      const coming = S.on + S.pending.length;
+      if (want > coming) { const add = Math.min(want - coming, Math.ceil(dmin * 8)); for (let i = 0; i < add; i++) S.pending.push(S.t + BOOT); }
+      else if (want < S.on - 2 && !S.pending.length) S.on = Math.max(4, S.on - Math.max(1, Math.round(dmin * 2)));
+    }
+    S.lat = latency(load, S.on); S.load = load;
+    S.cost += (S.on * 1000 * dmin) / 60;
+    S.hist.push([S.t, load, S.on * CAP, S.lat]);
+  }
+  const fmtTime = (m) => String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(Math.floor(m % 60)).padStart(2, "0");
+  function dcStat() {
+    CB.stat("o-dc-time", S.t >= 1440 ? "24:00" : fmtTime(S.t));
+    CB.stat("o-dc-req", S.load ? Math.round(S.load).toLocaleString("ko-KR") + "건" : "—");
+    CB.stat("o-dc-on", S.on + "대" + (S.pending.length ? ` <small style="font-size:12px;color:var(--text-faint)">(+${S.pending.length} 켜는 중)</small>` : ""));
+    const l = S.lat; CB.stat("o-dc-lat", S.load ? `<span style="color:${l > 1000 ? "var(--bad)" : l > 150 ? "var(--warn)" : "var(--ok)"}">${l > 3000 ? "멈춤 (시간 초과)" : Math.round(l) + " ms"}</span>` : "—");
+    CB.stat("o-dc-cost", Math.round(S.cost).toLocaleString("ko-KR") + "원");
+  }
+  // 3D racks
+  const RACKS = []; for (let row = 0; row < 2; row++) for (let r = 0; r < 4; r++) RACKS.push({ x: -3.6 + r * 1.9, z: row ? 1.0 : -2.8 });
+  const scene = CB.scene3d("#cv-dc", () => {
+    const P = CB.palette(), bx = [];
+    bx.push({ x: -5.6, y: -0.2, z: -4.6, w: 11.4, h: 0.2, d: 9.2, color: CB.isDark() ? "#1a2030" : "#d9dde7" });
+    bx.push({ x: -5.2, y: 0, z: -0.95, w: 9.8, h: 0.03, d: 1.9, color: CB.isDark() ? "#20406a" : "#bcd3f5" });
+    const load = S && S.load ? S.load : 0, on = S ? S.on : 0, rho = on ? load / (on * CAP) : 0;
+    const col = rho > 1 ? P.bad : rho > 0.75 ? P.warn : P.ok;
+    let idx = 0;
+    RACKS.forEach((rk, ri) => {
+      bx.push({ x: rk.x - 0.08, y: 0, z: rk.z - 0.08, w: 1.36, h: 0.12, d: 1.96, color: CB.isDark() ? "#2a3142" : "#4a5263" });
+      for (let s = 0; s < 10; s++) {
+        const lit = idx < on, booting = S && !lit && idx < on + S.pending.length;
+        bx.push({ id: "r" + ri, x: rk.x, y: 0.15 + s * 0.38, z: rk.z, w: 1.2, h: 0.3, d: 1.8, color: lit ? col : booting ? P.accent : CB.isDark() ? "#3a4152" : "#8a92a3", alpha: lit || booting ? 1 : 0.9 });
+        idx++;
+      }
+    });
+    bx.push({ id: "lb", x: -5.2, y: 0, z: -0.6, w: 0.9, h: 1.3, d: 1.2, color: P.accent, label: "로드 밸런서" });
+    bx.push({ id: "cool", x: 4.8, y: 0, z: -4.2, w: 0.7, h: 3.2, d: 8.4, color: CB.isDark() ? "#2f4f6f" : "#9ec2e8", label: "냉각기" });
+    return bx;
+  }, { radius: 7.5, zoom: 1.3, yaw: -0.55, pitch: 0.55, cyFrac: 0.54, center: [0, 1.4, 0], hint: "드래그: 회전", aspect: 0.5, maxHeight: 400, compactBelow: 0 });
+  const chart = CB.canvas("#cv-dc-chart", (ctx, w, h) => {
+    const P = CB.palette(); if (!S) return;
+    const maxY = Math.max(40000, ...S.hist.map((p) => Math.max(p[1], p[2]))) * 1.08;
+    const box = { x: 58, y: 10, w: w - 70, h: h - 40 };
+    const cap = S.hist.map((p) => [p[0] / 60, p[2]]), req = S.hist.map((p) => [p[0] / 60, p[1]]);
+    CB.chart(ctx, box, { x: [0, 24], y: [0, maxY], xTicks: [0, 3, 6, 9, 12, 15, 18, 21, 24], xFmt: (v) => v + "시", yFmt: (v) => (v >= 1000 ? v / 1000 + "천" : String(v)), series: [{ data: cap, color: P.ok, width: 1.5, fill: CB.isDark() ? "rgba(52,211,153,.18)" : "rgba(16,163,74,.15)" }, { data: req, color: P.accent, width: 2.2 }] });
+    // overload marks
+    const X = (v) => box.x + (v / 24) * box.w;
+    ctx.fillStyle = P.bad; ctx.globalAlpha = 0.25; S.hist.forEach((p) => { if (p[1] > p[2]) ctx.fillRect(X(p[0] / 60), box.y, Math.max(1, box.w / 1440 * 2), box.h); }); ctx.globalAlpha = 1;
+    CB.text(ctx, "■ 요청량", box.x + 8, box.y + 10, { size: 11.5, color: P.accent, bold: true });
+    CB.text(ctx, "■ 처리 능력", box.x + 70, box.y + 10, { size: 11.5, color: P.ok, bold: true });
+  }, { height: 170 });
+  $("dc-go").onclick = () => { if (!S || S.t >= 1440) dcReset(); playing = true; };
+  $("dc-pause").onclick = () => { playing = false; };
+  let frame = 0;
+  CB.loop($("cv-dc-chart"), (dt) => {
+    if (!playing || !S) return;
+    const mins = dt * 40; const n = Math.max(1, Math.ceil(mins)); for (let i = 0; i < n; i++) dcStep(mins / n);
+    if (S.t >= 1440) { S.t = 1440; playing = false; }
+    dcStat(); chart.redraw(); if (++frame % 2 === 0 || !playing) scene.redraw();
+  });
+  dcReset();
+
+  /* ---------------- replication ---------------- */
+  const ZONES = ["A", "B", "C"], PER = 4;
+  let dead = new Set(), place = [], seedR = 2;
+  const rpn = CB.seg("rp-n", () => rpPlace()), pol = CB.seg("rp-pol", () => rpPlace());
+  function rpPlace() {
+    const r = CB.rng(seedR), n = +rpn(); place = [];
+    for (let f = 0; f < 8; f++) {
+      const reps = [];
+      if (pol() === "spread") { const zs = [0, 1, 2].sort(() => r() - 0.5).slice(0, n); zs.forEach((z) => reps.push(z * PER + Math.floor(r() * PER))); }
+      else { const z = Math.floor(r() * 3), ss = [0, 1, 2, 3].sort(() => r() - 0.5).slice(0, n); ss.forEach((s) => reps.push(z * PER + s)); }
+      place.push(reps);
+    }
+    rpStat();
+  }
+  function rpStat() {
+    const alive = place.filter((reps) => reps.some((s) => !dead.has(s))).length;
+    CB.stat("o-rp-ok", `<span style="color:${alive < 8 ? "var(--bad)" : "var(--ok)"}">${alive} / 8</span>`);
+    CB.stat("o-rp-dead", dead.size + "대");
+    CB.stat("o-rp-space", "사진 크기 × " + rpn());
+    rcv && rcv.redraw();
+  }
+  $("rp-one").onclick = () => { const alive = []; for (let i = 0; i < 12; i++) if (!dead.has(i)) alive.push(i); if (alive.length) dead.add(alive[Math.floor(Math.random() * alive.length)]); rpStat(); };
+  $("rp-zone").onclick = () => { for (let i = 0; i < PER; i++) dead.add(i); rpStat(); };
+  $("rp-fix").onclick = () => { dead = new Set(); seedR++; rpPlace(); };
+  let rcv = null;
+  rcv = CB.canvas("#cv-rep", (ctx, w, h) => {
+    const P = CB.palette(), zw = (w - 32) / 3;
+    ZONES.forEach((z, zi) => {
+      const zx = 8 + zi * (zw + 8), zoneDown = [0, 1, 2, 3].every((s) => dead.has(zi * PER + s));
+      CB.rrect(ctx, zx, 8, zw, h - 16, 10); ctx.fillStyle = zoneDown ? (CB.isDark() ? "rgba(248,113,113,.10)" : "rgba(220,38,38,.07)") : P.surface; ctx.fill(); ctx.strokeStyle = P.border; ctx.stroke();
+      CB.text(ctx, `구역 ${z}` + (zoneDown ? " · 정전" : ""), zx + 10, 22, { size: 12.5, bold: true, color: zoneDown ? P.bad : P.dim });
+      const sh = (h - 48 - 3 * 6) / PER;
+      for (let s = 0; s < PER; s++) {
+        const id = zi * PER + s, sy = 34 + s * (sh + 6), isDead = dead.has(id);
+        CB.rrect(ctx, zx + 8, sy, zw - 16, sh, 7); ctx.fillStyle = isDead ? P.bg : P.bg; ctx.fill(); ctx.strokeStyle = isDead ? P.bad : P.border; ctx.lineWidth = isDead ? 1.6 : 1; ctx.stroke();
+        CB.text(ctx, isDead ? "✕ 고장" : `서버 ${z}${s + 1}`, zx + 16, sy + 12, { size: 10.5, color: isDead ? P.bad : P.faint, bold: isDead });
+        let cx = zx + 16;
+        place.forEach((reps, f) => { reps.forEach((rs) => { if (rs !== id) return; const lost = !reps.some((x) => !dead.has(x)); const cw = Math.min(26, (zw - 32) / 4.5); CB.rrect(ctx, cx, sy + sh - cw - 4, cw - 3, cw - 3 > 0 ? cw - 3 : 1, 5); ctx.fillStyle = isDead ? P.faint : lost ? P.bad : P.series[f % P.series.length]; ctx.globalAlpha = isDead ? 0.35 : 0.9; ctx.fill(); ctx.globalAlpha = 1; CB.text(ctx, String(f + 1), cx + (cw - 3) / 2, sy + sh - cw / 2 - 5, { align: "center", size: 11, bold: true, color: "#fff" }); cx += cw; }); });
+      }
+    });
+  }, { height: 300 });
+  rpPlace();
+})();
+</script>
+</body>
+</html>

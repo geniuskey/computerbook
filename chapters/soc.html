@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>손안의 컴퓨터: 스마트폰과 SoC · ComputerBook</title>
+<meta name="description" content="스마트폰은 칩 하나(SoC)에 CPU, GPU, NPU, 모뎀을 모두 담은 컴퓨터다. SoC를 3D로 분해해 보고, 배터리 시간 계산기와 발열·쓰로틀링 시뮬레이터로 모바일 컴퓨터의 제약을 체험한다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/soc.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="손안의 컴퓨터: 스마트폰과 SoC · ComputerBook">
+<meta property="og:description" content="스마트폰은 칩 하나(SoC)에 CPU, GPU, NPU, 모뎀을 모두 담은 컴퓨터다. SoC를 3D로 분해해 보고, 배터리 시간 계산기와 발열·쓰로틀링 시뮬레이터로 모바일 컴퓨터의 제약을 체험한다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/soc.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"손안의 컴퓨터: 스마트폰과 SoC","name":"손안의 컴퓨터: 스마트폰과 SoC · ComputerBook","url":"https://computerbook.euiyun.com/chapters/soc.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/soc.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":18,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-03","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"스마트폰은 칩 하나(SoC)에 CPU, GPU, NPU, 모뎀을 모두 담은 컴퓨터다. SoC를 3D로 분해해 보고, 배터리 시간 계산기와 발열·쓰로틀링 시뮬레이터로 모바일 컴퓨터의 제약을 체험한다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"18 손안의 컴퓨터: 스마트폰과 SoC","item":"https://computerbook.euiyun.com/chapters/soc.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+</head>
+<body data-chapter="soc">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 18</div>
+    <h1>손안의 컴퓨터: 스마트폰과 SoC</h1>
+    <p class="lead">주머니 속 스마트폰은 10년 전 데스크톱보다 빠른 컴퓨터다. CPU, GPU, 메모리, 저장장치, 네트워크까지 이 책에서 본 부품이 모두 들어 있다. 다른 점은 단 두 가지다. <strong>손바닥만 한 공간</strong>, 그리고 <strong>콘센트 대신 작은 배터리</strong>. 이 두 제약이 스마트폰 칩을 어떻게 바꿔 놓았는지 살펴본다.</p>
+    <ul class="objectives">
+      <li>SoC(시스템 온 칩)가 무엇이고 PC의 부품 배치와 어떻게 다른지 설명한다.</li>
+      <li>SoC를 3D로 분해해 CPU, GPU, NPU, ISP, 모뎀이 각각 하는 일을 확인한다.</li>
+      <li>화면 밝기, 하는 일, 통신 상태에 따라 배터리 시간이 어떻게 바뀌는지 계산한다.</li>
+      <li>발열이 성능을 떨어뜨리는 쓰로틀링을 시뮬레이터로 체험한다.</li>
+      <li>전용 회로가 같은 일을 CPU보다 훨씬 적은 전기로 해내는 이유를 이해한다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="what">
+    <h2>칩 하나에 담긴 컴퓨터</h2>
+    <p>데스크톱을 열면 CPU, 메모리, 그래픽카드, SSD가 메인보드 위에 따로따로 꽂혀 있다(22장에서 직접 조립해 볼 수 있다). 부품 사이는 수 cm에서 수십 cm 길이의 선으로 이어진다. 스마트폰에는 그럴 공간이 없다. 그래서 CPU, GPU, AI 계산기, 카메라 처리기, 통신 모뎀까지 손톱만 한 칩 한 개에 모두 새겨 넣는다. 이것이 <span class="term">SoC</span><span class="en">(System on a Chip)</span>다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 290" role="img" aria-label="PC 메인보드의 흩어진 부품과 스마트폰 SoC 한 개의 비교">
+        <text x="30" y="30" class="t" style="font-weight:700">PC: 부품이 따로따로</text>
+        <rect x="30" y="44" width="340" height="220" rx="12" class="f-surface s-line"/>
+        <rect x="140" y="70" width="90" height="70" rx="8" class="f-acc"/><text x="185" y="110" text-anchor="middle" class="t" style="fill:#fff;font-weight:700">CPU</text>
+        <rect x="270" y="60" width="18" height="90" rx="3" class="f-acc2-soft s-line"/><rect x="294" y="60" width="18" height="90" rx="3" class="f-acc2-soft s-line"/><text x="292" y="168" text-anchor="middle" class="t-dim" style="font-size:12px">RAM</text>
+        <rect x="60" y="190" width="220" height="50" rx="8" class="f-acc-soft s-acc"/><text x="170" y="220" text-anchor="middle" class="t" style="font-weight:700">그래픽카드</text>
+        <rect x="300" y="200" width="54" height="30" rx="5" class="f-elev s-line"/><text x="327" y="219" text-anchor="middle" class="t-dim" style="font-size:11px">SSD</text>
+        <rect x="50" y="70" width="60" height="60" rx="6" class="f-elev s-line"/><text x="80" y="104" text-anchor="middle" class="t-dim" style="font-size:11px">Wi-Fi</text>
+        <path d="M230 105 H268 M185 140 V188 M230 125 L300 200 M110 100 H138" class="s-acc" stroke-width="2"/>
+        <text x="200" y="282" text-anchor="middle" class="t-dim" style="font-size:12px">선 길이 수~수십 cm · 전력 수백 W</text>
+        <text x="430" y="30" class="t" style="font-weight:700">스마트폰: SoC 하나</text>
+        <rect x="430" y="44" width="340" height="220" rx="12" class="f-surface s-line"/>
+        <rect x="520" y="70" width="160" height="160" rx="10" class="f-elev s-acc" stroke-width="2"/>
+        <g style="font-size:11px">
+          <rect x="530" y="80" width="66" height="44" rx="5" class="f-acc"/><text x="563" y="106" text-anchor="middle" class="t" style="fill:#fff;font-size:11px">CPU</text>
+          <rect x="604" y="80" width="66" height="44" rx="5" class="f-acc-soft s-acc"/><text x="637" y="106" text-anchor="middle" class="t" style="font-size:11px">GPU</text>
+          <rect x="530" y="130" width="44" height="40" rx="5" class="f-acc2-soft s-line"/><text x="552" y="154" text-anchor="middle" class="t" style="font-size:11px">NPU</text>
+          <rect x="580" y="130" width="44" height="40" rx="5" class="f-acc2-soft s-line"/><text x="602" y="154" text-anchor="middle" class="t" style="font-size:11px">ISP</text>
+          <rect x="630" y="130" width="40" height="40" rx="5" class="f-acc2-soft s-line"/><text x="650" y="154" text-anchor="middle" class="t" style="font-size:11px">코덱</text>
+          <rect x="530" y="176" width="70" height="44" rx="5" class="f-acc-soft s-line"/><text x="565" y="202" text-anchor="middle" class="t" style="font-size:11px">모뎀</text>
+          <rect x="606" y="176" width="64" height="44" rx="5" class="f-surface s-line"/><text x="638" y="202" text-anchor="middle" class="t" style="font-size:11px">캐시</text>
+        </g>
+        <text x="600" y="250" text-anchor="middle" class="t-dim" style="font-size:12px">약 1 cm² · 위에 메모리를 겹쳐 쌓음</text>
+        <text x="600" y="282" text-anchor="middle" class="t-dim" style="font-size:12px">선 길이 수 mm · 전력 수 W</text>
+      </svg>
+      <figcaption><b>그림 18-1.</b> PC는 부품을 따로 꽂고, 스마트폰은 한 칩에 모은다. 선이 짧아지면 신호가 빨리 가고, 전기도 덜 든다.</figcaption>
+    </figure>
+    <p>한곳에 모으면 좋은 점이 많다. 부품 사이의 거리가 수 mm로 줄어 데이터가 빨리 오가고, 긴 선을 따라 신호를 보내느라 쓰던 전기가 줄어든다. CPU와 GPU가 같은 메모리를 함께 쓰니 데이터를 복사할 필요도 없다. 최근에는 노트북과 데스크톱도 이 방식을 따라가고 있다(통합 메모리를 쓰는 노트북 칩이 그 예다). 대신 한 부품만 골라 업그레이드할 수는 없다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="inside">
+    <h2>SoC 속을 3D로 뜯어보기</h2>
+    <p>아래 모형은 스마트폰 SoC를 단순하게 그린 것이다. 기판 위에 칩 패키지가 있고, 그 안의 실리콘 조각(<b>다이</b>) 위에 여러 전문 구역이 나뉘어 있다. 맨 위에는 메모리 칩을 겹쳐 올렸다. 손톱만 한 다이에 트랜지스터가 100억~200억 개 들어간다.</p>
+    <div class="sim" id="sim-soc">
+      <div class="sim-head"><span class="sim-tag">3D</span><h3>SoC 분해 모형</h3></div>
+      <div class="sim-view"><canvas id="cv-soc"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>분해 정도 <output id="soc-ex-out"></output></span><input type="range" id="soc-ex" min="0" max="100" value="70"></label>
+        <div class="ctrl"><span>보기</span><div class="btn-row"><button class="btn" id="soc-top">위에서</button><button class="btn" id="soc-side">비스듬히</button><button class="btn" id="soc-spin">돌리기</button></div></div>
+      </div>
+      <div class="stepdesc" id="soc-desc" style="margin:0 18px 16px">구역을 눌러 보자. 드래그하면 모형이 돌아간다.</div>
+      <div class="sim-note">크기와 배치는 이해를 돕기 위한 그림이며 실제 칩마다 다르다. 실제 다이에서는 캐시와 GPU가 넓은 면적을 차지하고, 모뎀은 별도 칩으로 두는 경우도 있다.</div>
+    </div>
+    <p>왜 이렇게 많은 전문 구역이 필요할까? CPU는 무엇이든 할 수 있는 만능 요리사지만, 같은 일만 반복하는 전용 회로가 그 일을 훨씬 적은 전기로 해낸다. 휴대폰에서 동영상을 몇 시간씩 볼 수 있는 것은 CPU가 아니라 영상 코덱 회로가 압축을 풀기 때문이다. 이 차이는 바로 다음 실험에서 숫자로 확인한다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="battery">
+    <h2>배터리는 얼마나 갈까</h2>
+    <p>스마트폰 배터리에는 보통 15~20 <span class="term">와트시</span><span class="en">(Wh)</span>의 에너지가 들어 있다. 1 W를 쓰는 일을 15~20시간 할 수 있다는 뜻이다. 그러니 배터리 시간은 간단히 <code>배터리 용량(Wh) ÷ 평균 전력(W)</code>이다. 무엇이 전력을 많이 먹는지만 알면 된다.</p>
+    <div class="sim" id="sim-bat">
+      <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>배터리 시간 계산기</h3></div>
+      <div class="sim-view"><canvas id="cv-bat"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl" style="grid-column:1/-1"><span>하는 일</span><div class="seg" id="bt-act"><button data-value="idle">대기 (화면 꺼짐)</button><button data-value="web" class="on">웹·메신저</button><button data-value="video">영상 보기</button><button data-value="game">3D 게임</button><button data-value="camera">영상 촬영</button><button data-value="nav">내비게이션</button></div></div>
+        <label class="ctrl"><span>화면 밝기 <output id="bt-bri-out"></output></span><input type="range" id="bt-bri" min="0" max="100" value="50"></label>
+        <div class="ctrl"><span>통신</span><div class="seg" id="bt-net"><button data-value="wifi" class="on">Wi-Fi</button><button data-value="cell">5G</button><button data-value="weak">약한 신호</button></div></div>
+        <div class="ctrl"><span>옵션</span>
+          <label class="check"><input type="checkbox" id="bt-120"> 화면 120 Hz</label>
+          <label class="check"><input type="checkbox" id="bt-cpu"> 전용 회로 끄기 (CPU가 직접 처리)</label>
+        </div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">평균 전력</span><span class="v" id="o-bt-w">—</span></div>
+        <div class="stat"><span class="k">배터리 시간 (17 Wh)</span><span class="v" id="o-bt-h">—</span></div>
+        <div class="stat"><span class="k">가장 많이 먹는 곳</span><span class="v" id="o-bt-top" style="font-size:15px">—</span></div>
+      </div>
+      <div class="sim-note">수치는 대표적인 크기를 단순화한 모델이다. 해볼 것: 영상 보기에서 “전용 회로 끄기”를 켜 보자. 같은 영상인데 SoC 전력이 몇 배로 뛴다. 통신을 “약한 신호”로 바꾸면 모뎀이 기지국에 닿으려 출력을 높이느라 배터리가 빨리 닳는다.</div>
+    </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">대부분의 일상 사용(웹, 메신저, 영상)에서 전력을 가장 많이 먹는 부품은 무엇일까?</p><p class="wi-hint">위 계산기에서 “웹·메신저”와 “영상 보기”를 고른 뒤 막대에서 가장 긴 칸을 찾아보자.</p><div class="opts">
+      <button class="opt">CPU</button><button class="opt" data-correct>화면</button><button class="opt">저장장치</button><button class="opt">스피커</button>
+    </div><div class="quiz-exp">화면은 수백만 개의 픽셀을 계속 밝혀야 해서 가벼운 사용에서는 가장 큰 소비처다. 밝기를 낮추거나 어두운 테마를 쓰면(OLED 화면에서) 배터리가 눈에 띄게 오래간다. 게임처럼 계산이 많은 일에서만 SoC가 화면을 앞지른다.</div></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="thermal">
+    <h2>뜨거워지면 느려진다</h2>
+    <p>전기는 결국 열이 된다. 스마트폰에는 팬이 없고, 손에 쥐는 물건이라 표면이 40°C를 넘으면 불쾌하거나 위험하다. 그래서 칩은 온도를 재다가 너무 뜨거워지면 스스로 클럭과 전압을 낮춘다. 이것이 <span class="term">쓰로틀링</span><span class="en">(throttling)</span>이다. 5장에서 본 것처럼 전력은 클럭과 전압에 함께 비례하므로, 클럭을 20%만 낮춰도 전력은 거의 절반으로 준다. 이렇게 상황에 맞춰 전압과 주파수를 바꾸는 기술을 <span class="term">DVFS</span><span class="en">(Dynamic Voltage and Frequency Scaling)</span>라 한다.</p>
+    <div class="sim" id="sim-heat">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>30분 동안 게임을 하면</h3></div>
+      <div class="sim-view"><canvas id="cv-heat"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>냉각</span><div class="seg" id="ht-cool"><button data-value="1" class="on">맨손</button><button data-value="1.35">두꺼운 케이스</button><button data-value="0.55">쿨러 부착</button></div></div>
+        <label class="ctrl"><span>주변 온도 <output id="ht-amb-out"></output></span><input type="range" id="ht-amb" min="5" max="40" value="25"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="ht-go">다시 시작</button><label class="check"><input type="checkbox" id="ht-off"> 쓰로틀링 끄기</label></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">경과 시간</span><span class="v" id="o-ht-t">—</span></div>
+        <div class="stat"><span class="k">표면 온도</span><span class="v" id="o-ht-temp">—</span></div>
+        <div class="stat"><span class="k">성능 (fps)</span><span class="v" id="o-ht-fps">—</span></div>
+      </div>
+      <div class="sim-note">빨간 선은 표면 온도, 파란 선은 게임 성능(fps)이다. 점선은 칩이 넘지 않으려는 온도(43°C). 30분을 약 15초로 빨리 돌린다. 해볼 것: 한여름(35°C 이상)에 두꺼운 케이스를 씌우면 성능이 어디까지 떨어지는지, 쓰로틀링을 끄면 온도가 어디까지 오르는지 보자. 실제 기기는 위험 온도에 이르면 강제로 꺼진다.</div>
+    </div>
+    <div class="callout tip"><div class="title">작은 코어는 왜 있을까</div><p>5장에서 본 큰 코어와 작은 코어가 스마트폰에서 특히 중요하다. 메시지 알림을 확인하거나 음악을 트는 정도의 가벼운 일은 작은 코어가 아주 적은 전기로 처리하고, 큰 코어는 앱을 열거나 게임을 할 때만 깨어난다. 운영체제의 스케줄러(8장)가 일의 무게를 보고 어느 코어에 맡길지 정한다.</p></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="special">
+    <h2>전용 회로가 전기를 아끼는 이유</h2>
+    <p>CPU는 어떤 계산이든 할 수 있도록 명령어를 꺼내고, 해독하고, 순서를 맞추는 데 많은 회로와 전기를 쓴다(4·5장). 실제 계산에 쓰는 전기는 그중 일부뿐이다. 반면 영상 코덱 회로는 “압축 풀기”라는 한 가지 일만 하도록 배선 자체를 짜 놓았다. 명령어를 해독할 필요가 없고, 데이터가 회로를 한 번 흘러가면 끝이다.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 250" role="img" aria-label="같은 일을 CPU와 전용 회로로 했을 때의 에너지 비교 막대">
+        <text x="30" y="30" class="t" style="font-weight:700">같은 일에 드는 에너지 (대략, CPU = 100)</text><rect x="470" y="19" width="14" height="14" rx="3" class="f-acc-soft s-acc"/><text x="490" y="31" class="t-dim">CPU 소프트웨어</text><rect x="610" y="19" width="14" height="14" rx="3" class="f-acc"/><text x="630" y="31" class="t-dim">전용 회로</text>
+        <g>
+          <text x="30" y="72" class="t">1시간 영상 재생</text>
+          <rect x="230" y="56" width="500" height="22" rx="5" class="f-acc-soft s-acc"/><text x="740" y="72" class="t-mono">100</text>
+          <rect x="230" y="82" width="70" height="22" rx="5" class="f-acc"/><text x="310" y="98" class="t-mono">≈ 15 (영상 코덱)</text>
+          <text x="30" y="142" class="t">사진 한 장 보정(HDR)</text>
+          <rect x="230" y="126" width="500" height="22" rx="5" class="f-acc-soft s-acc"/><text x="740" y="142" class="t-mono">100</text>
+          <rect x="230" y="152" width="50" height="22" rx="5" class="f-acc"/><text x="290" y="168" class="t-mono">≈ 10 (ISP)</text>
+          <text x="30" y="212" class="t">얼굴 인식 1회</text>
+          <rect x="230" y="196" width="500" height="22" rx="5" class="f-acc-soft s-acc"/><text x="740" y="212" class="t-mono">100</text>
+          <rect x="230" y="222" width="30" height="22" rx="5" class="f-acc"/><text x="270" y="238" class="t-mono">≈ 5 (NPU)</text>
+        </g>
+      </svg>
+      <figcaption><b>그림 18-2.</b> 같은 일을 CPU 소프트웨어로 할 때와 전용 회로로 할 때의 에너지 비교. 실제 비율은 칩과 작업마다 다르지만, 수 배에서 수십 배 차이가 흔하다.</figcaption>
+    </figure>
+    <p>그래서 SoC 설계는 “무엇을 전용 회로로 만들까”를 고르는 일이기도 하다. 많이 쓰고 방식이 정해진 일(영상, 사진, 음성, AI 추론, 암호화)은 전용 회로로, 새롭거나 드문 일은 CPU로 처리한다. 대신 전용 회로는 정해진 일만 한다. 새로운 영상 압축 방식이 나오면 예전 휴대폰은 그 영상을 CPU로 힘겹게 풀어야 한다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="sensors">
+    <h2>세상을 느끼는 감각: 센서</h2>
+    <p>스마트폰을 PC와 가장 다르게 만드는 것은 수많은 센서다. 화면을 돌리면 화면이 따라 돌고, 귀에 대면 화면이 꺼지고, 걸음 수가 저절로 세어진다. 센서는 1초에도 수백 번 값을 내놓는데, 그때마다 큰 CPU를 깨우면 배터리가 금방 닳는다. 그래서 SoC에는 아주 작고 전기를 거의 먹지 않는 <span class="term">센서 허브</span><span class="en">(sensor hub)</span>가 따로 있어, 센서 값을 모으다가 중요한 일이 생겼을 때만 CPU를 깨운다(15장의 인터럽트).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>센서</th><th>재는 것</th><th>쓰이는 곳</th></tr></thead>
+      <tbody>
+        <tr><td>가속도계</td><td>움직임과 기울기</td><td>화면 회전, 걸음 수, 흔들어서 실행</td></tr>
+        <tr><td>자이로스코프</td><td>회전 속도</td><td>게임 조작, 사진 흔들림 보정</td></tr>
+        <tr><td>지자기 센서</td><td>지구 자기장 방향</td><td>나침반, 지도 방향</td></tr>
+        <tr><td>GPS 수신기</td><td>위성 신호의 도착 시간 차</td><td>내 위치 (10장의 빛의 속도가 핵심)</td></tr>
+        <tr><td>근접·조도 센서</td><td>가까운 물체, 주변 밝기</td><td>통화 중 화면 끄기, 자동 밝기</td></tr>
+        <tr><td>이미지 센서</td><td>빛 → 픽셀 값(2장)</td><td>카메라, 얼굴 인식</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout deep"><div class="title">센서를 더 깊이</div><p>센서가 물리량을 어떻게 전기 신호로 바꾸는지는 자매 교과서 <a href="https://sensors.euiyun.com/">SensorBook</a>에서 시뮬레이터로 자세히 다룬다.</p></div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li><b>SoC</b>는 CPU, GPU, NPU, ISP, 모뎀 등을 칩 하나에 모은 것이다. 거리가 짧아 빠르고 전기를 덜 쓴다.</li>
+      <li>배터리 시간 = 배터리 에너지(Wh) ÷ 평균 전력(W). 가벼운 사용에서는 <b>화면</b>, 게임에서는 SoC가 가장 큰 소비처다.</li>
+      <li>열을 버릴 곳이 없는 스마트폰은 뜨거워지면 클럭과 전압을 낮춘다(<b>쓰로틀링</b>, DVFS).</li>
+      <li>정해진 일을 반복하는 <b>전용 회로</b>는 같은 일을 CPU보다 수 배~수십 배 적은 에너지로 한다.</li>
+      <li>센서 허브가 센서를 저전력으로 지켜보다가 필요할 때만 큰 코어를 깨운다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>SoC의 장점으로 가장 거리가 먼 것은?</p><div class="opts">
+        <button class="opt">부품 사이 거리가 짧아 데이터가 빨리 오간다</button><button class="opt">신호를 멀리 보내는 데 드는 전기가 줄어든다</button><button class="opt" data-correct>RAM이나 GPU만 따로 쉽게 업그레이드할 수 있다</button><button class="opt">CPU와 GPU가 메모리를 함께 쓸 수 있다</button>
+      </div><div class="quiz-exp">모든 것이 한 칩(과 그 위에 쌓은 메모리)에 묶여 있어 부품 하나만 바꿀 수 없다. 이것이 SoC의 대표적인 단점이다.</div></div>
+      <div class="quiz-q"><p>배터리 17 Wh인 휴대폰이 평균 2 W를 쓰면 대략 몇 시간 갈까?</p><div class="opts">
+        <button class="opt">2시간</button><button class="opt">4시간</button><button class="opt" data-correct>8.5시간</button><button class="opt">34시간</button>
+      </div><div class="quiz-exp">17 Wh ÷ 2 W = 8.5시간.</div></div>
+      <div class="quiz-q"><p>게임을 오래 하면 fps가 점점 떨어지는 가장 흔한 이유는?</p><div class="opts">
+        <button class="opt">배터리가 줄어서 전압이 모자라다</button><button class="opt" data-correct>칩이 뜨거워져 스스로 클럭을 낮춘다</button><button class="opt">메모리가 닳는다</button><button class="opt">게임이 일부러 느려진다</button>
+      </div><div class="quiz-exp">팬이 없는 스마트폰은 열을 버리기 어려워, 정해진 온도를 넘지 않도록 클럭과 전압을 낮춘다(쓰로틀링).</div></div>
+      <div class="quiz-q"><p>휴대폰이 동영상을 오래 재생할 수 있는 핵심 이유는?</p><div class="opts">
+        <button class="opt">CPU 코어가 많아서</button><button class="opt" data-correct>영상 압축을 푸는 전용 회로(코덱)가 있어서</button><button class="opt">동영상 파일이 작아서</button><button class="opt">화면이 작아서</button>
+      </div><div class="quiz-exp">정해진 일만 하도록 배선된 전용 회로는 명령어 해독 같은 부담 없이 같은 일을 훨씬 적은 에너지로 해낸다.</div></div>
+      <div class="quiz-q"><p>걸음 수를 세는 동안 큰 CPU 코어를 계속 깨워 두지 않아도 되는 이유는?</p><div class="opts">
+        <button class="opt">걸음 수는 서버가 센다</button><button class="opt" data-correct>저전력 센서 허브가 센서 값을 모으고 필요할 때만 CPU를 깨운다</button><button class="opt">가속도계는 전기를 쓰지 않는다</button><button class="opt">GPU가 대신 센다</button>
+      </div><div class="quiz-exp">센서 허브는 아주 작은 전용 프로세서다. 큰 코어는 잠들어 있다가 인터럽트를 받을 때만 깨어난다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------------- SoC 3D ---------------- */
+  const BLOCKS = [
+    { id: "big", label: "큰 코어", x: -4.3, z: -4.3, w: 2.5, d: 2.5, c: "accent", t: "<b>CPU 큰 코어</b> (2~4개) — 앱 실행, 웹 페이지 계산처럼 빨리 끝내야 하는 일을 맡는다. 빠르지만 전기를 많이 먹는다. <a href='cpu-perf.html'>5장</a>" },
+    { id: "little", label: "작은 코어", x: -1.6, z: -4.3, w: 2.2, d: 2.5, c: "accent", lighten: true, t: "<b>CPU 작은 코어</b> (4~6개) — 알림 확인, 음악 재생, 백그라운드 동기화 같은 가벼운 일을 아주 적은 전기로 처리한다." },
+    { id: "cache", label: "캐시", x: 0.8, z: -4.3, w: 3.5, d: 1.7, c: "faint", t: "<b>공유 캐시</b> — CPU, GPU, NPU가 함께 쓰는 빠른 기억 공간. 메모리까지 가는 횟수를 줄여 속도와 전기를 모두 아낀다. <a href='memory.html'>6장</a>" },
+    { id: "gpu", label: "GPU", x: -4.3, z: -1.5, w: 4.5, d: 3.3, c: "accent2", t: "<b>GPU</b> — 화면 그리기와 게임 그래픽. 다이에서 가장 넓은 구역 중 하나다. <a href='gpu.html'>12장</a>" },
+    { id: "npu", label: "NPU", x: 0.4, z: -2.4, w: 3.9, d: 2.8, c: "warn", t: "<b>NPU</b> — 행렬 곱셈 전용 회로. 사진 속 얼굴 찾기, 음성 인식, 문장 요약 같은 AI 추론을 적은 전력으로 한다. <a href='ai.html'>17장</a>" },
+    { id: "isp", label: "ISP", x: 0.4, z: 0.6, w: 1.9, d: 1.6, c: "ok", t: "<b>ISP</b>(이미지 신호 처리기) — 카메라 센서가 내놓은 날것의 값을 색 보정, 잡음 제거, HDR 합성을 거쳐 사진으로 만든다. 1초에 수십 장도 처리한다. <a href='bits.html'>2장</a>" },
+    { id: "codec", label: "코덱", x: 2.5, z: 0.6, w: 1.8, d: 1.6, c: "ok", t: "<b>영상 코덱</b> — 동영상 압축을 풀고(재생) 압축한다(촬영). CPU로 하면 몇 배의 전기가 든다. 아래 배터리 계산기에서 확인해 보자." },
+    { id: "modem", label: "모뎀", x: -4.3, z: 2.0, w: 3.3, d: 2.3, c: "bad", t: "<b>모뎀</b> — 5G·LTE 전파를 디지털 데이터로 바꾼다. 신호가 약하면 출력을 높이느라 전기를 많이 쓴다. <a href='network.html'>10장</a>" },
+    { id: "mc", label: "메모리 컨트롤러", x: -0.8, z: 2.4, w: 2.6, d: 1.9, c: "faint", t: "<b>메모리 컨트롤러</b> — 위에 쌓인 메모리(LPDDR)와 데이터를 주고받는 관문. 리프레시(6장)도 관리한다." },
+    { id: "sec", label: "보안", x: 2.0, z: 2.4, w: 2.3, d: 1.9, c: "text", t: "<b>보안 영역</b> — 지문·얼굴 정보와 암호 키를 따로 보관하는 격리된 구역. 운영체제가 해킹돼도 꺼내 갈 수 없게 만든다. <a href='security.html'>16장</a>" },
+  ];
+  const DESC_ALL = { board: "<b>기판(메인보드)</b> — 휴대폰의 작은 메인보드. SoC, 저장장치(UFS), 전원 관리 칩, 무선 칩이 빽빽하게 붙어 있다.", pkg: "<b>패키지</b> — 실리콘 다이를 감싸 보호하고, 수천 개의 미세한 단자로 기판과 연결한다.", die: "<b>다이</b> — 실제 회로가 새겨진 실리콘 조각. 약 1 cm²에 트랜지스터 100억~200억 개.", dram: "<b>메모리(LPDDR)</b> — 저전력 DRAM 칩을 SoC 바로 위에 겹쳐 올렸다(PoP, Package on Package). 거리가 짧아 빠르고 전기를 덜 쓴다. <a href='memory.html'>6장</a>" };
+  const ex = CB.range("soc-ex", (v) => v + "%", () => soc.redraw());
+  const soc = CB.scene3d("#cv-soc", () => {
+    const P = CB.palette(), e = ex() / 100;
+    const bx = [];
+    bx.push({ id: "board", x: -7, y: 0, z: -6, w: 14, h: 0.35, d: 12, color: CB.isDark() ? "#1d4d3a" : "#2f7a59" });
+    bx.push({ id: "pkg", x: -5.3, y: 0.35 + e * 0.6, z: -5.3, w: 10.6, h: 0.45, d: 10.6, color: CB.isDark() ? "#2b3142" : "#3c4354" });
+    const dieY = 0.8 + e * 1.4;
+    bx.push({ id: "die", x: -4.6, y: dieY, z: -4.6, w: 9.2, h: 0.25, d: 9.2, color: CB.isDark() ? "#5b6170" : "#9aa1b2" });
+    BLOCKS.forEach((b) => bx.push({ id: b.id, x: b.x, y: dieY + 0.25 + e * 0.5, z: b.z, w: b.w, h: 0.35, d: b.d, color: P[b.c], alpha: b.lighten ? 0.72 : 1, label: e > 0.25 ? b.label : null }));
+    const dy = dieY + 0.6 + 0.5 + e * 6;
+    bx.push({ id: "dram", x: -4.9, y: dy, z: -4.9, w: 9.8, h: 0.5, d: 9.8, color: CB.isDark() ? "#30384c" : "#2d3446", alpha: e > 0.3 ? 0.45 : 1, label: "메모리(LPDDR)", labelLift: 16, labelAlways: true });
+    bx.push({ id: "dram", x: -4.9, y: dy + 0.55, z: -4.9, w: 9.8, h: 0.45, d: 9.8, color: CB.isDark() ? "#363f55" : "#353d51", alpha: e > 0.3 ? 0.45 : 1 });
+    return bx;
+  }, { radius: 10.5, zoom: 1.2, compactBelow: 560, center: [0, 2.6, 0], yaw: -0.7, pitch: 0.72, cyFrac: 0.5, hint: "드래그: 회전 · 클릭: 설명", onPick: (id) => { const b = BLOCKS.find((x) => x.id === id); $("soc-desc").innerHTML = b ? b.t : DESC_ALL[id] || "구역을 눌러 보자. 드래그하면 모형이 돌아간다."; }, aspect: 0.6, maxHeight: 440 });
+  $("soc-top").onclick = () => { soc.stop(); soc.setView(0, 1.3); };
+  $("soc-side").onclick = () => { soc.stop(); soc.setView(-0.7, 0.72); };
+  let spinning = false;
+  $("soc-spin").onclick = () => { spinning = !spinning; $("soc-spin").textContent = spinning ? "멈추기" : "돌리기"; soc.stop(); };
+  let yawS = -0.7; CB.loop($("cv-soc"), (dt) => { if (!spinning) return; yawS += dt * 0.6; soc.setView(yawS); });
+
+  /* ---------------- battery ---------------- */
+  const ACT = {
+    idle: { n: "대기", soc: 0.02, cpuOnly: 0.02, radio: 0.12, screen: false, base: 0.03 },
+    web: { n: "웹·메신저", soc: 0.6, cpuOnly: 0.6, radio: 1, screen: true, base: 0.15 },
+    video: { n: "영상 보기", soc: 0.35, cpuOnly: 1.6, radio: 1, screen: true, base: 0.15 },
+    game: { n: "3D 게임", soc: 3.2, cpuOnly: 3.2, radio: 0.6, screen: true, base: 0.15 },
+    camera: { n: "영상 촬영", soc: 2.0, cpuOnly: 5.0, radio: 0.2, screen: true, base: 0.15 },
+    nav: { n: "내비게이션", soc: 0.9, cpuOnly: 0.9, radio: 0.8, screen: true, base: 0.45 },
+  };
+  const NET = { wifi: 0.25, cell: 0.7, weak: 1.6 };
+  const act = CB.seg("bt-act", () => bupd()), net = CB.seg("bt-net", () => bupd());
+  const bri = CB.range("bt-bri", (v) => v + "%", () => bupd());
+  $("bt-120").onchange = bupd; $("bt-cpu").onchange = bupd;
+  function bcalc() {
+    const a = ACT[act()], hz = $("bt-120").checked ? 1.25 : 1;
+    const screen = a.screen ? (0.25 + 1.3 * (bri() / 100)) * hz : 0;
+    const socW = $("bt-cpu").checked ? a.cpuOnly : a.soc;
+    const radio = a.screen ? NET[net()] * a.radio : NET[net()] * 0.08 + 0.02;
+    const parts = [["화면", screen, "warn"], ["SoC (CPU·GPU 등)", socW, "accent"], ["통신 (모뎀·Wi-Fi)", radio, "accent2"], ["나머지 (메모리·센서·GPS)", a.base, "faint"]];
+    const tot = parts.reduce((s, p) => s + p[1], 0);
+    return { parts, tot, hours: 17 / tot };
+  }
+  const fmtH = (h) => (h >= 48 ? (h / 24).toFixed(1) + "일" : h >= 10 ? Math.round(h) + "시간" : h.toFixed(1) + "시간");
+  function bupd() {
+    const r = bcalc(), top = r.parts.slice().sort((a, b) => b[1] - a[1])[0];
+    CB.stat("o-bt-w", r.tot.toFixed(2) + " W"); CB.stat("o-bt-h", fmtH(r.hours)); CB.stat("o-bt-top", top[0]);
+    bcv.redraw();
+  }
+  const bcv = CB.canvas("#cv-bat", (ctx, w, h) => {
+    const P = CB.palette(), r = bcalc();
+    // stacked bar
+    const L = 16, R = w - 16, bw = R - L, y0 = 34;
+    CB.text(ctx, `전력 ${r.tot.toFixed(2)} W를 어디에 쓰나`, L, 16, { size: 12.5, bold: true, color: P.dim });
+    let x = L; r.parts.forEach(([n, v, c]) => { const ww = (v / r.tot) * bw; if (ww < 0.5) return; CB.rrect(ctx, x + 1, y0, Math.max(1, ww - 2), 30, 6); ctx.fillStyle = P[c]; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1; if (ww > 46) CB.text(ctx, Math.round((v / r.tot) * 100) + "%", x + ww / 2, y0 + 15, { align: "center", size: 12, bold: true, color: "#fff" }); x += ww; });
+    // legend
+    let lx = L, ly = y0 + 50; ctx.font = "12px " + CB.font();
+    r.parts.forEach(([n, v, c]) => { const t = `${n} ${v.toFixed(2)} W`, tw = ctx.measureText(t).width + 26; if (lx + tw > R) { lx = L; ly += 20; } ctx.fillStyle = P[c]; ctx.fillRect(lx, ly - 5, 11, 11); CB.text(ctx, t, lx + 16, ly, { size: 12, color: P.dim }); ctx.font = "12px " + CB.font(); lx += tw + 8; });
+    // battery icon with hours
+    const by = ly + 26, bh = Math.max(40, h - by - 14), bx = L, bww = Math.min(bw - 20, 520);
+    CB.rrect(ctx, bx, by, bww, bh, 9); ctx.strokeStyle = P.border; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = P.border; ctx.fillRect(bx + bww + 2, by + bh * 0.3, 7, bh * 0.4);
+    const frac = Math.min(1, r.hours / 48);
+    CB.rrect(ctx, bx + 4, by + 4, Math.max(6, (bww - 8) * frac), bh - 8, 6); ctx.fillStyle = r.hours < 5 ? P.bad : r.hours < 12 ? P.warn : P.ok; ctx.globalAlpha = 0.8; ctx.fill(); ctx.globalAlpha = 1;
+    CB.text(ctx, `완충 후 약 ${fmtH(r.hours)}`, bx + 14, by + bh / 2, { size: 15, bold: true, color: P.text });
+    CB.text(ctx, "막대 끝 = 48시간", bx + bww - 8, by + bh / 2, { align: "right", size: 11, color: P.faint });
+  }, { height: 210 });
+  bupd();
+
+  /* ---------------- thermal ---------------- */
+  const cool = CB.seg("ht-cool", () => htReset()), amb = CB.range("ht-amb", (v) => v + "°C", () => htReset());
+  $("ht-off").onchange = () => htReset();
+  const PMAX = 7, RTH = 5, LIMIT = 43, TAU = 240, DUR = 1800;
+  let sim = null;
+  function htReset() { sim = { t: 0, T: amb() + 2, f: 1, hist: [] }; htStat(); hcv.redraw(); }
+  function htStep(dt) {
+    const s = sim, rth = RTH * Number(cool()), P = PMAX * s.f ** 3;
+    const Tss = amb() + rth * P; s.T += ((Tss - s.T) / TAU) * dt;
+    if (!$("ht-off").checked) { if (s.T > LIMIT) s.f = Math.max(0.3, s.f - 0.004 * dt * (s.T - LIMIT)); else if (s.T < LIMIT - 1) s.f = Math.min(1, s.f + 0.0015 * dt); }
+    s.t += dt; s.hist.push([s.t, s.T, 120 * s.f]);
+  }
+  function htStat() { const s = sim; CB.stat("o-ht-t", Math.floor(s.t / 60) + "분 " + String(Math.floor(s.t % 60)).padStart(2, "0") + "초"); CB.stat("o-ht-temp", `<span style="color:${s.T > LIMIT + 0.5 ? "var(--bad)" : "inherit"}">${s.T.toFixed(1)}°C</span>`); CB.stat("o-ht-fps", Math.round(120 * s.f) + " fps"); }
+  let hcv = null;
+  hcv = CB.canvas("#cv-heat", (ctx, w, h) => {
+    const P = CB.palette(), s = sim; if (!s) return;
+    const box = { x: 50, y: 14, w: w - 50 - 50, h: h - 14 - 44 };
+    const Tmax = Math.max(60, ...s.hist.map((p) => p[1] + 2));
+    CB.chart(ctx, box, { x: [0, 30], y: [0, Tmax], xLabel: "시간 (분)", yLabel: "온도 (°C)", yFmt: (v) => String(Math.round(v)), xTicks: [0, 5, 10, 15, 20, 25, 30], series: [{ data: s.hist.map((p) => [p[0] / 60, p[1]]), color: P.bad, width: 2.5 }], hlines: [{ y: LIMIT, label: "43°C", color: P.bad }] });
+    // fps on right axis
+    const Y2 = (v) => box.y + box.h - (v / 130) * box.h, X = (t) => box.x + (t / 30) * box.w;
+    ctx.strokeStyle = P.accent; ctx.lineWidth = 2.5; ctx.beginPath(); s.hist.forEach((p, i) => { const px = X(p[0] / 60), py = Y2(p[2]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.stroke();
+    [0, 40, 80, 120].forEach((v) => CB.text(ctx, String(v), box.x + box.w + 8, Y2(v), { size: 11, mono: true, color: P.accent }));
+    CB.text(ctx, "fps", box.x + box.w + 8, box.y + 2, { size: 11, bold: true, color: P.accent });
+  }, { aspect: 0.48, minHeight: 250, maxHeight: 340 });
+  $("ht-go").onclick = htReset;
+  CB.loop($("cv-heat"), (dt) => { if (!sim || sim.t >= DUR) return; const n = 12; for (let i = 0; i < n; i++) htStep((dt * 120) / n); if (sim.t > DUR) sim.t = DUR; htStat(); hcv.redraw(); });
+  htReset();
+})();
+</script>
+</body>
+</html>

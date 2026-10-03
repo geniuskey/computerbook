@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>데이터와 알고리즘 · ComputerBook</title>
+<meta name="description" content="같은 문제도 푸는 방법에 따라 수백만 배 차이가 난다. 순차 탐색과 이진 탐색, 정렬 알고리즘 경주, 빅오 증가율, 해시 테이블, 지도 앱의 길 찾기를 시뮬레이터로 배운다.">
+<link rel="canonical" href="https://computerbook.euiyun.com/chapters/algo.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ComputerBook">
+<meta property="og:title" content="데이터와 알고리즘 · ComputerBook">
+<meta property="og:description" content="같은 문제도 푸는 방법에 따라 수백만 배 차이가 난다. 순차 탐색과 이진 탐색, 정렬 알고리즘 경주, 빅오 증가율, 해시 테이블, 지도 앱의 길 찾기를 시뮬레이터로 배운다.">
+<meta property="og:url" content="https://computerbook.euiyun.com/chapters/algo.html">
+<meta property="og:image" content="https://computerbook.euiyun.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"데이터와 알고리즘","name":"데이터와 알고리즘 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/algo.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/algo.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":19,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-03","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"같은 문제도 푸는 방법에 따라 수백만 배 차이가 난다. 순차 탐색과 이진 탐색, 정렬 알고리즘 경주, 빅오 증가율, 해시 테이블, 지도 앱의 길 찾기를 시뮬레이터로 배운다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"19 데이터와 알고리즘","item":"https://computerbook.euiyun.com/chapters/algo.html"}]}]}</script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/common.js"></script>
+</head>
+<body data-chapter="algo">
+<main class="chapter">
+  <header class="chapter-hero">
+    <div class="eyebrow">Chapter 19</div>
+    <h1>데이터와 알고리즘</h1>
+    <p class="lead">지금까지는 컴퓨터를 <b>더 빠르게</b> 만드는 방법을 봤다. 클럭을 올리고, 캐시를 붙이고, 코어를 늘렸다. 그런데 같은 컴퓨터에서도 <strong>일하는 방법</strong>만 바꿔서 수백만 배 빨라지는 경우가 있다. 이 장은 그 “방법”, 즉 알고리즘과 데이터를 담는 그릇인 자료구조 이야기다. 수학 기호 없이 직접 돌려 보며 감을 잡자.</p>
+    <ul class="objectives">
+      <li>알고리즘과 자료구조가 무엇인지 레시피와 그릇에 빗대어 설명한다.</li>
+      <li>순차 탐색과 이진 탐색의 단계 수 차이를 직접 세어 본다.</li>
+      <li>정렬 알고리즘을 경주시켜 비교 횟수가 어떻게 늘어나는지 확인한다.</li>
+      <li>데이터가 늘 때 시간이 늘어나는 모양(빅오)을 그래프로 읽는다.</li>
+      <li>해시 테이블과 길 찾기 알고리즘이 일상의 앱에서 어떻게 쓰이는지 이해한다.</li>
+    </ul>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="what">
+    <h2>알고리즘은 레시피, 자료구조는 그릇</h2>
+    <p><span class="term">알고리즘</span><span class="en">(algorithm)</span>은 문제를 푸는 절차다. 요리로 치면 레시피다. 같은 김치찌개도 레시피에 따라 30분이 걸리기도 하고 3시간이 걸리기도 한다. <span class="term">자료구조</span><span class="en">(data structure)</span>는 데이터를 담는 방식이다. 양념을 서랍에 아무렇게나 넣어 두면 찾을 때마다 다 뒤져야 하지만, 이름순으로 꽂아 두거나 칸마다 라벨을 붙이면 금방 찾는다.</p>
+    <p>알고리즘이 얼마나 빠른지는 초(秒)가 아니라 <b>단계 수</b>로 잰다. 초는 컴퓨터마다 다르지만, 단계 수는 방법 자체의 성질이기 때문이다. 그리고 가장 중요한 질문은 “데이터가 10배, 1000배로 늘면 단계 수는 어떻게 늘어나나”다.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="search">
+    <h2>찾기: 하나씩 볼까, 반씩 버릴까</h2>
+    <p>전화번호부에서 이름 하나를 찾는다고 하자. 첫 장부터 한 명씩 확인하는 것이 <span class="term">순차 탐색</span><span class="en">(linear search)</span>이다. 하지만 전화번호부는 가나다순으로 정렬되어 있다. 가운데를 펼쳐 찾는 이름이 앞쪽인지 뒤쪽인지 보고, 절반을 통째로 버리는 일을 반복할 수 있다. 이것이 <span class="term">이진 탐색</span><span class="en">(binary search)</span>이다.</p>
+    <div class="sim" id="sim-search">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>64개 중에서 숫자 하나 찾기</h3></div>
+      <div class="sim-view"><canvas id="cv-search"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>방법</span><div class="seg" id="sr-mode"><button data-value="lin" class="on">하나씩 (순차)</button><button data-value="bin">반씩 버리기 (이진)</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="sr-go">찾기 시작</button><button class="btn" id="sr-new">새 목표</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">찾는 수</span><span class="v" id="o-sr-target">—</span></div>
+        <div class="stat"><span class="k">확인한 횟수</span><span class="v" id="o-sr-steps">0</span></div>
+        <div class="stat"><span class="k">자료가 10억 개라면 (최악)</span><span class="v" id="o-sr-big" style="font-size:15px">—</span></div>
+      </div>
+      <div class="sim-note">칸 안의 수는 작은 것부터 정렬되어 있다. 회색으로 흐려진 칸은 “여기엔 없다”고 확정되어 더 볼 필요가 없는 칸이다. 이진 탐색은 한 번 볼 때마다 후보가 절반으로 준다. 64 → 32 → 16 → 8 → 4 → 2 → 1, 많아야 7번이다. 10억 개라도 30번이면 된다. 단, <b>정렬되어 있을 때만</b> 쓸 수 있다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="sort">
+    <h2>정렬: 줄 세우기 경주</h2>
+    <p>이진 탐색을 쓰려면 먼저 정렬해야 한다. 정렬은 컴퓨터가 가장 많이 하는 일 중 하나다. 쇼핑몰의 “낮은 가격순”, 메일함의 “최신순”, 검색 결과의 순위가 모두 정렬이다. 방법은 여러 가지다.</p>
+    <ul>
+      <li><b>버블 정렬</b>: 이웃한 둘을 비교해 큰 것을 뒤로 보내는 일을 반복한다. 단순하지만 느리다.</li>
+      <li><b>삽입 정렬</b>: 카드를 한 장씩 집어 이미 정리된 손패의 알맞은 자리에 끼운다. 거의 정렬된 데이터에 강하다.</li>
+      <li><b>병합 정렬</b>: 반으로 나누고, 각각 정렬한 뒤, 두 줄을 앞에서부터 비교하며 합친다.</li>
+      <li><b>퀵 정렬</b>: 기준값 하나를 골라 그보다 작은 것과 큰 것으로 나누고, 각 쪽을 다시 같은 방법으로 정렬한다.</li>
+    </ul>
+    <div class="sim" id="sim-sort">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>정렬 알고리즘 경주</h3></div>
+      <div class="sim-view"><canvas id="cv-sort"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>알고리즘</span><div class="seg" id="so-alg"><button data-value="bubble" class="on">버블</button><button data-value="insert">삽입</button><button data-value="merge">병합</button><button data-value="quick">퀵</button></div></div>
+        <label class="ctrl"><span>막대 개수 <output id="so-n-out"></output></span><input type="range" id="so-n" min="8" max="80" value="40"></label>
+        <div class="ctrl"><span>처음 상태</span><div class="seg" id="so-init"><button data-value="rand" class="on">뒤죽박죽</button><button data-value="near">거의 정렬됨</button><button data-value="rev">거꾸로</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="so-go">정렬 시작</button><button class="btn" id="so-race">네 가지 동시 비교</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">비교 횟수</span><span class="v" id="o-so-cmp">0</span></div>
+        <div class="stat"><span class="k">옮긴 횟수</span><span class="v" id="o-so-mv">0</span></div>
+        <div class="stat"><span class="k">네 가지 비교 (같은 데이터)</span><span class="v" id="o-so-race" style="font-size:13.5px;line-height:1.5">—</span></div>
+      </div>
+      <div class="sim-note">노란 막대는 지금 비교 중인 두 칸이다. 해볼 것: 막대를 80개로 늘리고 “네 가지 동시 비교”를 눌러 보자. 버블은 약 n²/2번(3,000번 넘게), 병합과 퀵은 약 n×log₂n번(500번 안팎) 비교한다. “거의 정렬됨”에서는 삽입 정렬이 갑자기 1등이 된다. 데이터의 모양에 따라 최고의 방법이 달라진다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="bigo">
+    <h2>빅오: 데이터가 늘면 시간은 어떻게 늘까</h2>
+    <p>정렬 경주에서 본 것처럼, 중요한 것은 지금 몇 번인지보다 <b>데이터가 늘 때 단계 수가 늘어나는 모양</b>이다. 이것을 나타내는 표기가 <span class="term">빅오</span><span class="en">(Big-O)</span>다. O(n)은 “데이터가 2배면 시간도 2배”, O(n²)은 “데이터가 2배면 시간은 4배”라는 뜻이다. 컴퓨터를 10배 빠르게 사도, O(n²) 알고리즘으로는 데이터를 약 3배밖에 더 처리하지 못한다.</p>
+    <div class="sim" id="sim-bigo">
+      <div class="sim-head"><span class="sim-tag">CHART</span><h3>1초에 10억 단계를 하는 컴퓨터라면</h3></div>
+      <div class="sim-view"><canvas id="cv-bigo"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>데이터 개수 n <output id="bo-n-out"></output></span><input type="range" id="bo-n" min="1" max="9" step="0.1" value="6"></label>
+      </div>
+      <div class="sim-readout" id="bo-read"></div>
+      <div class="sim-note">가로축과 세로축 모두 로그 눈금이다(한 칸 = 10배). 해볼 것: n을 100만으로 두고 O(n²)과 O(n log n)의 시간을 비교해 보자. 같은 컴퓨터에서 몇 분 대 몇 밀리초다. O(2ⁿ)은 n이 60만 넘어도 우주의 나이보다 오래 걸린다. 16장의 무차별 대입이 바로 이런 모양이다.</div>
+    </div>
+    <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">버블 정렬(O(n²))로 1만 명의 성적을 정렬하는 데 1초가 걸렸다. 10만 명이면 얼마나 걸릴까?</p><p class="wi-hint">데이터가 10배가 되면 n²은 몇 배가 될까?</p><div class="opts">
+      <button class="opt">10초</button><button class="opt">20초</button><button class="opt" data-correct>약 100초</button><button class="opt">1초 그대로</button>
+    </div><div class="quiz-exp">n이 10배면 n²은 100배다. 같은 일을 O(n log n) 정렬로 하면 약 12배 남짓만 늘어난다. 데이터가 커질수록 알고리즘의 차이가 컴퓨터 성능 차이를 압도한다.</div></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="structure">
+    <h2>그릇 고르기: 배열, 연결 리스트, 해시 테이블</h2>
+    <p>데이터를 메모리에 어떻게 놓느냐에 따라 잘하는 일이 다르다. 6장의 메모리 사물함을 떠올리자.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-label="배열, 연결 리스트, 해시 테이블의 메모리 배치 비교">
+        <defs><marker id="al-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+        <text x="30" y="30" class="t" style="font-weight:700">배열: 나란히 붙은 칸</text>
+        <g class="t-mono">
+          <rect x="30" y="42" width="56" height="40" rx="5" class="f-acc-soft s-acc"/><text x="58" y="67" text-anchor="middle">사과</text>
+          <rect x="88" y="42" width="56" height="40" rx="5" class="f-acc-soft s-acc"/><text x="116" y="67" text-anchor="middle">배</text>
+          <rect x="146" y="42" width="56" height="40" rx="5" class="f-acc-soft s-acc"/><text x="174" y="67" text-anchor="middle">귤</text>
+          <rect x="204" y="42" width="56" height="40" rx="5" class="f-acc-soft s-acc"/><text x="232" y="67" text-anchor="middle">감</text>
+        </g>
+        <text x="30" y="104" class="t-dim" style="font-size:12px">k번째 칸 = 시작 주소 + k → 바로 접근 · 캐시 친화적</text>
+        <text x="30" y="122" class="t-dim" style="font-size:12px">중간에 끼우려면 뒤를 전부 한 칸씩 밀어야 함</text>
+        <text x="420" y="30" class="t" style="font-weight:700">연결 리스트: 다음 칸 주소를 들고 있음</text>
+        <g class="t-mono">
+          <rect x="420" y="42" width="70" height="40" rx="5" class="f-acc2-soft s-line"/><text x="455" y="67" text-anchor="middle">사과</text>
+          <rect x="540" y="62" width="70" height="40" rx="5" class="f-acc2-soft s-line"/><text x="575" y="87" text-anchor="middle">배</text>
+          <rect x="660" y="38" width="70" height="40" rx="5" class="f-acc2-soft s-line"/><text x="695" y="63" text-anchor="middle">귤</text>
+        </g>
+        <path d="M490 62 L538 78" class="s-acc" marker-end="url(#al-a)"/><path d="M610 82 L658 62" class="s-acc" marker-end="url(#al-a)"/>
+        <text x="420" y="124" class="t-dim" style="font-size:12px">끼우기·빼기는 화살표만 바꾸면 끝</text>
+        <text x="420" y="142" class="t-dim" style="font-size:12px">k번째를 찾으려면 처음부터 따라가야 함 · 메모리에 흩어짐</text>
+        <text x="30" y="178" class="t" style="font-weight:700">해시 테이블: 이름으로 칸 번호를 바로 계산</text>
+        <rect x="30" y="196" width="130" height="40" rx="8" class="f-surface s-line"/><text x="95" y="221" text-anchor="middle" class="t-mono">"귤"</text>
+        <path d="M162 216 H220" class="s-acc" marker-end="url(#al-a)"/>
+        <rect x="224" y="196" width="150" height="40" rx="8" class="f-acc"/><text x="299" y="221" text-anchor="middle" class="t" style="fill:#fff">해시 함수 → 3</text>
+        <path d="M376 216 H430" class="s-acc" marker-end="url(#al-a)"/>
+        <g class="t-mono">
+          <rect x="436" y="196" width="50" height="40" rx="5" class="f-elev s-line"/><text x="461" y="221" text-anchor="middle" class="t-dim">0</text>
+          <rect x="490" y="196" width="50" height="40" rx="5" class="f-elev s-line"/><text x="515" y="221" text-anchor="middle" class="t-dim">1</text>
+          <rect x="544" y="196" width="50" height="40" rx="5" class="f-elev s-line"/><text x="569" y="221" text-anchor="middle" class="t-dim">2</text>
+          <rect x="598" y="196" width="50" height="40" rx="5" class="f-acc-soft s-acc"/><text x="623" y="221" text-anchor="middle">귤</text>
+          <rect x="652" y="196" width="50" height="40" rx="5" class="f-elev s-line"/><text x="677" y="221" text-anchor="middle" class="t-dim">4</text>
+        </g>
+        <text x="30" y="266" class="t-dim" style="font-size:12px">데이터가 아무리 많아도 거의 한 번에 찾는다 (평균 O(1)). 대신 순서는 없다.</text>
+        <text x="30" y="286" class="t-dim" style="font-size:12px">파이썬의 딕셔너리, 자바스크립트의 객체, 데이터베이스의 색인이 이 원리를 쓴다.</text>
+      </svg>
+      <figcaption><b>그림 19-1.</b> 세 가지 그릇. 무엇을 자주 하느냐(순서대로 읽기, 끼우기, 이름으로 찾기)에 따라 알맞은 그릇이 다르다.</figcaption>
+    </figure>
+    <p><span class="term">해시 테이블</span><span class="en">(hash table)</span>은 16장의 해시 함수를 응용한다. 이름을 해시 함수에 넣어 나온 수를 칸 번호로 쓰면, 찾을 때도 같은 계산으로 바로 그 칸에 간다. 문제는 서로 다른 이름이 같은 칸 번호를 받는 <span class="term">충돌</span><span class="en">(collision)</span>이다. 그때는 그 칸에 줄을 세운다.</p>
+    <div class="sim" id="sim-hash">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>해시 테이블에 이름 넣고 찾기</h3></div>
+      <div class="sim-view"><canvas id="cv-hash"></canvas></div>
+      <div class="sim-controls">
+        <label class="ctrl"><span>이름</span><input type="text" id="hs-in" value="민지" maxlength="8"></label>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="hs-add">넣기</button><button class="btn" id="hs-find">찾기</button><button class="btn" id="hs-fill">20명 한꺼번에</button><button class="btn" id="hs-clear">비우기</button></div></div>
+        <div class="ctrl"><span>칸 수</span><div class="seg" id="hs-m"><button data-value="5">5칸</button><button data-value="11" class="on">11칸</button><button data-value="31">31칸</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">해시 계산</span><span class="v" id="o-hs-calc" style="font-size:13.5px">—</span></div>
+        <div class="stat"><span class="k">찾을 때 확인한 횟수</span><span class="v" id="o-hs-look">—</span></div>
+        <div class="stat"><span class="k">가장 긴 줄</span><span class="v" id="o-hs-max">—</span></div>
+      </div>
+      <div class="sim-note">이 장난감 해시 함수는 글자 번호(유니코드)를 모두 더해 칸 수로 나눈 나머지를 쓴다. 해볼 것: 20명을 넣고 칸 수를 5칸 → 31칸으로 바꿔 보자. 칸이 넉넉하면 줄이 짧아져 거의 한 번에 찾는다. 실제 해시 테이블은 줄이 길어지기 전에 칸 수를 자동으로 두 배로 늘린다.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="path">
+    <h2>지도 앱은 어떻게 길을 찾을까</h2>
+    <p>지도 앱의 길 찾기, 10장의 라우터가 패킷 경로를 고르는 일, 게임 캐릭터가 벽을 피해 움직이는 일은 모두 같은 문제다. 장소를 점으로, 길을 선으로 놓은 <span class="term">그래프</span><span class="en">(graph)</span>에서 <span class="term">최단 경로</span><span class="en">(shortest path)</span>를 찾는 것이다. 아래 격자에서 벽을 그리고 세 가지 방법을 비교해 보자.</p>
+    <div class="sim" id="sim-path">
+      <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>미로에서 길 찾기</h3></div>
+      <div class="sim-view"><canvas id="cv-path"></canvas></div>
+      <div class="sim-controls">
+        <div class="ctrl"><span>방법</span><div class="seg" id="pt-alg"><button data-value="bfs" class="on">가까운 곳부터 (BFS)</button><button data-value="greedy">목표 쪽으로 직진</button><button data-value="astar">A* (둘을 섞음)</button></div></div>
+        <div class="ctrl"><span>&nbsp;</span><div class="btn-row"><button class="btn primary" id="pt-go">길 찾기</button><button class="btn" id="pt-maze">새 미로</button><button class="btn" id="pt-clear">벽 지우기</button></div></div>
+      </div>
+      <div class="sim-readout">
+        <div class="stat"><span class="k">살펴본 칸</span><span class="v" id="o-pt-seen">—</span></div>
+        <div class="stat"><span class="k">찾은 경로 길이</span><span class="v" id="o-pt-len">—</span></div>
+        <div class="stat"><span class="k">최단 경로인가</span><span class="v" id="o-pt-best">—</span></div>
+      </div>
+      <div class="sim-note">칸을 누르거나 끌면 벽을 세우거나 지운다. 초록 S에서 빨강 G로 간다. 연한 칸이 알고리즘이 살펴본 곳이다. <b>BFS</b>는 출발점에서 가까운 순서로 물결처럼 퍼져 반드시 최단 경로를 찾지만 많이 살펴본다. <b>목표 쪽으로 직진</b>은 적게 살펴보지만 벽에 막히면 돌아가는 길을 고를 수 있다. <b>A*</b>는 “지금까지 온 거리 + 남은 거리 어림값”이 작은 칸부터 보아, 최단 경로를 보장하면서도 덜 살펴본다. 실제 지도 앱은 여기에 도로 속도와 교통 정보를 가중치로 더한다.</div>
+    </div>
+  </section>
+
+  <section class="keypoints" id="summary">
+    <h2>핵심 정리</h2>
+    <ol>
+      <li><b>알고리즘</b>은 문제를 푸는 절차, <b>자료구조</b>는 데이터를 담는 방식이다. 속도는 초가 아니라 단계 수로 잰다.</li>
+      <li>정렬된 데이터에서 <b>이진 탐색</b>은 10억 개 중에서도 30번 만에 찾는다.</li>
+      <li>정렬은 방법에 따라 n²/2번(버블)과 n log n번(병합·퀵)으로 비교 횟수가 크게 다르다.</li>
+      <li><b>빅오</b>는 데이터가 늘 때 시간이 늘어나는 모양이다. 큰 데이터에서는 알고리즘이 하드웨어보다 중요하다.</li>
+      <li><b>해시 테이블</b>은 이름에서 칸 번호를 계산해 거의 한 번에 찾는다. 길 찾기는 그래프의 <b>최단 경로</b> 문제다.</li>
+    </ol>
+  </section>
+
+  <section class="quiz-sec" id="quiz">
+    <h2>확인 퀴즈</h2>
+    <div class="quiz">
+      <div class="quiz-q"><p>이진 탐색을 쓰기 위한 조건은?</p><div class="opts">
+        <button class="opt">데이터가 100개 이하</button><button class="opt" data-correct>데이터가 정렬되어 있어야 한다</button><button class="opt">데이터가 숫자여야 한다</button><button class="opt">GPU가 있어야 한다</button>
+      </div><div class="quiz-exp">가운데 값과 비교해 “앞쪽이냐 뒤쪽이냐”를 판단하려면 순서가 정해져 있어야 한다.</div></div>
+      <div class="quiz-q"><p>약 100만(≈2²⁰) 개의 정렬된 데이터에서 이진 탐색은 최악의 경우 몇 번 확인할까?</p><div class="opts">
+        <button class="opt">약 100만 번</button><button class="opt">약 1,000번</button><button class="opt" data-correct>약 20번</button><button class="opt">1번</button>
+      </div><div class="quiz-exp">한 번에 절반씩 줄어들므로 2를 20번 곱하면 100만이 넘는다. 즉 20번이면 충분하다.</div></div>
+      <div class="quiz-q"><p>O(n²) 알고리즘에서 데이터가 3배가 되면 시간은?</p><div class="opts">
+        <button class="opt">3배</button><button class="opt">6배</button><button class="opt" data-correct>9배</button><button class="opt">변하지 않는다</button>
+      </div><div class="quiz-exp">3² = 9배. 그래서 큰 데이터에는 O(n log n) 같은 더 완만한 알고리즘이 필요하다.</div></div>
+      <div class="quiz-q"><p>해시 테이블에서 서로 다른 두 키가 같은 칸 번호를 받는 것을 무엇이라 하나?</p><div class="opts">
+        <button class="opt">오버플로</button><button class="opt" data-correct>충돌</button><button class="opt">캐시 실패</button><button class="opt">교착</button>
+      </div><div class="quiz-exp">충돌이 생기면 같은 칸에 줄을 세우거나 다른 빈칸을 찾는다. 칸 수가 넉넉하면 충돌이 줄어든다.</div></div>
+      <div class="quiz-q"><p>출발점에서 가까운 칸부터 차례로 살펴보는 BFS의 특징은?</p><div class="opts">
+        <button class="opt">항상 가장 적은 칸을 살펴본다</button><button class="opt" data-correct>(모든 길의 길이가 같다면) 반드시 최단 경로를 찾는다</button><button class="opt">벽이 있으면 동작하지 않는다</button><button class="opt">목표 방향만 본다</button>
+      </div><div class="quiz-exp">물결처럼 거리 1, 2, 3… 순서로 퍼지므로 처음 목표에 닿는 순간의 경로가 가장 짧다. 대신 사방을 다 살펴 느릴 수 있다.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------------- search ---------------- */
+  const N = 64; let arr = [], target = 0, lo = 0, hi = N - 1, cur = -1, steps = 0, found = -1, running = false, dead = new Set(), acc = 0;
+  (function gen() { const r = CB.rng(5); let v = 1; arr = []; for (let i = 0; i < N; i++) { v += 1 + Math.floor(r() * 4); arr.push(v); } })();
+  const mode = CB.seg("sr-mode", () => srReset());
+  function newTarget() { target = arr[Math.floor(Math.random() * N)]; srReset(); }
+  function srReset() { lo = 0; hi = N - 1; cur = -1; steps = 0; found = -1; running = false; dead = new Set(); CB.stat("o-sr-target", target); CB.stat("o-sr-steps", "0번"); CB.stat("o-sr-big", mode() === "lin" ? "10억 번" : "30번"); scv && scv.redraw(); }
+  function srStep() {
+    if (found >= 0) return false;
+    steps++;
+    if (mode() === "lin") { cur = steps - 1; if (arr[cur] === target) found = cur; else dead.add(cur); }
+    else { cur = (lo + hi) >> 1; if (arr[cur] === target) found = cur; else if (arr[cur] < target) { for (let i = lo; i <= cur; i++) dead.add(i); lo = cur + 1; } else { for (let i = cur; i <= hi; i++) dead.add(i); hi = cur - 1; } }
+    CB.stat("o-sr-steps", steps + "번" + (found >= 0 ? " ✓" : ""));
+    scv.redraw(); return found < 0;
+  }
+  let scv = null;
+  scv = CB.canvas("#cv-search", (ctx, w, h) => {
+    const P = CB.palette(), cols = w < 520 ? 8 : 16, rows = N / cols, gap = 4;
+    const cw = (w - 24 - gap * (cols - 1)) / cols, ch = Math.min(34, (h - 24 - gap * (rows - 1)) / rows);
+    const oy = (h - (ch * rows + gap * (rows - 1))) / 2;
+    for (let i = 0; i < N; i++) {
+      const x = 12 + (i % cols) * (cw + gap), y = oy + Math.floor(i / cols) * (ch + gap);
+      const isF = i === found, isC = i === cur && !isF, isD = dead.has(i) && !isC;
+      CB.rrect(ctx, x, y, cw, ch, 5);
+      ctx.fillStyle = isF ? P.ok : isC ? P.warn : P.surface; ctx.globalAlpha = isD ? 0.35 : 1; ctx.fill();
+      ctx.strokeStyle = isF || isC ? "transparent" : P.border; ctx.lineWidth = 1; ctx.stroke();
+      CB.text(ctx, String(arr[i]), x + cw / 2, y + ch / 2, { align: "center", size: cw > 34 ? 13 : 11, mono: true, bold: isF || isC, color: isF || isC ? "#fff" : P.text });
+      ctx.globalAlpha = 1;
+    }
+  }, { aspect: 0.24, minHeight: 170, maxHeight: 300 });
+  $("sr-go").onclick = () => { if (found >= 0 || steps) srReset(); running = true; };
+  $("sr-new").onclick = newTarget;
+  CB.loop($("cv-search"), (dt) => { if (!running) return; acc += dt; if (acc < (mode() === "lin" ? 0.09 : 0.6)) return; acc = 0; if (!srStep()) running = false; });
+  newTarget();
+
+  /* ---------------- sort ---------------- */
+  function makeData(n, kind, seed) { const r = CB.rng(seed); let a = Array.from({ length: n }, (_, i) => i + 1); if (kind === "rev") a.reverse(); else { for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (kind === "near") { a.sort((x, y) => x - y); for (let k = 0; k < Math.max(1, n / 12); k++) { const i = Math.floor(r() * (n - 1)); [a[i], a[i + 1]] = [a[i + 1], a[i]]; } } } return a; }
+  function ops(alg, src) {
+    const a = src.slice(), o = []; const cmp = (i, j) => { o.push(["c", i, j]); return a[i] > a[j]; }; const sw = (i, j) => { o.push(["s", i, j]); [a[i], a[j]] = [a[j], a[i]]; };
+    const n = a.length;
+    if (alg === "bubble") { for (let i = 0; i < n - 1; i++) { let any = false; for (let j = 0; j < n - 1 - i; j++) if (cmp(j, j + 1)) { sw(j, j + 1); any = true; } if (!any) break; } }
+    else if (alg === "insert") { for (let i = 1; i < n; i++) { let j = i; while (j > 0 && cmp(j - 1, j)) { sw(j - 1, j); j--; } } }
+    else if (alg === "merge") {
+      const ms = (l, r) => { if (r - l < 1) return; const m = (l + r) >> 1; ms(l, m); ms(m + 1, r); const tmp = []; let i = l, j = m + 1; while (i <= m && j <= r) { o.push(["c", i, j]); if (a[i] <= a[j]) tmp.push(a[i++]); else tmp.push(a[j++]); } while (i <= m) tmp.push(a[i++]); while (j <= r) tmp.push(a[j++]); for (let k = 0; k < tmp.length; k++) { a[l + k] = tmp[k]; o.push(["w", l + k, tmp[k]]); } };
+      ms(0, n - 1);
+    } else {
+      const qs = (l, r) => { if (l >= r) return; const mid = (l + r) >> 1; sw(mid, r); let p = l; for (let i = l; i < r; i++) { if (!cmp(i, r)) { if (i !== p) sw(i, p); p++; } } sw(p, r); qs(l, p - 1); qs(p + 1, r); };
+      qs(0, n - 1);
+    }
+    return o;
+  }
+  const count = (o) => ({ c: o.filter((x) => x[0] === "c").length, m: o.filter((x) => x[0] !== "c").length });
+  const alg = CB.seg("so-alg", () => soReset()), sinit = CB.seg("so-init", () => soReset());
+  const sn = CB.range("so-n", (v) => v + "개", () => soReset());
+  let base = [], view = [], plan = [], pi = 0, sRun = false, sSeed = 3, hiI = [-1, -1], cC = 0, cM = 0, sAcc = 0;
+  function soReset() { base = makeData(sn(), sinit(), sSeed); view = base.slice(); plan = ops(alg(), base); pi = 0; sRun = false; hiI = [-1, -1]; cC = cM = 0; CB.stat("o-so-cmp", "0"); CB.stat("o-so-mv", "0"); CB.stat("o-so-race", "—"); socv && socv.redraw(); }
+  function soStep(k) {
+    for (let t = 0; t < k && pi < plan.length; t++) { const [ty, i, j] = plan[pi++]; if (ty === "c") { cC++; hiI = [i, j]; } else if (ty === "s") { cM++; [view[i], view[j]] = [view[j], view[i]]; hiI = [i, j]; } else { cM++; view[i] = j; hiI = [i, -1]; } }
+    CB.stat("o-so-cmp", cC.toLocaleString("ko-KR")); CB.stat("o-so-mv", cM.toLocaleString("ko-KR"));
+    if (pi >= plan.length) { hiI = [-1, -1]; sRun = false; }
+    socv.redraw();
+  }
+  let socv = null;
+  socv = CB.canvas("#cv-sort", (ctx, w, h) => {
+    const P = CB.palette(), n = view.length, gap = n > 50 ? 1 : 2, bw = (w - 24 - gap * (n - 1)) / n, done = pi >= plan.length && plan.length;
+    view.forEach((v, i) => { const bh = (v / n) * (h - 24), x = 12 + i * (bw + gap); ctx.fillStyle = hiI.includes(i) ? P.warn : done ? P.ok : P.accent; ctx.globalAlpha = hiI.includes(i) || done ? 0.95 : 0.7; ctx.fillRect(x, h - 12 - bh, Math.max(1, bw), bh); });
+    ctx.globalAlpha = 1;
+  }, { aspect: 0.36, minHeight: 200, maxHeight: 300 });
+  $("so-go").onclick = () => { if (pi >= plan.length) soReset(); sRun = true; };
+  $("so-race").onclick = () => {
+    const names = { bubble: "버블", insert: "삽입", merge: "병합", quick: "퀵" };
+    const res = Object.keys(names).map((k) => [names[k], count(ops(k, base)).c]).sort((a, b) => a[1] - b[1]);
+    CB.stat("o-so-race", res.map(([nm, c], i) => `${i + 1}. ${nm} ${c.toLocaleString("ko-KR")}`).join("<br>"));
+  };
+  CB.loop($("cv-sort"), (dt) => { if (!sRun) return; sAcc += dt; const perSec = Math.max(30, plan.length / 8); const k = Math.floor(sAcc * perSec); if (k < 1) return; sAcc -= k / perSec; soStep(k); });
+  soReset();
+
+  /* ---------------- big-O ---------------- */
+  const CLS = [
+    ["O(1)", (n) => 1, "faint"], ["O(log n)", (n) => Math.log2(Math.max(2, n)), "ok"], ["O(n)", (n) => n, "accent2"],
+    ["O(n log n)", (n) => n * Math.log2(Math.max(2, n)), "accent"], ["O(n²)", (n) => n * n, "warn"], ["O(2ⁿ)", (n) => Math.pow(2, Math.min(n, 1500)), "bad"],
+  ];
+  const fmtT = (s) => (!isFinite(s) || s > 4.35e17 * 10 ? "우주 나이보다 김" : s >= 3.15e7 * 100 ? (s / 3.15e7).toExponential(1).replace("e+", "×10^") + "년" : s >= 3.15e7 ? (s / 3.15e7).toFixed(1) + "년" : s >= 86400 ? (s / 86400).toFixed(1) + "일" : s >= 3600 ? (s / 3600).toFixed(1) + "시간" : s >= 60 ? (s / 60).toFixed(1) + "분" : s >= 1 ? s.toFixed(1) + "초" : s >= 1e-3 ? (s * 1e3).toFixed(1) + " ms" : s >= 1e-6 ? (s * 1e6).toFixed(1) + " µs" : (s * 1e9).toFixed(0) + " ns");
+  const bn = CB.range("bo-n", (v) => CB.kn(Math.round(Math.pow(10, v))) + "개", () => { bcv.redraw(); boRead(); });
+  $("bo-read").innerHTML = CLS.map(([nm], i) => `<div class="stat"><span class="k">${nm}</span><span class="v" id="o-bo-${i}" style="font-size:15px">—</span></div>`).join("");
+  function boRead() { const n = Math.pow(10, bn()); CLS.forEach(([nm, f], i) => CB.stat("o-bo-" + i, fmtT(f(n) / 1e9))); }
+  const bcv = CB.canvas("#cv-bigo", (ctx, w, h) => {
+    const P = CB.palette(), n0 = Math.pow(10, bn());
+    const series = CLS.map(([nm, f, c]) => { const d = []; for (let e = 0; e <= 9; e += 0.05) { const n = Math.pow(10, e), t = f(n) / 1e9; if (t > 1e20) break; d.push([n, Math.max(1e-9, t)]); } return { data: d, color: P[c], width: 2.4, label: nm }; });
+    CB.chart(ctx, null, { x: [1, 1e9], y: [1e-9, 1e18], logX: true, logY: true, xLabel: "데이터 개수 n", yLabel: "걸리는 시간", yTicks: [1e-9, 1e-6, 1e-3, 1, 3600, 3.15e7, 3.15e9, 3.15e13, 4.35e17], yFmt: (v) => ({ 1e-9: "1ns", 1e-6: "1µs", 1e-3: "1ms", 1: "1초", 3600: "1시간", 31500000: "1년", 3150000000: "100년", 31500000000000: "100만 년", 435000000000000000: "우주" }[v] || ""), xFmt: (v) => CB.kn(v), series, vlines: [{ x: n0, color: P.text }] });
+    // labels at right end of each visible series
+    const box = { x: 58, y: 16, w: w - 76, h: h - 62 };
+    const X = (v) => box.x + (Math.log10(v) / 9) * box.w, Y = (v) => box.y + box.h - ((Math.log10(v) + 9) / 27) * box.h;
+    series.forEach((s) => { const p = s.data[s.data.length - 1]; if (!p) return; const px = Math.min(box.x + box.w - 4, X(p[0])), py = Math.max(box.y + 8, Y(p[1])); CB.text(ctx, s.label, px - 4, py - 8, { align: "right", size: 11.5, bold: true, color: s.color }); });
+  }, { aspect: 0.55, minHeight: 280, maxHeight: 420 });
+  boRead();
+
+  /* ---------------- hash table ---------------- */
+  const NAMES20 = ["민지", "서준", "하은", "도윤", "지우", "시우", "서연", "예준", "수아", "주원", "지호", "하린", "유준", "채원", "은우", "지안", "건우", "소율", "현우", "다은"];
+  let keys = [], lastLook = null, lastCalc = "";
+  const hm = CB.seg("hs-m", () => { lastLook = null; hdraw(); });
+  const hf = (s, m) => { let t = 0; for (const ch of s) t += ch.codePointAt(0); return [t % m, t]; };
+  function hdraw() {
+    const M = +hm(); const b = Array.from({ length: M }, () => []); keys.forEach((k) => b[hf(k, M)[0]].push(k));
+    CB.stat("o-hs-max", keys.length ? Math.max(...b.map((x) => x.length)) + "명" : "—"); CB.stat("o-hs-calc", lastCalc || "—");
+    hcv.redraw();
+  }
+  const add = (nm) => { nm = nm.trim(); if (!nm || keys.includes(nm)) return; keys.push(nm); };
+  $("hs-add").onclick = () => { const nm = $("hs-in").value.trim(); if (!nm) return; const [i, t] = hf(nm, +hm()); lastCalc = `“${nm}” 합 ${t} → ${t} mod ${hm()} = <b>${i}번 칸</b>`; add(nm); lastLook = null; hdraw(); };
+  $("hs-find").onclick = () => { const nm = $("hs-in").value.trim(); const M = +hm(); const [i, t] = hf(nm, M); const chain = keys.filter((k) => hf(k, M)[0] === i); const pos = chain.indexOf(nm); lastLook = { i, nm, pos }; lastCalc = `“${nm}” → ${i}번 칸`; CB.stat("o-hs-look", pos >= 0 ? `${pos + 1}번 (찾음)` : `${chain.length}번 (없음)`); hdraw(); };
+  $("hs-fill").onclick = () => { NAMES20.forEach(add); lastCalc = "20명을 넣었다"; lastLook = null; hdraw(); };
+  $("hs-clear").onclick = () => { keys = []; lastLook = null; lastCalc = ""; CB.stat("o-hs-look", "—"); hdraw(); };
+  const hcv = CB.canvas("#cv-hash", (ctx, w, h) => {
+    const P = CB.palette(), M = +hm(); const b = Array.from({ length: M }, () => []); keys.forEach((k) => b[hf(k, M)[0]].push(k));
+    const cols = M <= 11 ? 1 : 2, perCol = Math.ceil(M / cols), rh = Math.min(28, (h - 16) / perCol), colW = (w - 16) / cols;
+    for (let i = 0; i < M; i++) {
+      const c = Math.floor(i / perCol), r = i % perCol, x = 8 + c * colW, y = 8 + r * rh;
+      const hl = lastLook && lastLook.i === i;
+      CB.rrect(ctx, x, y + 2, 34, rh - 4, 4); ctx.fillStyle = hl ? P.accent : P.surface; ctx.fill();
+      CB.text(ctx, String(i), x + 17, y + rh / 2, { align: "center", size: 11.5, mono: true, bold: true, color: hl ? "#fff" : P.dim });
+      let cx = x + 42;
+      b[i].forEach((k, j) => { ctx.font = "13px " + CB.font(); const tw = ctx.measureText(k).width + 16; if (cx + tw > x + colW - 6) { CB.text(ctx, "…", cx, y + rh / 2, { size: 13, color: P.dim }); return; } const hit = hl && lastLook.pos === j, seen = hl && (lastLook.pos < 0 || j <= lastLook.pos); CB.rrect(ctx, cx, y + 3, tw, rh - 6, 5); ctx.fillStyle = hit ? P.ok : seen ? P.warn : P.accent2; ctx.globalAlpha = hit || seen ? 0.9 : 0.25; ctx.fill(); ctx.globalAlpha = 1; CB.text(ctx, k, cx + tw / 2, y + rh / 2, { align: "center", size: 13, color: hit || seen ? "#fff" : P.text }); if (j < b[i].length - 1) CB.text(ctx, "→", cx + tw + 2, y + rh / 2, { size: 11, color: P.faint }); cx += tw + 14; });
+    }
+  }, { height: 330 });
+  hdraw();
+
+  /* ---------------- path finding ---------------- */
+  const GC = 24, GR = 14, S = [1, GR - 2], G = [GC - 2, 1];
+  let wall = new Set(), visited = [], pathCells = [], pRun = false, pIdx = 0, pAcc = 0, painting = null, mazeSeed = 11;
+  const key = (x, y) => x + "," + y;
+  function maze(seed) { const r = CB.rng(seed); wall = new Set(); for (let x = 3; x < GC - 2; x += 4) { const gap1 = 1 + Math.floor(r() * (GR - 2)), gap2 = 1 + Math.floor(r() * (GR - 2)); for (let y = 0; y < GR; y++) if (y !== gap1 && y !== gap2 && Math.abs(y - gap1) > 0) wall.add(key(x, y)); } for (let k = 0; k < 22; k++) { const x = Math.floor(r() * GC), y = Math.floor(r() * GR); if ((x !== S[0] || y !== S[1]) && (x !== G[0] || y !== G[1])) wall.add(key(x, y)); } wall.delete(key(...S)); wall.delete(key(...G)); }
+  function solve(kind) {
+    const h = (x, y) => Math.abs(x - G[0]) + Math.abs(y - G[1]);
+    const dist = new Map([[key(...S), 0]]), prev = new Map(), seen = [], open = [[S[0], S[1]]], closed = new Set();
+    while (open.length) {
+      let bi = 0;
+      if (kind !== "bfs") { let best = Infinity; open.forEach((p, i) => { const g = dist.get(key(...p)), f = kind === "greedy" ? h(...p) : g + h(...p); if (f < best - 1e-9 || (f === best && h(...p) < h(...open[bi]))) { best = f; bi = i; } }); }
+      const [x, y] = open.splice(bi, 1)[0], k = key(x, y);
+      if (closed.has(k)) continue; closed.add(k); seen.push([x, y]);
+      if (x === G[0] && y === G[1]) break;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy, nk = key(nx, ny); if (nx < 0 || ny < 0 || nx >= GC || ny >= GR || wall.has(nk) || closed.has(nk)) return; const nd = dist.get(k) + 1; if (!dist.has(nk) || nd < dist.get(nk)) { dist.set(nk, nd); prev.set(nk, k); open.push([nx, ny]); } });
+    }
+    const path = []; let c = key(...G); if (!prev.has(c) && c !== key(...S)) return { seen, path: null };
+    while (c) { path.unshift(c.split(",").map(Number)); c = prev.get(c); }
+    return { seen, path };
+  }
+  const palg = CB.seg("pt-alg", () => pReset());
+  function pReset() { visited = []; pathCells = []; pRun = false; pIdx = 0; CB.stat("o-pt-seen", "—"); CB.stat("o-pt-len", "—"); CB.stat("o-pt-best", "—"); pcv && pcv.redraw(); }
+  let result = null, bestLen = null;
+  $("pt-go").onclick = () => { pReset(); result = solve(palg()); const b = solve("bfs"); bestLen = b.path ? b.path.length - 1 : null; pRun = true; };
+  $("pt-maze").onclick = () => { mazeSeed += 7; maze(mazeSeed); pReset(); };
+  $("pt-clear").onclick = () => { wall = new Set(); pReset(); };
+  let pcv = null, pgeom = { cs: 10, ox: 0, oy: 0 };
+  pcv = CB.canvas("#cv-path", (ctx, w, h) => {
+    const P = CB.palette(), cs = Math.min((w - 16) / GC, (h - 16) / GR), ox = (w - cs * GC) / 2, oy = (h - cs * GR) / 2;
+    pgeom = { cs, ox, oy };
+    const vis = new Set(visited.slice(0, pIdx).map((p) => key(...p))), on = new Set(pathCells.map((p) => key(...p)));
+    for (let x = 0; x < GC; x++) for (let y = 0; y < GR; y++) {
+      const k = key(x, y), px = ox + x * cs, py = oy + y * cs;
+      ctx.fillStyle = wall.has(k) ? P.text : on.has(k) ? P.warn : vis.has(k) ? P.accent : P.surface;
+      ctx.globalAlpha = wall.has(k) ? 0.8 : on.has(k) ? 0.95 : vis.has(k) ? 0.28 : 1;
+      ctx.fillRect(px + 0.5, py + 0.5, cs - 1, cs - 1); ctx.globalAlpha = 1;
+    }
+    [[S, P.ok, "S"], [G, P.bad, "G"]].forEach(([p, c, t]) => { ctx.fillStyle = c; ctx.fillRect(ox + p[0] * cs + 1, oy + p[1] * cs + 1, cs - 2, cs - 2); CB.text(ctx, t, ox + (p[0] + 0.5) * cs, oy + (p[1] + 0.5) * cs, { align: "center", size: Math.max(10, cs * 0.55), bold: true, color: "#fff" }); });
+  }, { aspect: GR / GC, minHeight: 190, maxHeight: 420 });
+  const cellAt = (e) => { const g = pgeom, r = $("cv-path").getBoundingClientRect(), x = Math.floor((e.clientX - r.left - g.ox) / g.cs), y = Math.floor((e.clientY - r.top - g.oy) / g.cs); return x >= 0 && y >= 0 && x < GC && y < GR ? [x, y] : null; };
+  const paint = (c) => { if (!c) return; const k = key(...c); if (k === key(...S) || k === key(...G)) return; painting ? wall.add(k) : wall.delete(k); pReset(); };
+  $("cv-path").addEventListener("pointerdown", (e) => { const c = cellAt(e); if (!c) return; painting = !wall.has(key(...c)); paint(c); $("cv-path").setPointerCapture(e.pointerId); });
+  $("cv-path").addEventListener("pointermove", (e) => { if (painting === null) return; paint(cellAt(e)); });
+  ["pointerup", "pointercancel"].forEach((ev) => $("cv-path").addEventListener(ev, () => (painting = null)));
+  $("cv-path").style.touchAction = "none";
+  CB.loop($("cv-path"), (dt) => {
+    if (!pRun || !result) return; pAcc += dt; const k = Math.floor(pAcc * 90); if (k < 1) return; pAcc -= k / 90;
+    visited = result.seen; pIdx = Math.min(visited.length, pIdx + k); CB.stat("o-pt-seen", pIdx + "칸");
+    if (pIdx >= visited.length) {
+      pRun = false;
+      if (result.path) { pathCells = result.path; const len = result.path.length - 1; CB.stat("o-pt-len", len + "칸"); CB.stat("o-pt-best", len === bestLen ? "<span style='color:var(--ok)'>예</span>" : `<span style='color:var(--bad)'>아니오 (최단 ${bestLen}칸)</span>`); }
+      else { CB.stat("o-pt-len", "길 없음"); CB.stat("o-pt-best", "—"); }
+    }
+    pcv.redraw();
+  });
+  maze(mazeSeed); pReset();
+})();
+</script>
+</body>
+</html>

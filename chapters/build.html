@@ -17,7 +17,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"나만의 컴퓨터 만들기","name":"나만의 컴퓨터 만들기 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/build.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/build.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":18,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-02","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"지금까지 배운 것을 모아 직접 컴퓨터를 조립해 본다. 예산 안에서 CPU·메모리·저장장치·GPU를 고르고, 부팅·게임·영상 편집·AI 같은 작업을 돌려 병목을 찾고, 미션을 해결한다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"18 나만의 컴퓨터 만들기","item":"https://computerbook.euiyun.com/chapters/build.html"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"나만의 컴퓨터 만들기","name":"나만의 컴퓨터 만들기 · ComputerBook","url":"https://computerbook.euiyun.com/chapters/build.html","mainEntityOfPage":"https://computerbook.euiyun.com/chapters/build.html","inLanguage":"ko","isAccessibleForFree":true,"learningResourceType":"interactive textbook chapter","position":22,"image":"https://computerbook.euiyun.com/og.png","dateModified":"2026-10-03","isPartOf":{"@type":"Book","@id":"https://computerbook.euiyun.com/#book","name":"ComputerBook — 인터랙티브 컴퓨터 교과서","url":"https://computerbook.euiyun.com/"},"publisher":{"@type":"Organization","name":"ComputerBook","url":"https://computerbook.euiyun.com/"},"description":"지금까지 배운 것을 모아 직접 컴퓨터를 조립해 본다. 예산 안에서 CPU·메모리·저장장치·GPU를 고르고, 부팅·게임·영상 편집·AI 같은 작업을 돌려 병목을 찾고, 미션을 해결한다."},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ComputerBook","item":"https://computerbook.euiyun.com/"},{"@type":"ListItem","position":2,"name":"22 나만의 컴퓨터 만들기","item":"https://computerbook.euiyun.com/chapters/build.html"}]}]}</script>
 <link rel="stylesheet" href="../css/style.css">
 <script src="../js/common.js"></script>
 <style>
@@ -45,7 +45,7 @@
 <body data-chapter="build">
 <main class="chapter">
   <header class="chapter-hero">
-    <div class="eyebrow">Chapter 18</div>
+    <div class="eyebrow">Chapter 22</div>
     <h1>나만의 컴퓨터 만들기</h1>
     <p class="lead">이제 부품 하나하나가 무슨 일을 하는지 안다. 그렇다면 직접 한 대를 맞춰 보자. 이 장은 읽는 장이 아니라 <strong>노는 장</strong>이다. 예산 안에서 부품을 고르고, 여러 작업을 돌려 보고, 어디가 느린지 찾아 고친다. 결과마다 관련된 장으로 가는 길을 붙여 두었으니, 막히면 돌아가서 다시 보고 오자.</p>
     <ul class="objectives">
@@ -73,13 +73,14 @@
         <text x="40" y="190" class="t-dim">모든 부품을 꽂는 판. 부품 사이의 길이 얼마나 넓은지 정한다.</text>
         <text x="40" y="212" class="t-dim">파워(전원 공급기)는 주방의 전기·가스. 부품이 많이 먹을수록 커야 한다.</text>
       </svg>
-      <figcaption><b>그림 18-1.</b> 부품과 주방의 대응. 어느 하나만 좋아서는 빠른 주방이 되지 않는다.</figcaption>
+      <figcaption><b>그림 22-1.</b> 부품과 주방의 대응. 어느 하나만 좋아서는 빠른 주방이 되지 않는다.</figcaption>
     </figure>
     <div class="sim" id="sim-build">
       <div class="sim-head"><span class="sim-tag">PLAYGROUND</span><h3>부품을 골라 조립하기</h3></div>
-      <div class="sim-view"><canvas id="cv-board"></canvas></div>
+      <div class="sim-view"><canvas id="cv-board"></canvas><canvas id="cv-pc3d" style="display:none"></canvas></div>
       <div class="sim-controls">
-        <div class="ctrl" style="grid-column:1/-1"><span>미션 (예산이 정해진다)</span><div class="seg" id="b-mission"><button data-value="0" class="on">사무용 PC</button><button data-value="1">게이밍 PC</button><button data-value="2">영상 편집</button><button data-value="3">AI 실험</button><button data-value="4">자유 설계</button></div></div>
+        <div class="ctrl"><span>보기</span><div class="seg" id="b-view"><button data-value="2d" class="on">배선도</button><button data-value="3d">3D 모형</button></div></div>
+        <div class="ctrl" style="grid-column:span 2"><span>미션 (예산이 정해진다)</span><div class="seg" id="b-mission"><button data-value="0" class="on">사무용 PC</button><button data-value="1">게이밍 PC</button><button data-value="2">영상 편집</button><button data-value="3">AI 실험</button><button data-value="4">자유 설계</button></div></div>
         <div class="ctrl"><span>CPU</span><div class="seg" id="b-cpu"><button data-value="0" class="on">보급 4코어</button><button data-value="1">중급 8코어</button><button data-value="2">고급 16코어</button></div></div>
         <div class="ctrl"><span>RAM</span><div class="seg" id="b-ram"><button data-value="0" class="on">8 GB</button><button data-value="1">16 GB</button><button data-value="2">32 GB</button><button data-value="3">64 GB</button></div></div>
         <div class="ctrl"><span>저장장치</span><div class="seg" id="b-ssd"><button data-value="0" class="on">HDD</button><button data-value="1">SATA SSD</button><button data-value="2">NVMe SSD</button><button data-value="3">고급 NVMe</button></div></div>
@@ -153,7 +154,7 @@
           <rect x="620" y="210" width="160" height="72" rx="10" class="f-acc-soft s-acc"/><text x="700" y="238" text-anchor="middle" class="t" style="font-weight:700">GPU 올리기</text><text x="700" y="262" text-anchor="middle" class="t-dim" style="font-size:12px">또는 화질 낮추기 · 12장</text>
         </g>
       </svg>
-      <figcaption><b>그림 18-2.</b> 증상에서 업그레이드까지. 어느 칸도 차 있지 않은데 느리다면 인터넷(10장)이나 프로그램 자체의 문제일 수 있다.</figcaption>
+      <figcaption><b>그림 22-2.</b> 증상에서 업그레이드까지. 어느 칸도 차 있지 않은데 느리다면 인터넷(10장)이나 프로그램 자체의 문제일 수 있다.</figcaption>
     </figure>
     <p>오래된 노트북을 되살리는 가장 효과적인 방법이 대개 “HDD를 SSD로, RAM을 한 단계 더”인 이유도 여기에 있다. 대부분의 일상 작업은 CPU 계산보다 기다림(저장장치)과 자리 부족(메모리) 때문에 느려진다. 반대로 게임이나 영상 작업처럼 계산이 많은 일은 CPU와 GPU의 균형을 봐야 한다.</p>
     <div class="table-wrap"><table>
@@ -305,7 +306,7 @@
       const mark = g ? `<b style="left:${Math.min(99, (g[2] / r.max) * 100)}%"></b>` : "";
       return `<div class="bench-row${g ? " goal" : ""}"><div class="nm">${NAMES[k][0]}<small>${NAMES[k][1]} · ${r.lower ? "짧을수록 좋음" : "클수록 좋음"}</small></div><div class="bar"><i style="width:${frac * 100}%;background:${col}"></i>${mark}</div><div class="val ${good === null ? "" : good ? "ok" : "bad"}">${fmtV(r)}</div><div class="why">${r.why}</div></div>`;
     }).join("");
-    bcv.redraw(); bootReset();
+    bcv.redraw(); if (pc3d) pc3d.redraw(); bootReset();
   }
 
   /* ---------------- motherboard canvas ---------------- */
@@ -334,6 +335,26 @@
     part(gpu, b.gpu.vram ? "GPU" : "GPU 없음", b.gpu.vram ? `${b.gpu.n} · VRAM ${b.gpu.vram} GB` : "CPU 속 내장 그래픽 사용 (RAM을 나눠 씀)", b.gpu.vram ? P.accent2 : P.bg, b.gpu.vram ? "#fff" : null);
     part(ssd, b.ssd.n, b.ssd.n === "HDD" ? "회전 원판 · 탐색 시간" : "플래시 메모리", P.bg);
   }, { aspect: 0.48, minHeight: 250, maxHeight: 330 });
+
+  /* ---------------- 3D model of the build ---------------- */
+  let pc3d = null;
+  const bview = CB.seg("b-view", (v) => { $("cv-board").style.display = v === "2d" ? "" : "none"; $("cv-pc3d").style.display = v === "3d" ? "" : "none"; if (v === "3d") pc3d.redraw(); else bcv.redraw(); });
+  pc3d = CB.scene3d("#cv-pc3d", () => {
+    const P = CB.palette(), b = build(), ci = CPU.indexOf(b.cpu), gi = GPU.indexOf(b.gpu), si = SSD.indexOf(b.ssd), bx = [];
+    bx.push({ id: "board", x: -5, y: 0, z: -4, w: 10, h: 0.22, d: 8, color: CB.isDark() ? "#1d4d3a" : "#2f7a59" });
+    bx.push({ id: "cpu", x: -1.6, y: 0.22, z: -3.2, w: 2, h: 0.18, d: 2, color: P.accent });
+    const ch = [1.0, 1.6, 2.3][ci];
+    bx.push({ id: "cpu", x: -1.8, y: 0.4, z: -3.4, w: 2.4, h: ch, d: 2.4, color: CB.isDark() ? "#6b7385" : "#a3abbb", label: "CPU · " + b.cpu.n });
+    const sticks = b.ram.gb >= 32 ? 4 : 2;
+    for (let i = 0; i < 4; i++) { bx.push({ id: "ram", x: 1.3 + i * 0.5, y: 0.22, z: -3.6, w: 0.22, h: i < sticks ? 1.3 : 0.12, d: 3.2, color: i < sticks ? P.accent2 : (CB.isDark() ? "#2a3142" : "#4a5263"), label: i === 0 ? "RAM " + b.ram.gb + "GB" : null, labelLift: 18 }); }
+    if (b.gpu.vram) { const gw = [0, 4.6, 6.2, 7.6][gi], gh = [0, 0.7, 0.95, 1.25][gi]; bx.push({ id: "gpu", x: -4.4, y: 0.6, z: 0.6, w: gw, h: gh, d: 1.5, color: CB.isDark() ? "#2b3142" : "#3c4354", label: "GPU · " + b.gpu.n }); bx.push({ id: "gpu", x: -4.4, y: 0.22, z: 0.9, w: 3.4, h: 0.38, d: 0.3, color: P.faint }); }
+    else bx.push({ id: "gpu", x: -4.4, y: 0.22, z: 0.9, w: 3.4, h: 0.12, d: 0.3, color: P.faint, label: "GPU 슬롯 (비어 있음)", labelLift: 12 });
+    if (si >= 2) bx.push({ id: "ssd", x: 1.2, y: 0.22, z: 2.6, w: 2.4, h: 0.1, d: 0.6, color: P.ok, label: b.ssd.n, labelLift: 10 });
+    else if (si === 1) bx.push({ id: "ssd", x: 5.6, y: 0, z: 1.0, w: 1.6, h: 0.3, d: 2.4, color: P.ok, label: "SATA SSD" });
+    else bx.push({ id: "ssd", x: 5.6, y: 0, z: 0.4, w: 2.2, h: 0.8, d: 3.2, color: CB.isDark() ? "#565e70" : "#8a92a3", label: "HDD" });
+    bx.push({ id: "psu", x: -8.6, y: 0, z: -1.6, w: 3, h: 1.8, d: 3.2, color: CB.isDark() ? "#30384c" : "#2d3446", label: "파워 " + Math.round(watt(b) * 1.4 / 50) * 50 + "W" });
+    return bx;
+  }, { radius: 9, zoom: 1.7, yaw: -0.5, pitch: 0.7, center: [-0.5, 0.6, 0], hint: "드래그: 회전", aspect: 0.48, minHeight: 250, maxHeight: 330, compactBelow: 0, cyFrac: 0.5 });
 
   /* ---------------- boot animation ---------------- */
   let bt = -1, bplay = false, stepIdx = -1;

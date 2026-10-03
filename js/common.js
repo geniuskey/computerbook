@@ -25,8 +25,12 @@
     { slug: "io",       num: "15", part: "더 깊이",  title: "입출력과 버스",               desc: "장치와 대화하는 법. 폴링·인터럽트·DMA, USB·PCIe 대역폭, 화면이 그려지는 원리와 화면 찢김.", tags: ["하드웨어", "sim"] },
     { slug: "security", num: "16", part: "더 깊이",  title: "보안의 기초",                 desc: "해시와 비밀번호, 무차별 대입, 고전 암호가 깨지는 이유, 버퍼 오버플로, 피싱과 2단계 인증.", tags: ["보안", "sim"] },
     { slug: "ai",       num: "17", part: "더 깊이",  title: "AI는 어떻게 계산하나",        desc: "인공 뉴런과 학습, 경사 하강, 신경망과 행렬, 다음 단어 예측, 모델 크기와 GPU 메모리.", tags: ["AI", "sim"] },
-    { slug: "build",    num: "18", part: "실습",     title: "나만의 컴퓨터 만들기",        desc: "예산 안에서 부품을 골라 조립하고, 부팅·게임·영상 편집·AI 작업을 돌려 병목을 찾는 미션 놀이터.", tags: ["실습", "sim"] },
-    { slug: "glossary", num: "19", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 199개를 검색하고, 35문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
+    { slug: "soc",      num: "18", part: "더 깊이",  title: "손안의 컴퓨터: 스마트폰과 SoC", desc: "칩 하나에 담긴 컴퓨터. SoC를 3D로 분해하고, 배터리 시간과 발열·쓰로틀링, 전용 회로가 전기를 아끼는 이유를 실험한다.", tags: ["하드웨어", "sim", "3D"] },
+    { slug: "algo",     num: "19", part: "더 깊이",  title: "데이터와 알고리즘",           desc: "같은 문제도 푸는 방법에 따라 수백만 배 차이. 찾기와 정렬, 해시 테이블, 빅오 감각, 길 찾기를 직접 돌려 본다.", tags: ["소프트웨어", "sim"] },
+    { slug: "cloud",    num: "20", part: "더 깊이",  title: "클라우드와 데이터센터",       desc: "내 사진은 어디에 저장될까. 데이터센터를 3D로 둘러보고, 자동 확장, 가상화, 복제와 장애 대비, 전기와 냉각을 살펴본다.", tags: ["네트워크", "sim", "3D"] },
+    { slug: "history",  num: "21", part: "더 깊이",  title: "컴퓨터의 역사",               desc: "톱니바퀴 계산기에서 AI 칩까지. 무어의 법칙을 그래프로 따라가고, 타임머신 계산기로 옛 컴퓨터와 오늘의 차이를 체감한다.", tags: ["역사", "sim"] },
+    { slug: "build",    num: "22", part: "실습",     title: "나만의 컴퓨터 만들기",        desc: "예산 안에서 부품을 골라 조립하고, 부팅·게임·영상 편집·AI 작업을 돌려 병목을 찾는 미션 놀이터.", tags: ["실습", "sim"] },
+    { slug: "glossary", num: "23", part: "종합",     title: "용어집 & 종합 퀴즈",          desc: "핵심 용어 232개를 검색하고, 43문항 종합 퀴즈로 배운 내용을 점검하자.", tags: ["정리"] },
   ];
 
   const CB = (window.CB = {});
@@ -245,6 +249,111 @@
       stop() { running = false; },
       get running() { return running; },
       toggle() { running ? (running = false) : ((running = true), kick()); return running; },
+    };
+  };
+
+  /* ------------------------------------------------------------ 작은 3D 장면 (상자만, 라이브러리 없음) */
+  /**
+   * const sc = CB.scene3d("#cv", () => boxes, { yaw, pitch, radius, height, autoRotate, onPick(id), onHover(id) })
+   *   box = { id, x, y, z, w, h, d, color, alpha, label, sub }  (x 오른쪽, y 위, z 앞쪽 · x,y,z는 최소 모서리)
+   *   드래그로 회전, 클릭으로 선택. sc.redraw(), sc.setView(yaw, pitch), sc.selected
+   */
+  CB.scene3d = function (canvas, getBoxes, opts = {}) {
+    if (typeof canvas === "string") canvas = document.querySelector(canvas);
+    const st = { yaw: opts.yaw == null ? -0.65 : opts.yaw, pitch: opts.pitch == null ? 0.5 : opts.pitch, hover: null, selected: opts.selected || null, faces: [], touched: false };
+    const rgbCache = {};
+    const rgb = (ctx, c) => {
+      if (rgbCache[c]) return rgbCache[c];
+      ctx.fillStyle = "#000"; ctx.fillStyle = c; const s = ctx.fillStyle;
+      let r = 0, g = 0, b = 0;
+      if (s[0] === "#") { r = parseInt(s.slice(1, 3), 16); g = parseInt(s.slice(3, 5), 16); b = parseInt(s.slice(5, 7), 16); }
+      else { const m = s.match(/[\d.]+/g) || [0, 0, 0]; r = +m[0]; g = +m[1]; b = +m[2]; }
+      return (rgbCache[c] = [r, g, b]);
+    };
+    CB.onTheme(() => { for (const k in rgbCache) delete rgbCache[k]; });
+    const view = CB.canvas(canvas, (ctx, w, h) => {
+      const P = CB.palette(), boxes = getBoxes() || [];
+      const R = opts.radius || 10, D = R * 3.4, f = Math.min(w, h * 1.25) * 1.35 * (opts.zoom || 1);
+      const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+      const c0 = opts.center || [0, 0, 0];
+      const tr = (x, y, z) => { x -= c0[0]; y -= c0[1]; z -= c0[2]; const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp; return [x1, y2, z2]; };
+      const pr = (p) => { const s = f / (D - p[2]); return [w / 2 + p[0] * s, h * (opts.cyFrac || 0.55) - p[1] * s]; };
+      const L = [-0.45, 0.75, 0.5]; const ln = Math.hypot(...L); L[0] /= ln; L[1] /= ln; L[2] /= ln;
+      const faces = [];
+      boxes.forEach((b) => {
+        const X = [b.x, b.x + b.w], Y = [b.y, b.y + b.h], Z = [b.z, b.z + b.d];
+        const v = []; for (let i = 0; i < 8; i++) v.push(tr(X[i & 1], Y[(i >> 1) & 1], Z[(i >> 2) & 1]));
+        const F = [[0, 2, 6, 4, [-1, 0, 0]], [1, 5, 7, 3, [1, 0, 0]], [0, 4, 5, 1, [0, -1, 0]], [2, 3, 7, 6, [0, 1, 0]], [0, 1, 3, 2, [0, 0, -1]], [4, 6, 7, 5, [0, 0, 1]]];
+        F.forEach(([a, bq, c, d, n]) => {
+          const nn = tr(n[0] + c0[0], n[1] + c0[1], n[2] + c0[2]); // 방향만 필요
+          const ctr = [(v[a][0] + v[c][0]) / 2, (v[a][1] + v[c][1]) / 2, (v[a][2] + v[c][2]) / 2];
+          const toCam = [-ctr[0], -ctr[1], D - ctr[2]];
+          if (nn[0] * toCam[0] + nn[1] * toCam[1] + nn[2] * toCam[2] <= 0) return;
+          const lit = 0.62 + 0.38 * Math.max(0, nn[0] * L[0] + nn[1] * L[1] + nn[2] * L[2]);
+          faces.push({ b, pts: [v[a], v[bq], v[c], v[d]].map(pr), depth: Math.hypot(toCam[0], toCam[1], toCam[2]), lit, top: n[1] === 1 });
+        });
+      });
+      faces.sort((p, q) => q.depth - p.depth);
+      st.faces = faces;
+      const hl = st.hover || st.selected;
+      faces.forEach((fc) => {
+        const [r, g, bb] = rgb(ctx, fc.b.color || P.surface);
+        const k = fc.lit * (fc.b.id && fc.b.id === hl ? 1.12 : 1);
+        ctx.beginPath(); fc.pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath();
+        ctx.globalAlpha = fc.b.alpha == null ? 1 : fc.b.alpha;
+        ctx.fillStyle = `rgb(${Math.min(255, r * k) | 0},${Math.min(255, g * k) | 0},${Math.min(255, bb * k) | 0})`; ctx.fill();
+        ctx.strokeStyle = fc.b.id && fc.b.id === hl ? P.text : "rgba(0,0,0,.18)"; ctx.lineWidth = fc.b.id && fc.b.id === hl ? 1.6 : 0.7; ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+      // labels (앞쪽이 위에 오도록)
+      const compact = opts.compactBelow && w < opts.compactBelow;
+      const labs = boxes.filter((b) => b.label && (!compact || b.labelAlways || (b.id && b.id === hl))).map((b) => { const p = tr(b.x + b.w / 2, b.y + b.h, b.z + b.d / 2); return { b, p: pr(p), z: p[2] }; }).sort((a, c) => a.z - c.z);
+      ctx.font = "600 12px " + CB.font();
+      labs.forEach(({ b, p }) => {
+        const tw = ctx.measureText(b.label).width + 12, y = p[1] - (b.labelLift || 14);
+        CB.rrect(ctx, p[0] - tw / 2, y - 10, tw, 20, 6); ctx.fillStyle = b.id === hl ? P.accent : "rgba(15,20,35,.72)"; ctx.fill();
+        CB.text(ctx, b.label, p[0], y, { align: "center", size: 12, bold: true, color: "#fff" }); ctx.font = "600 12px " + CB.font();
+      });
+      if (opts.hint && !st.touched) CB.text(ctx, opts.hint, w - 10, h - 12, { align: "right", size: 11.5, color: P.faint });
+      if (opts.overlay) opts.overlay(ctx, w, h);
+    }, { height: opts.height, aspect: opts.aspect || 0.62, minHeight: opts.minHeight || 260, maxHeight: opts.maxHeight || 460 });
+    const pick = (mx, my) => {
+      for (let i = st.faces.length - 1; i >= 0; i--) {
+        const p = st.faces[i].pts; let inside = false;
+        for (let a = 0, b = 3; a < 4; b = a++) { if ((p[a][1] > my) !== (p[b][1] > my) && mx < ((p[b][0] - p[a][0]) * (my - p[a][1])) / (p[b][1] - p[a][1]) + p[a][0]) inside = !inside; }
+        if (inside && st.faces[i].b.id) return st.faces[i].b.id;
+      }
+      return null;
+    };
+    canvas.style.touchAction = "pan-y"; canvas.style.cursor = "grab";
+    let drag = null;
+    const pos = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    canvas.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch, moved: false, id: e.pointerId }; });
+    canvas.addEventListener("pointermove", (e) => {
+      if (drag) {
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 4) { if (!drag.moved) { try { canvas.setPointerCapture(drag.id); } catch (er) {} } drag.moved = true; st.touched = true; canvas.style.cursor = "grabbing"; }
+        if (drag.moved) { st.yaw = drag.yaw + dx * 0.009; if (e.pointerType === "mouse") st.pitch = CB.clamp(drag.pitch + dy * 0.006, 0.08, 1.35); view.redraw(); }
+        return;
+      }
+      if (e.pointerType !== "mouse") return;
+      const [mx, my] = pos(e), id = pick(mx, my);
+      if (id !== st.hover) { st.hover = id; canvas.style.cursor = id ? "pointer" : "grab"; view.redraw(); if (opts.onHover) opts.onHover(id); }
+    });
+    const end = (e) => {
+      if (drag && !drag.moved) { const [mx, my] = pos(e); const id = pick(mx, my); st.selected = id; st.touched = true; if (opts.onPick) opts.onPick(id); view.redraw(); }
+      drag = null; canvas.style.cursor = st.hover ? "pointer" : "grab";
+    };
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", () => { drag = null; });
+    canvas.addEventListener("pointerleave", () => { if (!drag && st.hover) { st.hover = null; view.redraw(); } });
+    if (opts.autoRotate !== false) CB.loop(canvas, (dt) => { if (st.touched || drag) return; st.yaw += dt * 0.18; view.redraw(); });
+    return {
+      redraw: () => view.redraw(),
+      setView(yaw, pitch) { if (yaw != null) st.yaw = yaw; if (pitch != null) st.pitch = pitch; view.redraw(); },
+      stop() { st.touched = true; },
+      get selected() { return st.selected; },
+      set selected(v) { st.selected = v; view.redraw(); },
     };
   };
 
