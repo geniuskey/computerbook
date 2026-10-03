@@ -69,5 +69,6 @@
 - `CB.range(id, fmt, onInput)`, `CB.seg(id, onChange)`, `CB.stat(id, html)`
 - 그리기: `CB.rrect`, `CB.box(ctx,x,y,w,h,{fill,stroke,text,color,size,bold,mono,r})`, `CB.arrow`, `CB.text`
 - 숫자: `CB.bin(n,bits)`, `CB.hex(n,digits)`, `CB.bytes(b)`, `CB.time(s)`, `CB.kn(n)`(만·억·조), `CB.fmt`, `CB.si`
+- 3D: `CB.scene3d(canvas, () => boxes, {radius, zoom, yaw, pitch, center, cyFrac, onPick(id), hint, compactBelow})` — 상자 `{id, x, y, z, w, h, d, color, alpha, label}`만으로 그리는 원근 3D. 드래그 회전·클릭 선택, 보일 때만 자동 회전.
 - 진도: `CB.progress.get(slug)`, `.last()`, `.doneCount()`, `.reset()` (localStorage `cb-progress-v1`)
 - 기타: `CB.palette()`, `CB.color(name)`, `CB.isDark()`, `CB.onTheme(cb)`, `CB.rng(seed)`, `CB.clamp/lerp/map`, `CB.CHAPTERS`
