@@ -1,0 +1,10 @@
+{
+  "id": "computerbook",
+  "title": "ComputerBook",
+  "description": "스위치 하나에서 CPU, 메모리, 운영체제, 네트워크, GPU까지. 장난감 CPU를 한 박자씩 돌리고 패킷을 보내며, 컴퓨터 구조를 배운 적 없어도 이해하도록 썼습니다.",
+  "url": "https://computerbook.euiyun.com/",
+  "repo": "https://github.com/geniuskey/computerbook",
+  "field": "computing",
+  "status": "published",
+  "domain": "computerbook.euiyun.com"
+}
