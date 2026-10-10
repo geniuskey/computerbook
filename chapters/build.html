@@ -137,7 +137,7 @@
   <!-- ============================================================ -->
   <section id="diagnose">
     <h2>내 컴퓨터는 왜 느릴까: 증상으로 원인 찾기</h2>
-    <p>새 부품을 사기 전에, 지금 컴퓨터가 어디서 막히는지부터 보자. 윈도우의 작업 관리자나 맥의 활동 모니터를 열면 CPU, 메모리, 디스크, GPU가 각각 얼마나 바쁜지 보인다. 느릴 때 <b>100% 가까이 찬 칸</b>이 병목이다.</p>
+    <p>새 부품을 사기 전에, 지금 컴퓨터가 어디서 막히는지부터 보자. 윈도우의 작업 관리자나 맥의 활동 모니터를 열면 CPU, 메모리, 디스크, GPU가 각각 얼마나 바쁜지 보인다. 느릴 때 사용률이 높은 자원은 병목의 단서다. 다만 한 스레드가 CPU 코어 하나를 꽉 쓰면 8코어 전체 사용률은 약 12.5%여도 그 코어가 병목일 수 있다. 전체 비율뿐 아니라 코어별 사용률, 디스크 대기와 메모리 압박도 함께 확인하자.</p>
     <figure class="diagram">
       <svg viewBox="0 0 800 300" role="img" aria-label="느린 컴퓨터의 원인을 찾는 순서도">
         <defs><marker id="bd-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
@@ -157,7 +157,7 @@
           <rect x="620" y="210" width="160" height="72" rx="10" class="f-acc-soft s-acc"/><text x="700" y="238" text-anchor="middle" class="t" style="font-weight:700">GPU 올리기</text><text x="700" y="262" text-anchor="middle" class="t-dim" style="font-size:12px">또는 화질 낮추기 · 12장</text>
         </g>
       </svg>
-      <figcaption><b>그림 22-2.</b> 증상에서 업그레이드까지. 어느 칸도 차 있지 않은데 느리다면 인터넷(10장)이나 프로그램 자체의 문제일 수 있다.</figcaption>
+      <figcaption><b>그림 22-2.</b> 증상에서 업그레이드까지. 전체 사용률이 낮아도 CPU 코어 하나, 디스크 지연, 잠금 대기가 병목일 수 있다. 인터넷(10장)이나 프로그램 자체의 문제도 살펴보자.</figcaption>
     </figure>
     <p>오래된 노트북을 되살리는 가장 효과적인 방법이 대개 “HDD를 SSD로, RAM을 한 단계 더”인 이유도 여기에 있다. 대부분의 일상 작업은 CPU 계산보다 기다림(저장장치)과 자리 부족(메모리) 때문에 느려진다. 반대로 게임이나 영상 작업처럼 계산이 많은 일은 CPU와 GPU의 균형을 봐야 한다.</p>
     <div class="table-wrap"><table>
@@ -180,7 +180,7 @@
       <li>전체 속도는 가장 느린 부품, 즉 <b>병목</b>이 정한다. 좋은 조립은 하려는 일에 맞춘 균형이다.</li>
       <li>RAM이 모자라면 저장장치로 옮겨 쓰는 스와핑이 일어나 갑자기 수십 배 느려진다.</li>
       <li>부팅은 <b>펌웨어 → POST → 부트로더 → 커널 → 드라이버 → 로그인</b> 순서로 진행된다.</li>
-      <li>업그레이드 전에 작업 관리자로 어느 칸이 100%인지 확인하자.</li>
+      <li>업그레이드 전에 작업 관리자에서 자원별·코어별 사용률과 기다림을 확인하자.</li>
     </ol>
   </section>
 
@@ -278,7 +278,7 @@
       out.compile = { v: t, unit: "분", lower: true, max: 16, why: io > cpuT * 0.4 ? `병목: 저장장치 — 작은 소스 파일 수만 개를 읽고 쓴다. ${CH("storage", "7장")}` : `병목: CPU 코어 수 — 파일을 코어마다 나눠 동시에 컴파일한다. ${CH("cpu-perf", "5장")}` }; }
     // ai (8B, 8-bit ≈ 8 GB)
     { const model = 8; let v, why;
-      if (b.gpu.vram && model <= b.gpu.vram * 0.9) { v = b.gpu.bw / model; why = `모델이 VRAM에 다 들어갔다. 속도 ≈ VRAM 대역폭 ÷ 모델 크기. ${CH("ai", "17장")}`; }
+      if (b.gpu.vram && model <= b.gpu.vram * 0.9) { v = b.gpu.bw / model; why = `문장 하나를 생성하는 밀집형 모델의 가중치가 VRAM에 다 들어갔다. 가중치 전송 기준 속도 상한 ≈ VRAM 대역폭 ÷ 모델 크기. ${CH("ai", "17장")}`; }
       else if (b.ram.gb >= model + 4) { v = 60 / model; why = `${b.gpu.vram ? `VRAM ${b.gpu.vram} GB에 8 GB 모델이 여유 있게 들어가지 않아` : "GPU 메모리가 없어"} RAM과 CPU로 돌린다. ${CH("ai", "17장")}`; }
       else { v = 0.4; why = `병목: RAM — 모델(8 GB)과 운영체제가 함께 들어갈 자리가 없어 스와핑. ${CH("vm", "9장")}`; }
       out.ai = { v, unit: "토큰/초", lower: false, max: 140, why }; }

@@ -177,7 +177,7 @@
   <section id="size">
     <h2>모델 크기, 메모리, 그리고 속도</h2>
     <p>“80억(8B) 매개변수 모델”이라는 말은 가중치 숫자가 80억 개라는 뜻이다. 숫자 하나를 16비트(2바이트)로 저장하면 모델 크기는 80억 × 2 = 16 GB다. 추론하려면 이 숫자들이 전부 메모리에 올라와 있어야 한다. 6장에서 본 대로 RAM(조리대)에 없으면 SSD(창고)까지 다녀와야 하니 매우 느려진다.</p>
-    <p>더 중요한 사실이 있다. 언어 모델은 <b>토큰 하나를 만들 때마다 가중치 전체를 한 번씩 읽는다</b>. 그래서 생성 속도는 계산 능력보다 메모리 대역폭에 크게 좌우된다. 대략 <code>초당 토큰 ≈ 메모리 대역폭 ÷ 모델 크기</code>다. 숫자를 8비트나 4비트로 줄여 저장하는 <span class="term">양자화</span><span class="en">(quantization)</span>가 널리 쓰이는 이유다. 정확도는 조금 잃지만 크기가 줄고 속도는 빨라진다.</p>
+    <p>아래 모형은 밀집형(dense) 모델로 문장 하나를 한 토큰씩 생성하며 가중치 읽기가 속도를 제한하는 경우다. 이때는 토큰마다 대체로 <b>가중치 전체를 한 번씩 읽는다</b>. MoE 모델은 선택한 전문가만 읽고, 여러 문장을 함께 처리하면 가중치 읽기를 공유하므로 같은 식을 그대로 적용할 수 없다. 가중치 전송만 고려한 이론적 상한은 <code>초당 토큰 ≈ 메모리 대역폭 ÷ 모델 크기</code>다. 실제 속도는 계산, KV 캐시 읽기와 장치 간 통신 때문에 낮아질 수 있다. 숫자를 8비트나 4비트로 줄여 저장하는 <span class="term">양자화</span><span class="en">(quantization)</span>가 널리 쓰이는 이유다. 정확도는 조금 잃지만 크기가 줄고 속도는 빨라진다.</p>
     <div class="sim" id="sim-mem">
       <div class="sim-head"><span class="sim-tag">CALCULATOR</span><h3>이 모델이 내 기기에서 돌아갈까</h3></div>
       <div class="sim-view"><canvas id="cv-mem"></canvas></div>
@@ -189,7 +189,7 @@
       <div class="sim-readout">
         <div class="stat"><span class="k">모델 크기</span><span class="v" id="o-mm-size">—</span></div>
         <div class="stat"><span class="k">기기 메모리</span><span class="v" id="o-mm-cap">—</span></div>
-        <div class="stat"><span class="k">예상 생성 속도</span><span class="v" id="o-mm-tps">—</span></div>
+        <div class="stat"><span class="k">가중치 전송 기준 속도 상한</span><span class="v" id="o-mm-tps">—</span></div>
       </div>
       <div class="sim-note">아래쪽 글은 계산된 속도로 실제로 흘러나오는 모습이다(사람이 읽는 속도는 초당 5~10 토큰 정도). 기기 수치는 대표적인 값을 단순화했고, 실제로는 대화 내용을 기억하는 메모리(KV 캐시)와 운영체제 몫이 더 필요하다. 해볼 것: 70B 모델을 16비트로 게임용 GPU에 올려 보고, 4비트로 바꿔 보자. 그다음 같은 모델을 AI용 GPU 여러 대에 나눠 올려 보자.</div>
     </div>
@@ -204,7 +204,7 @@
       <li><b>경사 하강법</b>은 손실이 줄어드는 방향으로 한 걸음씩 가중치를 옮긴다. 학습률이 너무 작으면 느리고, 너무 크면 발산한다.</li>
       <li>신경망 한 층의 계산은 <b>행렬 곱셈</b>이다. 독립적인 곱셈이 매우 많아 GPU·NPU가 잘 맞는다.</li>
       <li>언어 모델은 <b>다음 토큰의 확률</b>을 반복해서 계산한다. 그럴듯함이 사실을 보장하지는 않는다.</li>
-      <li>모델 크기 = 매개변수 수 × 숫자 하나의 크기. 생성 속도는 대략 <b>메모리 대역폭 ÷ 모델 크기</b>다.</li>
+      <li>모델 크기 = 매개변수 수 × 숫자 하나의 크기. 문장 하나를 생성하는 밀집형 모델의 가중치 전송 기준 속도 상한은 대략 <b>메모리 대역폭 ÷ 모델 크기</b>다.</li>
     </ol>
   </section>
 
@@ -428,7 +428,7 @@
     const m = mm(); shown = 0; tacc = 0;
     CB.stat("o-mm-size", m.size >= 1 ? m.size.toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + " GB" : Math.round(m.size * 1000) + " MB");
     CB.stat("o-mm-cap", m.d.mem + " GB · " + (m.d.bw >= 1000 ? (m.d.bw / 1000).toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + " TB/s" : m.d.bw + " GB/s"));
-    CB.stat("o-mm-tps", m.fits ? `<span style="color:${m.tps < 5 ? "var(--warn)" : "var(--ok)"}">초당 약 ${m.tps >= 100 ? Math.round(m.tps).toLocaleString("ko-KR") : m.tps.toFixed(1)} 토큰</span>` : "<span style='color:var(--bad)'>메모리 부족</span>");
+    CB.stat("o-mm-tps", m.fits ? `<span style="color:${m.tps < 5 ? "var(--warn)" : "var(--ok)"}">초당 최대 약 ${m.tps >= 100 ? Math.round(m.tps).toLocaleString("ko-KR") : m.tps.toFixed(1)} 토큰</span>` : "<span style='color:var(--bad)'>메모리 부족</span>");
     mcv.redraw();
   }
   const mcv = CB.canvas("#cv-mem", (ctx, w, h) => {

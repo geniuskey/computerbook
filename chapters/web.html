@@ -173,29 +173,29 @@
       </div>
       <div class="sim-note">HTTPS에서도 도청자는 “어느 사이트(서버 IP)와 통신하는지”, “데이터 양”은 알 수 있다. 하지만 어떤 페이지를 보고 무엇을 입력했는지는 알 수 없다. 여기서 보이는 암호문은 설명을 위해 흉내 낸 것이다.</div>
     </div>
-    <div class="callout analogy"><strong>열린 자물쇠 보내기</strong><p>처음 만난 두 사람이 비밀 열쇠를 어떻게 안전하게 나눠 가질까? 서버가 <b>열린 자물쇠</b>(공개 키)를 누구나 가져갈 수 있게 뿌린다. 브라우저는 새로 만든 비밀 열쇠를 상자에 넣고 그 자물쇠로 “찰칵” 잠가 보낸다. 잠근 자물쇠는 서버만 가진 <b>진짜 열쇠</b>(개인 키)로만 열린다. 도청자는 자물쇠도, 잠긴 상자도 보지만 열 수 없다. 이렇게 나눈 비밀 열쇠로 그 뒤의 대화를 빠르게 암호화한다. 이 원리를 <b>공개 키 암호</b>라 한다.</p></div>
+    <div class="callout analogy"><strong>공개 정보로 같은 비밀 만들기</strong><p>TLS 1.3의 대표적인 첫 연결에서는 브라우저와 서버가 각각 일회용 비밀값을 고르고, 그로부터 만든 공개 정보만 교환한다. 각자는 자기 비밀값과 상대의 공개 정보를 계산해 같은 공유 비밀을 얻는다(<b>ECDHE 키 합의</b>). 도청자는 공개 정보를 모두 보아도 공유 비밀을 쉽게 계산할 수 없다. 서버는 인증서와 서명으로 진짜 서버임을 증명하고, 양쪽은 공유 비밀에서 방향별 대칭 키를 만들어 대화를 암호화한다. 비밀 열쇠 자체를 상자에 넣어 보내는 예전 RSA 키 운반과는 다르다.</p></div>
     <figure class="diagram">
       <svg viewBox="0 0 800 300" role="img" aria-label="HTTPS 연결이 비밀 열쇠를 나누는 과정">
         <defs><marker id="tl2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
         <text x="130" y="22" text-anchor="middle" class="t" style="font-weight:700">내 브라우저</text>
         <text x="670" y="22" text-anchor="middle" class="t" style="font-weight:700">은행 서버</text>
         <line x1="130" y1="32" x2="130" y2="290" class="s-axis" stroke-width="3"/><line x1="670" y1="32" x2="670" y2="290" class="s-axis" stroke-width="3"/>
-        <path d="M134 56 L664 76" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="56" text-anchor="middle" class="t-acc">① 안녕하세요, 이런 암호 방식을 쓸 수 있어요</text>
-        <path d="M666 104 L136 124" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="104" text-anchor="middle" class="t-acc">② 인증서 + 열린 자물쇠(공개 키)를 보냅니다</text>
-        <rect x="140" y="138" width="250" height="40" rx="8" class="f-surface"/><text x="150" y="155" class="t-dim">③ 인증서가 진짜인지 확인 (서명 검사)</text><text x="150" y="171" class="t-dim">    → 새 비밀 열쇠를 만든다</text>
-        <path d="M134 196 L664 216" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="196" text-anchor="middle" class="t-acc">④ 비밀 열쇠를 자물쇠로 잠가 보냄 🔒</text>
-        <rect x="420" y="226" width="240" height="26" rx="6" class="f-surface"/><text x="430" y="244" class="t-dim">⑤ 개인 키로 열어 비밀 열쇠를 얻음</text>
-        <rect x="140" y="262" width="520" height="28" rx="8" class="f-acc-soft"/><text x="400" y="281" text-anchor="middle" class="t" style="font-weight:700">⑥ 이제부터 모든 대화를 같은 비밀 열쇠로 빠르게 암호화</text>
+        <path d="M134 56 L664 76" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="56" text-anchor="middle" class="t-acc">① 지원 방식 + 브라우저의 일회용 공개 정보</text>
+        <path d="M666 104 L136 124" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="104" text-anchor="middle" class="t-acc">② 서버 공개 정보 + 인증서·서명·완료 확인</text>
+        <rect x="140" y="138" width="250" height="40" rx="8" class="f-surface"/><text x="150" y="155" class="t-dim">③ 인증서와 교환 내용의 서명 확인</text><text x="150" y="171" class="t-dim">    → 공유 비밀에서 통신 키 도출</text>
+        <path d="M134 196 L664 216" class="s-acc" marker-end="url(#tl2)"/><text x="400" y="196" text-anchor="middle" class="t-acc">④ 완료 확인 + 암호화한 요청</text>
+        <rect x="420" y="226" width="240" height="26" rx="6" class="f-surface"/><text x="430" y="244" class="t-dim">⑤ 완료 확인 검사 후 요청 처리</text>
+        <rect x="140" y="262" width="520" height="28" rx="8" class="f-acc-soft"/><text x="400" y="281" text-anchor="middle" class="t" style="font-weight:700">⑥ 방향별 대칭 키로 대화를 빠르게 암호화</text>
       </svg>
-      <figcaption><b>그림 11-3.</b> HTTPS(TLS)의 열쇠 나누기를 단순화한 모습. 느린 공개 키 암호는 처음에 비밀 열쇠를 안전하게 건네는 데만 쓰고, 그 뒤는 빠른 대칭 키 암호로 대화한다. 요즘 방식은 이 과정을 왕복 한 번 안에 끝낸다.</figcaption>
+      <figcaption><b>그림 11-3.</b> 인증서 기반 TLS 1.3 첫 연결의 대표적인 ECDHE 교환. 추가 협상이 없다면 TCP 연결 이후 한 번의 왕복으로 브라우저가 서버를 확인하고 암호화한 요청을 보낼 수 있다. 재개 연결과 PSK 방식은 흐름이 다르다.</figcaption>
     </figure>
-    <p>그런데 도청자가 “내가 그 서버야”라며 가짜 자물쇠를 보내면 어떡할까? 그래서 서버는 믿을 수 있는 기관(인증 기관)이 “이 자물쇠는 진짜 example.com의 것”이라고 서명한 <span class="term">인증서</span>를 함께 보낸다. 브라우저 주소창의 자물쇠 아이콘은 “암호화되어 있고, 인증서가 유효하다”는 뜻이다. 사이트가 착한 곳이라는 보증은 아니다. 피싱 사이트도 자물쇠를 달 수 있으니 주소를 꼭 확인하자.</p>
+    <p>그런데 도청자가 “내가 그 서버야”라며 가짜 공개 정보를 보내면 어떡할까? 서버는 인증 기관이 “이 인증용 공개 키는 example.com의 것”이라고 서명한 <span class="term">인증서</span>와, 그에 대응하는 개인 키로 교환 내용에 서명한 증명을 보낸다. 브라우저 주소창의 보안 표시는 “암호화되어 있고, 인증서가 유효하다”는 뜻이다. 사이트가 착한 곳이라는 보증은 아니다. 피싱 사이트도 자기 도메인의 인증서를 받을 수 있으니 주소를 꼭 확인하자.</p>
   </section>
 
   <!-- ============================================================ -->
   <section id="http">
     <h2>HTTP: 요청하고 응답받기</h2>
-    <p>연결과 암호화가 준비되면 드디어 페이지를 요청한다. 웹의 대화 규칙이 <span class="term">HTTP</span><span class="en">(HyperText Transfer Protocol)</span>다. 놀랍게도 그 내용은 사람이 읽을 수 있는 글자다.</p>
+    <p>연결과 암호화가 준비되면 드디어 페이지를 요청한다. 웹의 대화 규칙이 <span class="term">HTTP</span><span class="en">(HyperText Transfer Protocol)</span>다. 아래 HTTP/1.1 예시는 사람이 읽을 수 있는 텍스트 형식이다. HTTP/2와 HTTP/3는 같은 요청·응답 의미를 바이너리 프레임으로 실어 나른다.</p>
     <div class="codebox"><span class="c">// 브라우저 → 서버 (요청)</span>
 <span class="k">GET</span> /search?q=노트북 HTTP/1.1
 Host: shop.example.com
@@ -273,7 +273,7 @@ Cache-Control: max-age=600
       <li>페이지 로딩은 <b>DNS → TCP 연결 → TLS(암호화) → HTTP 요청 → 응답 → 렌더링</b>의 순서로 진행된다. 왕복 지연이 전체 시간을 크게 좌우한다.</li>
       <li><b>DNS</b>는 루트 → 최상위 도메인 → 해당 도메인 서버 순으로 물어 이름을 IP 주소로 바꾸고, 결과를 캐시한다.</li>
       <li><b>HTTPS</b>는 공개 키 암호로 비밀 열쇠를 나눠 대화를 암호화하고, 인증서로 서버가 진짜인지 확인한다.</li>
-      <li><b>HTTP</b>는 사람이 읽을 수 있는 요청/응답 형식이며, 상태 코드로 결과를 알린다.</li>
+      <li><b>HTTP</b>는 요청/응답 규칙이며, 상태 코드로 결과를 알린다. HTTP/1.1은 텍스트, HTTP/2·3은 바이너리 프레임을 쓴다.</li>
       <li>브라우저는 HTML을 <b>DOM 트리</b>로 만들고 스타일 계산, 레이아웃, 페인트를 거쳐 화면을 그린다.</li>
     </ol>
   </section>

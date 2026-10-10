@@ -166,7 +166,7 @@
   <section id="text">
     <h2>글자를 숫자로: ASCII와 유니코드</h2>
     <p>컴퓨터에게 글자 ‘A’를 저장하라고 하면 무엇을 저장할까? 답은 <strong>약속된 번호</strong>다. 1960년대 미국에서 영어 알파벳, 숫자, 기호에 0~127번을 붙인 약속을 정했는데 이를 <span class="term">ASCII</span><span class="en">(아스키)</span>라 한다. ‘A’는 65번, ‘a’는 97번, 숫자 ‘0’은 48번이다.</p>
-    <p>하지만 128칸으로는 한글, 한자, 아랍 문자, 이모지를 담을 수 없다. 그래서 전 세계 모든 문자에 고유 번호를 붙인 <span class="term">유니코드</span><span class="en">(Unicode)</span>가 만들어졌다. ‘가’는 44032번(16진수 AC00), ‘😀’는 128512번이다. 유니코드 번호를 실제 바이트로 저장하는 방법 중 가장 널리 쓰이는 것이 <span class="term">UTF-8</span>이다. 영어는 1바이트, 한글은 3바이트, 이모지는 4바이트를 쓴다.</p>
+    <p>하지만 128칸으로는 한글, 한자, 아랍 문자, 이모지를 담을 수 없다. 그래서 전 세계 모든 문자에 고유 번호를 붙인 <span class="term">유니코드</span><span class="en">(Unicode)</span>가 만들어졌다. ‘가’는 44032번(16진수 AC00), ‘😀’는 128512번이다. 유니코드 번호를 실제 바이트로 저장하는 방법 중 가장 널리 쓰이는 것이 <span class="term">UTF-8</span>이다. ASCII 범위의 영어 글자는 1바이트, 완성형 한글 음절은 3바이트, 😀 같은 보충 평면 문자 하나는 4바이트다. 화면의 이모지 하나가 여러 코드 포인트를 묶은 형태라면 4바이트보다 길 수 있다(예: ❤️는 6바이트).</p>
     <figure class="diagram">
       <svg viewBox="0 0 800 280" role="img" aria-label="한글 '가'가 UTF-8 세 바이트로 바뀌는 과정">
         <text x="20" y="28" class="t" style="font-weight:700">‘가’의 유니코드 번호 AC00 (16비트)</text>
@@ -201,7 +201,7 @@
       </div>
       <div class="byte-row" id="bytes"></div>
       <div class="sim-readout">
-        <div class="stat"><span class="k">글자 수</span><span class="v" id="o-chars">—</span></div>
+        <div class="stat"><span class="k">코드 포인트 수</span><span class="v" id="o-chars">—</span></div>
         <div class="stat"><span class="k">바이트 수</span><span class="v" id="o-bytes">—</span></div>
         <div class="stat"><span class="k">비트 수</span><span class="v" id="o-bits">—</span></div>
       </div>

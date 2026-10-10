@@ -105,7 +105,7 @@
         <label class="ctrl"><span>데이터 개수 n <output id="bo-n-out"></output></span><input type="range" id="bo-n" min="1" max="9" step="0.1" value="6"></label>
       </div>
       <div class="sim-readout" id="bo-read"></div>
-      <div class="sim-note">가로축과 세로축 모두 로그 눈금이다(한 칸 = 10배). 해볼 것: n을 100만으로 두고 O(n²)과 O(n log n)의 시간을 비교해 보자. 같은 컴퓨터에서 몇 분 대 몇 밀리초다. O(2ⁿ)은 n이 60만 넘어도 우주의 나이보다 오래 걸린다. 16장의 무차별 대입이 바로 이런 모양이다.</div>
+      <div class="sim-note">가로축과 세로축 모두 로그 눈금이다(한 칸 = 10배). 해볼 것: n을 100만으로 두고 O(n²)과 O(n log n)의 시간을 비교해 보자. 같은 컴퓨터에서 몇 분 대 몇 밀리초다. 초당 10억 단계라는 이 가정에서 O(2ⁿ)은 n = 60이면 약 37년, n = 90이면 우주의 나이보다 오래 걸린다. 16장의 무차별 대입이 바로 이런 모양이다.</div>
     </div>
     <div class="whatif quiz-q"><div class="wi-head">예측해 보기</div><p class="wi-q">버블 정렬(O(n²))로 1만 명의 성적을 정렬하는 데 1초가 걸렸다. 10만 명이면 얼마나 걸릴까?</p><p class="wi-hint">데이터가 10배가 되면 n²은 몇 배가 될까?</p><div class="opts">
       <button class="opt">10초</button><button class="opt">20초</button><button class="opt" data-correct>약 100초</button><button class="opt">1초 그대로</button>
@@ -310,7 +310,7 @@
     ["O(1)", (n) => 1, "faint"], ["O(log n)", (n) => Math.log2(Math.max(2, n)), "ok"], ["O(n)", (n) => n, "accent2"],
     ["O(n log n)", (n) => n * Math.log2(Math.max(2, n)), "accent"], ["O(n²)", (n) => n * n, "warn"], ["O(2ⁿ)", (n) => Math.pow(2, Math.min(n, 1500)), "bad"],
   ];
-  const fmtT = (s) => (!isFinite(s) || s > 4.35e17 * 10 ? "우주 나이보다 김" : s >= 3.15e7 * 100 ? (s / 3.15e7).toExponential(1).replace("e+", "×10^") + "년" : s >= 3.15e7 ? (s / 3.15e7).toFixed(1) + "년" : s >= 86400 ? (s / 86400).toFixed(1) + "일" : s >= 3600 ? (s / 3600).toFixed(1) + "시간" : s >= 60 ? (s / 60).toFixed(1) + "분" : s >= 1 ? s.toFixed(1) + "초" : s >= 1e-3 ? (s * 1e3).toFixed(1) + " ms" : s >= 1e-6 ? (s * 1e6).toFixed(1) + " µs" : (s * 1e9).toFixed(0) + " ns");
+  const fmtT = (s) => (!isFinite(s) || s > 4.35e17 ? "우주 나이보다 김" : s >= 3.15e7 * 100 ? (s / 3.15e7).toExponential(1).replace("e+", "×10^") + "년" : s >= 3.15e7 ? (s / 3.15e7).toFixed(1) + "년" : s >= 86400 ? (s / 86400).toFixed(1) + "일" : s >= 3600 ? (s / 3600).toFixed(1) + "시간" : s >= 60 ? (s / 60).toFixed(1) + "분" : s >= 1 ? s.toFixed(1) + "초" : s >= 1e-3 ? (s * 1e3).toFixed(1) + " ms" : s >= 1e-6 ? (s * 1e6).toFixed(1) + " µs" : (s * 1e9).toFixed(0) + " ns");
   const bn = CB.range("bo-n", (v) => CB.kn(Math.round(Math.pow(10, v))) + "개", () => { bcv.redraw(); boRead(); });
   $("bo-read").innerHTML = CLS.map(([nm], i) => `<div class="stat"><span class="k">${nm}</span><span class="v" id="o-bo-${i}" style="font-size:15px">—</span></div>`).join("");
   function boRead() { const n = Math.pow(10, bn()); CLS.forEach(([nm, f], i) => CB.stat("o-bo-" + i, fmtT(f(n) / 1e9))); }

@@ -161,7 +161,7 @@
         <div class="stat"><span class="k">실제 플래시 쓰기</span><span class="v" id="o-fw">0</span></div>
         <div class="stat"><span class="k">블록 지우기 횟수</span><span class="v" id="o-er">0</span></div>
       </div>
-      <div class="sim-note">파랑 = 유효한 데이터, 빨간 취소선 = 무효(옛 버전), 회색 = 빈 페이지. 빈 페이지가 바닥나면 SSD가 알아서 <b>가비지 컬렉션</b>을 한다: 무효가 가장 많은 블록의 유효 데이터를 옮기고 블록을 통째로 지운다. 옮겨 쓰는 만큼 “실제 쓰기”가 요청보다 많아진다. 플래시 셀은 수천 번 지우면 닳기 때문에 SSD는 지우기를 여러 블록에 고르게 나눈다(웨어 레벨링).</div>
+      <div class="sim-note">파랑 = 유효한 데이터, 빨간 취소선 = 무효(옛 버전), 회색 = 빈 페이지. 빈 페이지가 줄어들면 복사용 여유 공간을 남겨 두고 SSD가 알아서 <b>가비지 컬렉션</b>을 한다: 무효가 가장 많은 블록의 유효 데이터를 옮기고 블록을 통째로 지운다. 옮겨 쓰는 만큼 “실제 쓰기”가 요청보다 많아진다. 플래시 셀은 수천 번 지우면 닳기 때문에 SSD는 지우기를 여러 블록에 고르게 나눈다(웨어 레벨링).</div>
     </div>
     <p>이런 복잡한 관리는 SSD 안에 들어 있는 작은 컴퓨터(컨트롤러)가 혼자 처리한다. 운영체제는 “5번 블록에 써 줘”라고만 말하고, 컨트롤러가 실제로는 빈 페이지 어딘가에 쓰고 그 위치를 자기만의 표에 적어 둔다. 9장에서 배울 가상 메모리와 놀랄 만큼 닮은 아이디어다.</p>
     <figure class="diagram">
@@ -337,27 +337,24 @@
   function freePage() { for (let b = 0; b < NB; b++) for (let p = 0; p < NP; p++) if (blocks[b].pages[p].s === "free") return [b, p]; return null; }
   function gc() {
     // choose block with most invalid pages (with tie: least erased)
-    let best = -1, bi = -1;
+    let best = -Infinity, bi = -1;
     blocks.forEach((B, i) => { const inv = B.pages.filter((p) => p.s === "invalid").length; const score = inv * 100 - B.erase; if (inv > 0 && score > best) { best = score; bi = i; } });
-    if (bi < 0) return -1;
-    const valid = blocks[bi].pages.filter((p) => p.s === "valid");
-    blocks[bi].pages.forEach((p) => { if (p.s === "valid") p.s = "moving"; });
-    // temporarily mark as invalid so freePage skips; copy valid to others
-    const saved = valid.map((p) => p.f);
-    blocks[bi].pages = Array.from({ length: NP }, () => ({ s: "invalid", f: "" }));
-    saved.forEach((name) => { const fp = freePage(); if (!fp) return; blocks[fp[0]].pages[fp[1]] = { s: "valid", f: name }; where[name[0]] = fp; fw++; });
+    if (bi < 0) throw new Error("No invalid pages to collect");
+    const saved = blocks[bi].pages.filter((p) => p.s === "valid").map((p) => p.f);
+    const destinations = [];
+    blocks.forEach((B, b) => { if (b !== bi) B.pages.forEach((p, i) => { if (p.s === "free") destinations.push([b, i]); }); });
+    if (destinations.length < saved.length) throw new Error("Insufficient erased pages for relocation");
+    // All valid data must be copied outside the victim block before erasure.
+    saved.forEach((name, i) => { const fp = destinations[i]; blocks[fp[0]].pages[fp[1]] = { s: "valid", f: name }; where[name[0]] = fp; fw++; });
     blocks[bi].pages = Array.from({ length: NP }, () => ({ s: "free", f: "" }));
-    // move again to fill? (valid moved before erase; if no room, place into this erased block)
     blocks[bi].erase++; er++;
-    // relocate any lost (if not placed) into erased block
-    saved.forEach((name) => { const [b, p] = where[name[0]]; if (blocks[b].pages[p].f !== name) { const fp = freePage(); blocks[fp[0]].pages[fp[1]] = { s: "valid", f: name }; where[name[0]] = fp; fw++; } });
     return { bi, moved: saved.length };
   }
   function modify(f) {
     uw++;
     let msg = "";
     let fp = freePage();
-    if (!fp) { const g = gc(); msg = `빈 페이지가 없다 → <b>가비지 컬렉션</b>: 블록 ${g.bi}의 유효 페이지 ${g.moved}개를 옮겨 적고 블록 ${g.bi}를 통째로 지웠다. `; fp = freePage(); }
+    if (blocks.reduce((n, B) => n + B.pages.filter((p) => p.s === "free").length, 0) <= NP - 1) { const g = gc(); msg = `복사용 여유 페이지를 남겨 둔다 → <b>가비지 컬렉션</b>: 블록 ${g.bi}의 유효 페이지 ${g.moved}개를 옮겨 적고 블록 ${g.bi}를 통째로 지웠다. `; fp = freePage(); }
     const [ob, op] = where[f]; blocks[ob].pages[op].s = "invalid";
     ver[f]++; blocks[fp[0]].pages[fp[1]] = { s: "valid", f: f + ver[f] }; where[f] = fp; fw++;
     msg += `${f}를 수정: 새 버전 ${f}${ver[f]}을(를) 블록 ${fp[0]}의 빈 페이지에 쓰고, 옛 버전은 무효로 표시했다.`;

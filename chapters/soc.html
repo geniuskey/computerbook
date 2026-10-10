@@ -122,7 +122,7 @@
   <!-- ============================================================ -->
   <section id="thermal">
     <h2>뜨거워지면 느려진다</h2>
-    <p>전기는 결국 열이 된다. 스마트폰에는 팬이 없고, 손에 쥐는 물건이라 표면이 40°C를 넘으면 불쾌하거나 위험하다. 그래서 칩은 온도를 재다가 너무 뜨거워지면 스스로 클럭과 전압을 낮춘다. 이것이 <span class="term">쓰로틀링</span><span class="en">(throttling)</span>이다. 5장에서 본 것처럼 전력은 클럭과 전압에 함께 비례하므로, 클럭을 20%만 낮춰도 전력은 거의 절반으로 준다. 이렇게 상황에 맞춰 전압과 주파수를 바꾸는 기술을 <span class="term">DVFS</span><span class="en">(Dynamic Voltage and Frequency Scaling)</span>라 한다.</p>
+    <p>전기는 결국 열이 된다. 스마트폰에는 팬이 없고, 손에 쥐는 물건이라 표면이 40°C를 넘으면 불쾌하거나 위험하다. 그래서 칩은 온도를 재다가 너무 뜨거워지면 스스로 클럭과 전압을 낮춘다. 이것이 <span class="term">쓰로틀링</span><span class="en">(throttling)</span>이다. 5장에서 본 것처럼 동적 전력은 전압의 제곱 × 클럭에 비례한다. 전압과 클럭을 각각 20% 낮출 수 있다면 동적 전력은 0.8² × 0.8 = 0.512배, 즉 거의 절반이 된다. 전압을 그대로 두면 클럭 20% 감소에 따른 동적 전력 감소도 20%이며, 누설 전력과 화면 등의 전력은 별도로 남는다. 아래 열 모형은 전압도 클럭에 비례해 줄어든다고 가정해 칩 전력을 클럭의 세제곱으로 단순화했다. 이렇게 상황에 맞춰 전압과 주파수를 바꾸는 기술을 <span class="term">DVFS</span><span class="en">(Dynamic Voltage and Frequency Scaling)</span>라 한다.</p>
     <div class="sim" id="sim-heat">
       <div class="sim-head"><span class="sim-tag">SIMULATOR</span><h3>30분 동안 게임을 하면</h3></div>
       <div class="sim-view"><canvas id="cv-heat"></canvas></div>
