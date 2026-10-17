@@ -800,51 +800,6 @@
       }
     }
 
-    // 용어 툴팁: 본문의 .term에 용어집 설명을 붙인다
-    if (main && curSlug !== "glossary" && main.querySelector(".term")) {
-      const bind = () => {
-        const T = window.CB_TERMS, AL = window.CB_TERM_ALIAS || {};
-        if (!T) return;
-        const norm = (x) => x.replace(/\s+/g, "").toLowerCase();
-        const idx = new Map();
-        const put = (k, t) => { k = norm(k); if (!k) return; const l = idx.get(k) || []; if (!l.includes(t)) l.push(t); idx.set(k, l); };
-        T.forEach((t) => { [t[0], t[0].replace(/\(.*?\)/g, ""), t[1], t[1].replace(/\(.*?\)/g, "")].forEach((k) => put(k, t)); t[0].split(/[\/·]/).forEach((k) => put(k, t)); });
-        const find = (txt) => { const a = AL[txt.trim()]; const l = idx.get(norm(a || txt)); if (!l) return null; return l.find((t) => t[3] === curSlug) || l[0]; };
-        const tip = document.createElement("div"); tip.className = "sb-tip"; tip.id = "sb-tip"; tip.setAttribute("role", "tooltip"); body.appendChild(tip);
-        let cur = null, hideT = 0;
-        const esc = (x) => x.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-        const show = (el, t) => {
-          clearTimeout(hideT); cur = el;
-          const c = CHAPTERS.find((x) => x.slug === t[3]);
-          tip.innerHTML = `<div class="tt-h"><b>${esc(t[0])}</b><span>${esc(t[1])}</span></div><p>${esc(t[2])}</p><div class="tt-l">` +
-            (c && c.slug !== curSlug ? `<a href="${href(c.slug)}">${c.num}장 ${esc(c.title)}에서 자세히 →</a>` : "") +
-            `<a href="${href("glossary")}?q=${encodeURIComponent(t[0].replace(/\(.*?\)/g, ""))}">용어집</a></div>`;
-          tip.classList.add("show"); el.setAttribute("aria-describedby", "sb-tip");
-          const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
-          let x = Math.max(12, Math.min(innerWidth - tw - 12, r.left + r.width / 2 - tw / 2));
-          let y = r.top - th - 10; if (y < 70) y = r.bottom + 10;
-          tip.style.left = x + "px"; tip.style.top = y + "px";
-        };
-        const hide = (now) => { clearTimeout(hideT); hideT = setTimeout(() => { tip.classList.remove("show"); if (cur) cur.removeAttribute("aria-describedby"); cur = null; }, now ? 0 : 220); };
-        tip.addEventListener("mouseenter", () => clearTimeout(hideT));
-        tip.addEventListener("mouseleave", () => hide());
-        main.querySelectorAll(".term").forEach((el) => {
-          const t = find(el.textContent); if (!t) return;
-          el.classList.add("has-tip"); el.tabIndex = 0;
-          el.addEventListener("mouseenter", () => show(el, t));
-          el.addEventListener("mouseleave", () => hide());
-          el.addEventListener("focus", () => show(el, t));
-          el.addEventListener("blur", () => hide());
-          el.addEventListener("click", (e) => { e.stopPropagation(); cur === el && tip.classList.contains("show") ? hide(true) : show(el, t); });
-        });
-        document.addEventListener("click", (e) => { if (!tip.contains(e.target)) hide(true); });
-        document.addEventListener("keydown", (e) => { if (e.key === "Escape") hide(true); });
-        addEventListener("scroll", () => { if (cur) hide(true); }, { passive: true });
-      };
-      if (window.CB_TERMS) bind();
-      else { const sc = document.createElement("script"); sc.src = root + "js/terms.js"; sc.onload = bind; document.head.appendChild(sc); }
-    }
-
     // KaTeX
     const renderMath = () => {
       if (window.renderMathInElement) {
@@ -882,4 +837,13 @@
   } else {
     addSimulatorLinks();
   }
+})();
+
+// Series glossary tooltips (same runtime across independently deployed books).
+(function () {
+  const base = new URL(".", document.currentScript.src);
+  window.BOOK_GLOSSARY_CONFIG = { dataUrl: new URL("terms.js", base).href, aliases: "CB_TERM_ALIAS" };
+  const script = document.createElement("script");
+  script.src = new URL("glossary-tooltips.js", base).href;
+  document.head.append(script);
 })();
