@@ -1,56 +1,8 @@
-# ComputerBook — 누구나 읽는 인터랙티브 컴퓨터 교과서
+# ComputerBook
 
-0과 1에서 인공지능까지. 컴퓨터 구조를 배운 적 없는 사람도 CPU, 메모리, 운영체제, 네트워크, GPU, 프로그램 실행 원리를
-**직접 만지며** 이해하도록 만든 한국어 웹 교과서입니다. 23개 챕터, 83개의 시뮬레이터·인터랙티브 차트(3D 모형 포함), 59개의 개념 그림, 21개의 “만약에?” 예측 실험으로 구성됩니다.
+ComputerBook은 [ComputingBooks](https://computing.euiyun.com/) 서가로 옮겨 갔습니다.
 
-[SensorBook](https://github.com/geniuskey/sensorbook)과 같은 구조와 디자인 시스템을 따르는 시리즈입니다.
+- 새 주소: <https://computing.euiyun.com/computer/>
+- 원고와 코드: [geniuskey/computing-books](https://github.com/geniuskey/computing-books) 저장소의 `computer/` 폴더
 
-## 실행
-빌드 과정이 없는 정적 사이트입니다.
-
-```bash
-python3 -m http.server 8000   # → http://localhost:8000
-```
-`index.html`을 브라우저로 바로 열어도 동작합니다. 글꼴만 CDN에서 불러오며, 오프라인이면 시스템 글꼴로 대체됩니다.
-
-## 구성
-| 장 | 파일 | 주제 | 주요 시뮬레이터 |
-|---|---|---|---|
-| 01 | chapters/intro.html | 컴퓨터는 무엇인가 | 메인보드 탐험, 데이터의 여행, 컴퓨터 시간 → 사람 시간 |
-| 02 | chapters/bits.html | 0과 1로 모든 것을 | 잡음 속 신호, 8비트 스위치, UTF-8 변환기, RGB, 픽셀, 샘플링 |
-| 03 | chapters/logic.html | 트랜지스터와 논리 게이트 | 게이트 놀이터, 4비트 덧셈기, SR 래치, 클럭과 카운터 |
-| 04 | chapters/cpu.html | CPU: 명령을 수행하는 두뇌 | 장난감 CPU (어셈블리 직접 작성 가능), 기계어 조립·해독 퍼즐, ADD 한 명령의 미시 단계 |
-| 05 | chapters/cpu-perf.html | 더 빠른 CPU의 비밀 | 파이프라인, 슈퍼스칼라·비순차 실행, 분기 예측기 대결, 전력 계산기, 암달의 법칙 |
-| 06 | chapters/memory.html | 메모리와 캐시 | 메모리 사물함, DRAM 리프레시, 캐시 시뮬레이터, 지역성 |
-| 07 | chapters/storage.html | 저장장치와 파일 | HDD vs SSD 경주, 플래시 쓰기·지우기, 파일 시스템 |
-| 08 | chapters/os.html | 운영체제 | 시스템 콜, CPU 스케줄러, 인터럽트, 경쟁 상태와 잠금 |
-| 09 | chapters/vm.html | 가상 메모리 | 주소 변환기, TLB 실험, 스래싱 체험, 페이지 교체 대결 |
-| 10 | chapters/network.html | 네트워크의 기초 | 패킷, 캡슐화, 라우팅, TCP 재전송, 빛의 속도 |
-| 11 | chapters/web.html | 웹 페이지가 열리기까지 | URL 해부, 로딩 폭포, DNS, HTTPS 도청자 시점, 미니 브라우저 |
-| 12 | chapters/gpu.html | GPU: 수천 개의 작은 일꾼 | CPU vs GPU 경주, 래스터화, 셰이더, 행렬 곱셈 |
-| 13 | chapters/program.html | 프로그램은 어떻게 실행되는가 | 미니 컴파일러(소스→토큰→트리→기계어→실행), 호출 스택 |
-| 14 | chapters/journey.html | 클릭 한 번의 여행 | 메시지·웹 검색·게임·사진 네 장면의 전 계층 여행, 병목 실험실 |
-| 15 | chapters/io.html | 입출력과 버스 | 폴링·인터럽트·DMA 타임라인, 연결 방식별 전송 시간, 화면 찢김과 V-Sync |
-| 16 | chapters/security.html | 보안의 기초 | SHA-256 눈사태 효과, 무차별 대입 계산기, 카이사르 암호 빈도 분석, 버퍼 오버플로 |
-| 17 | chapters/ai.html | AI는 어떻게 계산하나 | 뉴런 하나 학습시키기, 경사 하강, 장난감 언어 모델, 모델 크기·메모리 계산기 |
-| 18 | chapters/soc.html | 손안의 컴퓨터: 스마트폰과 SoC | SoC 3D 분해 모형, 배터리 시간 계산기, 발열·쓰로틀링 |
-| 19 | chapters/algo.html | 데이터와 알고리즘 | 순차·이진 탐색, 정렬 경주, 빅오 그래프, 해시 테이블, 길 찾기(BFS·A*) |
-| 20 | chapters/cloud.html | 클라우드와 데이터센터 | 데이터센터 3D와 하루 자동 확장, 복제와 장애 실험 |
-| 21 | chapters/history.html | 컴퓨터의 역사 | 무어의 법칙 그래프, 타임머신 계산기 |
-| 22 | chapters/build.html | 나만의 컴퓨터 만들기 | 예산 미션 조립 놀이터(배선도·3D), 7가지 작업 벤치마크와 병목 찾기, 부팅 과정 |
-| 23 | chapters/glossary.html | 용어집 & 종합 퀴즈 | 용어 232개 검색, 43문항 종합 퀴즈 |
-
-공통 코드: `css/style.css`(디자인 토큰, 라이트/다크), `js/common.js`(내비게이션, 캔버스·차트 헬퍼, 전역 `CB`, 학습 진도 저장, 용어 툴팁), `js/terms.js`(용어집 데이터, 본문 `.term` 툴팁과 용어집이 함께 사용).
-읽은 위치·퀴즈 답은 서버 없이 브라우저의 localStorage에만 저장됩니다.
-챕터 작성 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
-챕터를 추가하거나 제목·설명을 바꾼 뒤에는 `python3 tools/seo.py`로 canonical/OG/JSON-LD 태그와 `sitemap.xml`을 다시 만듭니다.
-
-시뮬레이터는 이해를 돕기 위해 단순화한 모델이며, 수치는 대표적인 크기 수준입니다.
-
-## 용어집과 본문 뜻풀이
-
-용어 정의는 `js/terms.js`의 `window.BOOK_GLOSSARY`에 저장합니다. 용어집과 본문 뜻풀이가 같은 데이터를 사용하며, 본문에서 용어에 마우스를 올리거나 키보드로 포커스하거나 모바일에서 탭하면 정의를 확인할 수 있습니다. 공통 동작과 스타일은 `js/glossary-tooltips.js`, `css/glossary-tooltips.css`입니다. 데이터 형식은 시리즈 공통 v1이며, 각 항목은 `ko`(이름), `en`(영문명), `abbr`(약어), `def`(정의), `chapters`(관련 장 목록)를 갖습니다. 이름이 반복되면 한 번만 표시하고, 묶음 항목은 가리킨 이름을 제목에 표시하며 구분에 필요한 비교 설명을 함께 제공합니다.
-
-## 라이선스
-
-코드는 [MIT](LICENSE-MIT), 교재 콘텐츠는 [CC BY 4.0](LICENSE-CC-BY-4.0)으로 제공됩니다. 자세한 범위는 [라이선스 안내](LICENSE.md)를 참고하세요.
+이 저장소는 옛 주소(`computerbook.euiyun.com`)로 들어온 독자를 같은 쪽의 새 주소로 넘기는 페이지만 배포합니다. 옮기기 전의 원고와 기록은 git 기록에 남아 있습니다.
